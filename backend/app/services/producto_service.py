@@ -1,50 +1,92 @@
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from app.core.database import SessionLocal
-from app.models import Categoria, Producto
+from app.models import (
+    Categoria,
+    Producto,
+)
 from app.schemas.producto import (
     ProductoActualizar,
     ProductoCrear,
 )
 
 
+# ============================================================
+# CONVERTIR PRODUCTO A DICCIONARIO
+# ============================================================
+
 def _producto_a_dict(
     producto: Producto,
 ) -> dict:
     return {
-        "id": producto.id,
-        "nombre": producto.nombre,
-        "sku": producto.sku,
-        "categoria": (
-            producto.categoria.nombre
-        ),
-        "precio": float(
-            producto.precio
-        ),
-        "stock_minimo": (
-            producto.stock_minimo
-        ),
-        "activo": producto.activo,
+        "id":
+            producto.id,
+
+        "nombre":
+            producto.nombre,
+
+        "sku":
+            producto.sku,
+
+        "categoria":
+            producto.categoria.nombre,
+
+        "precio":
+            float(
+                producto.precio
+            ),
+
+        "stock_minimo":
+            producto.stock_minimo,
+
+        "activo":
+            producto.activo,
     }
 
 
-def _obtener_categoria_modelo(
+# ============================================================
+# OBTENER O CREAR CATEGORÍA
+# ============================================================
+
+def _obtener_o_crear_categoria(
     db,
     nombre_categoria: str,
-) -> Categoria | None:
-    return (
+) -> Categoria:
+    categoria = (
         db.query(Categoria)
         .filter(
             func.lower(
                 Categoria.nombre
             )
-            == nombre_categoria
-            .strip()
-            .lower()
+            == nombre_categoria.lower()
         )
         .first()
     )
 
+    if categoria is not None:
+        return categoria
+
+    categoria = Categoria(
+        nombre=
+            nombre_categoria,
+
+        activa=
+            True,
+    )
+
+    db.add(
+        categoria
+    )
+
+    db.flush()
+
+    return categoria
+
+
+# ============================================================
+# LISTAR PRODUCTOS
+# ============================================================
 
 def listar_productos() -> list[dict]:
     db = SessionLocal()
@@ -52,9 +94,26 @@ def listar_productos() -> list[dict]:
     try:
         productos = (
             db.query(Producto)
+
+            # =================================================
+            # OPTIMIZACIÓN
+            # =================================================
+            # Producto.categoria es una relación many-to-one.
+            #
+            # joinedload obtiene la categoría junto con cada
+            # producto y evita consultas adicionales.
+            # =================================================
+
+            .options(
+                joinedload(
+                    Producto.categoria
+                )
+            )
+
             .order_by(
                 Producto.id
             )
+
             .all()
         )
 
@@ -70,6 +129,10 @@ def listar_productos() -> list[dict]:
         db.close()
 
 
+# ============================================================
+# OBTENER PRODUCTO
+# ============================================================
+
 def obtener_producto(
     producto_id: int,
 ) -> dict | None:
@@ -78,10 +141,18 @@ def obtener_producto(
     try:
         producto = (
             db.query(Producto)
+
+            .options(
+                joinedload(
+                    Producto.categoria
+                )
+            )
+
             .filter(
                 Producto.id
                 == producto_id
             )
+
             .first()
         )
 
@@ -95,6 +166,10 @@ def obtener_producto(
     finally:
         db.close()
 
+
+# ============================================================
+# OBTENER PRODUCTO POR SKU
+# ============================================================
 
 def obtener_producto_por_sku(
     sku: str,
@@ -104,12 +179,20 @@ def obtener_producto_por_sku(
     try:
         producto = (
             db.query(Producto)
+
+            .options(
+                joinedload(
+                    Producto.categoria
+                )
+            )
+
             .filter(
                 func.lower(
                     Producto.sku
                 )
                 == sku.lower()
             )
+
             .first()
         )
 
@@ -124,6 +207,10 @@ def obtener_producto_por_sku(
         db.close()
 
 
+# ============================================================
+# CREAR PRODUCTO
+# ============================================================
+
 def crear_producto(
     datos: ProductoCrear,
 ) -> dict:
@@ -131,43 +218,67 @@ def crear_producto(
 
     try:
         categoria = (
-            _obtener_categoria_modelo(
+            _obtener_o_crear_categoria(
                 db,
                 datos.categoria,
             )
         )
 
-        if categoria is None:
-            raise ValueError(
-                "La categoría seleccionada "
-                "no existe."
-            )
-
-        if not categoria.activa:
-            raise ValueError(
-                "La categoría seleccionada "
-                "está inactiva."
-            )
-
         producto = Producto(
-            nombre=datos.nombre,
-            sku=datos.sku,
-            categoria_id=(
-                categoria.id
-            ),
-            precio=datos.precio,
-            stock_minimo=(
-                datos.stock_minimo
-            ),
-            activo=datos.activo,
+            nombre=
+                datos.nombre,
+
+            sku=
+                datos.sku,
+
+            categoria_id=
+                categoria.id,
+
+            precio=
+                datos.precio,
+
+            stock_minimo=
+                datos.stock_minimo,
+
+            activo=
+                datos.activo,
         )
 
-        db.add(producto)
+        db.add(
+            producto
+        )
+
         db.commit()
-        db.refresh(producto)
+
+        producto_id = (
+            producto.id
+        )
+
+        producto_guardado = (
+            db.query(Producto)
+
+            .options(
+                joinedload(
+                    Producto.categoria
+                )
+            )
+
+            .filter(
+                Producto.id
+                == producto_id
+            )
+
+            .first()
+        )
+
+        if producto_guardado is None:
+            raise RuntimeError(
+                "No se pudo recuperar "
+                "el producto registrado"
+            )
 
         return _producto_a_dict(
-            producto
+            producto_guardado
         )
 
     except Exception:
@@ -178,6 +289,10 @@ def crear_producto(
         db.close()
 
 
+# ============================================================
+# ACTUALIZAR PRODUCTO
+# ============================================================
+
 def actualizar_producto(
     producto_id: int,
     datos: ProductoActualizar,
@@ -187,10 +302,18 @@ def actualizar_producto(
     try:
         producto = (
             db.query(Producto)
+
+            .options(
+                joinedload(
+                    Producto.categoria
+                )
+            )
+
             .filter(
                 Producto.id
                 == producto_id
             )
+
             .first()
         )
 
@@ -203,14 +326,20 @@ def actualizar_producto(
             )
         )
 
+        # ====================================================
+        # CATEGORÍA
+        # ====================================================
+
         if (
             "categoria"
             in cambios
-            and cambios["categoria"]
+            and cambios[
+                "categoria"
+            ]
             is not None
         ):
             categoria = (
-                _obtener_categoria_modelo(
+                _obtener_o_crear_categoria(
                     db,
                     cambios[
                         "categoria"
@@ -218,56 +347,67 @@ def actualizar_producto(
                 )
             )
 
-            if categoria is None:
-                raise ValueError(
-                    "La categoría seleccionada "
-                    "no existe."
-                )
-
-            cambio_categoria = (
-                categoria.id
-                != producto.categoria_id
-            )
-
-            if (
-                cambio_categoria
-                and not categoria.activa
-            ):
-                raise ValueError(
-                    "La categoría seleccionada "
-                    "está inactiva."
-                )
-
             producto.categoria_id = (
                 categoria.id
             )
 
+        # ====================================================
+        # NOMBRE
+        # ====================================================
+
         if (
-            "nombre" in cambios
-            and cambios["nombre"]
+            "nombre"
+            in cambios
+            and cambios[
+                "nombre"
+            ]
             is not None
         ):
             producto.nombre = (
-                cambios["nombre"]
+                cambios[
+                    "nombre"
+                ]
             )
 
+        # ====================================================
+        # SKU
+        # ====================================================
+
         if (
-            "sku" in cambios
-            and cambios["sku"]
+            "sku"
+            in cambios
+            and cambios[
+                "sku"
+            ]
             is not None
         ):
             producto.sku = (
-                cambios["sku"]
+                cambios[
+                    "sku"
+                ]
             )
 
+        # ====================================================
+        # PRECIO
+        # ====================================================
+
         if (
-            "precio" in cambios
-            and cambios["precio"]
+            "precio"
+            in cambios
+            and cambios[
+                "precio"
+            ]
             is not None
         ):
             producto.precio = (
-                cambios["precio"]
+                cambios[
+                    "precio"
+                ]
             )
+
+        # ====================================================
+        # STOCK MÍNIMO
+        # ====================================================
 
         if (
             "stock_minimo"
@@ -283,20 +423,48 @@ def actualizar_producto(
                 ]
             )
 
+        # ====================================================
+        # ESTADO
+        # ====================================================
+
         if (
-            "activo" in cambios
-            and cambios["activo"]
+            "activo"
+            in cambios
+            and cambios[
+                "activo"
+            ]
             is not None
         ):
             producto.activo = (
-                cambios["activo"]
+                cambios[
+                    "activo"
+                ]
             )
 
         db.commit()
-        db.refresh(producto)
+
+        producto_actualizado = (
+            db.query(Producto)
+
+            .options(
+                joinedload(
+                    Producto.categoria
+                )
+            )
+
+            .filter(
+                Producto.id
+                == producto_id
+            )
+
+            .first()
+        )
+
+        if producto_actualizado is None:
+            return None
 
         return _producto_a_dict(
-            producto
+            producto_actualizado
         )
 
     except Exception:
@@ -307,6 +475,10 @@ def actualizar_producto(
         db.close()
 
 
+# ============================================================
+# ELIMINAR PRODUCTO
+# ============================================================
+
 def eliminar_producto(
     producto_id: int,
 ) -> bool:
@@ -315,17 +487,22 @@ def eliminar_producto(
     try:
         producto = (
             db.query(Producto)
+
             .filter(
                 Producto.id
                 == producto_id
             )
+
             .first()
         )
 
         if producto is None:
             return False
 
-        db.delete(producto)
+        db.delete(
+            producto
+        )
+
         db.commit()
 
         return True

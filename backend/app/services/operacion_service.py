@@ -1,3 +1,5 @@
+from sqlalchemy.orm import selectinload
+
 from app.algorithms import (
     combinacion_lineal,
     multiplicar_matrices,
@@ -20,6 +22,10 @@ from app.models import (
 )
 from app.schemas.operacion import OperacionCrear
 
+
+# ============================================================
+# FUNCIONES AUXILIARES
+# ============================================================
 
 def _obtener_entrada(
     operacion: Operacion,
@@ -60,24 +66,64 @@ def _operacion_a_dict(
     )
 
     return {
-        "id": operacion.id,
-        "nombre": _obtener_entrada(
-            operacion,
-            "nombre",
-        ),
-        "tipo_operacion": operacion.tipo,
-        "tipo_recurso": operacion.recurso,
-        "recurso_ids": recurso_ids or [],
-        "escalar": escalar,
-        "escalares": escalares,
-        "descripcion": operacion.descripcion or "",
-        "estado": operacion.estado,
-        "resultado": _obtener_resultado(
-            operacion
-        ),
-        "fecha": operacion.creado_en,
+        "id":
+            operacion.id,
+
+        "nombre":
+            _obtener_entrada(
+                operacion,
+                "nombre",
+            ),
+
+        "tipo_operacion":
+            operacion.tipo,
+
+        "tipo_recurso":
+            operacion.recurso,
+
+        "recurso_ids":
+            recurso_ids or [],
+
+        "escalar":
+            escalar,
+
+        "escalares":
+            escalares,
+
+        "descripcion":
+            operacion.descripcion or "",
+
+        "estado":
+            operacion.estado,
+
+        "resultado":
+            _obtener_resultado(
+                operacion
+            ),
+
+        "fecha":
+            operacion.creado_en,
     }
 
+
+# ============================================================
+# CARGA OPTIMIZADA DE RELACIONES
+# ============================================================
+
+def _opciones_operacion():
+    return (
+        selectinload(
+            Operacion.entradas
+        ),
+        selectinload(
+            Operacion.resultados
+        ),
+    )
+
+
+# ============================================================
+# OBTENER VECTOR DESDE POSTGRESQL
+# ============================================================
 
 def _obtener_vector_db(
     db,
@@ -85,7 +131,9 @@ def _obtener_vector_db(
 ) -> list[float]:
     vector = (
         db.query(Vector)
-        .filter(Vector.id == vector_id)
+        .filter(
+            Vector.id == vector_id
+        )
         .first()
     )
 
@@ -96,14 +144,22 @@ def _obtener_vector_db(
 
     valores_ordenados = sorted(
         vector.valores,
-        key=lambda valor: valor.posicion,
+        key=lambda valor:
+            valor.posicion,
     )
 
     return [
-        float(valor.valor)
-        for valor in valores_ordenados
+        float(
+            valor.valor
+        )
+        for valor
+        in valores_ordenados
     ]
 
+
+# ============================================================
+# OBTENER MATRIZ DESDE POSTGRESQL
+# ============================================================
 
 def _obtener_matriz_db(
     db,
@@ -111,7 +167,9 @@ def _obtener_matriz_db(
 ) -> list[list[float]]:
     matriz = (
         db.query(Matriz)
-        .filter(Matriz.id == matriz_id)
+        .filter(
+            Matriz.id == matriz_id
+        )
         .first()
     )
 
@@ -123,18 +181,30 @@ def _obtener_matriz_db(
     resultado = [
         [
             0.0
-            for _ in range(matriz.columnas)
+            for _ in range(
+                matriz.columnas
+            )
         ]
-        for _ in range(matriz.filas)
+        for _ in range(
+            matriz.filas
+        )
     ]
 
     for valor in matriz.valores:
-        resultado[valor.fila][valor.columna] = (
-            float(valor.valor)
+        resultado[
+            valor.fila
+        ][
+            valor.columna
+        ] = float(
+            valor.valor
         )
 
     return resultado
 
+
+# ============================================================
+# VALIDACIÓN DE RECURSOS
+# ============================================================
 
 def _validar_cantidad_recursos(
     tipo_operacion: str,
@@ -176,7 +246,8 @@ def _validar_cantidad_recursos(
         )
 
     if (
-        tipo_operacion == "combinacion_lineal"
+        tipo_operacion
+        == "combinacion_lineal"
         and len(recurso_ids) < 1
     ):
         raise ValueError(
@@ -184,6 +255,10 @@ def _validar_cantidad_recursos(
             "al menos un vector"
         )
 
+
+# ============================================================
+# CALCULAR OPERACIÓN
+# ============================================================
 
 def _calcular_resultado(
     db,
@@ -194,7 +269,10 @@ def _calcular_resultado(
         datos.recurso_ids,
     )
 
-    if datos.tipo_operacion == "suma_vector":
+    if (
+        datos.tipo_operacion
+        == "suma_vector"
+    ):
         vector_a = _obtener_vector_db(
             db,
             datos.recurso_ids[0],
@@ -210,7 +288,10 @@ def _calcular_resultado(
             vector_b,
         )
 
-    if datos.tipo_operacion == "resta_vector":
+    if (
+        datos.tipo_operacion
+        == "resta_vector"
+    ):
         vector_a = _obtener_vector_db(
             db,
             datos.recurso_ids[0],
@@ -226,10 +307,14 @@ def _calcular_resultado(
             vector_b,
         )
 
-    if datos.tipo_operacion == "escalar_vector":
+    if (
+        datos.tipo_operacion
+        == "escalar_vector"
+    ):
         if datos.escalar is None:
             raise ValueError(
-                "La operación requiere un escalar"
+                "La operación requiere "
+                "un escalar"
             )
 
         vector = _obtener_vector_db(
@@ -237,12 +322,17 @@ def _calcular_resultado(
             datos.recurso_ids[0],
         )
 
-        return multiplicar_vector_escalar(
-            vector,
-            datos.escalar,
+        return (
+            multiplicar_vector_escalar(
+                vector,
+                datos.escalar,
+            )
         )
 
-    if datos.tipo_operacion == "producto_escalar":
+    if (
+        datos.tipo_operacion
+        == "producto_escalar"
+    ):
         vector_a = _obtener_vector_db(
             db,
             datos.recurso_ids[0],
@@ -258,7 +348,10 @@ def _calcular_resultado(
             vector_b,
         )
 
-    if datos.tipo_operacion == "suma_matriz":
+    if (
+        datos.tipo_operacion
+        == "suma_matriz"
+    ):
         matriz_a = _obtener_matriz_db(
             db,
             datos.recurso_ids[0],
@@ -274,7 +367,10 @@ def _calcular_resultado(
             matriz_b,
         )
 
-    if datos.tipo_operacion == "resta_matriz":
+    if (
+        datos.tipo_operacion
+        == "resta_matriz"
+    ):
         matriz_a = _obtener_matriz_db(
             db,
             datos.recurso_ids[0],
@@ -309,7 +405,10 @@ def _calcular_resultado(
             matriz_b,
         )
 
-    if datos.tipo_operacion == "transpuesta":
+    if (
+        datos.tipo_operacion
+        == "transpuesta"
+    ):
         matriz = _obtener_matriz_db(
             db,
             datos.recurso_ids[0],
@@ -319,10 +418,14 @@ def _calcular_resultado(
             matriz
         )
 
-    if datos.tipo_operacion == "escalar_matriz":
+    if (
+        datos.tipo_operacion
+        == "escalar_matriz"
+    ):
         if datos.escalar is None:
             raise ValueError(
-                "La operación requiere un escalar"
+                "La operación requiere "
+                "un escalar"
             )
 
         matriz = _obtener_matriz_db(
@@ -330,21 +433,30 @@ def _calcular_resultado(
             datos.recurso_ids[0],
         )
 
-        return multiplicar_matriz_escalar(
-            matriz,
-            datos.escalar,
+        return (
+            multiplicar_matriz_escalar(
+                matriz,
+                datos.escalar,
+            )
         )
 
-    if datos.tipo_operacion == "combinacion_lineal":
+    if (
+        datos.tipo_operacion
+        == "combinacion_lineal"
+    ):
         if datos.escalares is None:
             raise ValueError(
-                "La combinación lineal requiere "
-                "una lista de escalares"
+                "La combinación lineal "
+                "requiere una lista de escalares"
             )
 
         if (
-            len(datos.recurso_ids)
-            != len(datos.escalares)
+            len(
+                datos.recurso_ids
+            )
+            != len(
+                datos.escalares
+            )
         ):
             raise ValueError(
                 "Debe existir un escalar "
@@ -370,24 +482,40 @@ def _calcular_resultado(
     )
 
 
+# ============================================================
+# LISTAR OPERACIONES
+# ============================================================
+
 def listar_operaciones() -> list[dict]:
     db = SessionLocal()
 
     try:
         operaciones = (
             db.query(Operacion)
-            .order_by(Operacion.id)
+            .options(
+                *_opciones_operacion()
+            )
+            .order_by(
+                Operacion.id
+            )
             .all()
         )
 
         return [
-            _operacion_a_dict(operacion)
-            for operacion in operaciones
+            _operacion_a_dict(
+                operacion
+            )
+            for operacion
+            in operaciones
         ]
 
     finally:
         db.close()
 
+
+# ============================================================
+# OBTENER OPERACIÓN
+# ============================================================
 
 def obtener_operacion(
     operacion_id: int,
@@ -397,8 +525,12 @@ def obtener_operacion(
     try:
         operacion = (
             db.query(Operacion)
+            .options(
+                *_opciones_operacion()
+            )
             .filter(
-                Operacion.id == operacion_id
+                Operacion.id
+                == operacion_id
             )
             .first()
         )
@@ -414,66 +546,125 @@ def obtener_operacion(
         db.close()
 
 
+# ============================================================
+# CREAR OPERACIÓN
+# ============================================================
+
 def crear_operacion(
     datos: OperacionCrear,
 ) -> dict:
     db = SessionLocal()
 
     try:
-        resultado = _calcular_resultado(
-            db,
-            datos,
+        resultado = (
+            _calcular_resultado(
+                db,
+                datos,
+            )
         )
 
         operacion = Operacion(
-            tipo=datos.tipo_operacion,
-            recurso=datos.tipo_recurso,
-            descripcion=datos.descripcion,
-            estado="completada",
+            tipo=
+                datos.tipo_operacion,
+
+            recurso=
+                datos.tipo_recurso,
+
+            descripcion=
+                datos.descripcion,
+
+            estado=
+                "completada",
         )
 
         operacion.entradas.append(
             EntradaOperacion(
-                nombre="nombre",
-                valor=datos.nombre,
+                nombre=
+                    "nombre",
+
+                valor=
+                    datos.nombre,
             )
         )
 
         operacion.entradas.append(
             EntradaOperacion(
-                nombre="recurso_ids",
-                valor=datos.recurso_ids,
+                nombre=
+                    "recurso_ids",
+
+                valor=
+                    datos.recurso_ids,
             )
         )
 
-        if datos.escalar is not None:
+        if (
+            datos.escalar
+            is not None
+        ):
             operacion.entradas.append(
                 EntradaOperacion(
-                    nombre="escalar",
-                    valor=datos.escalar,
+                    nombre=
+                        "escalar",
+
+                    valor=
+                        datos.escalar,
                 )
             )
 
-        if datos.escalares is not None:
+        if (
+            datos.escalares
+            is not None
+        ):
             operacion.entradas.append(
                 EntradaOperacion(
-                    nombre="escalares",
-                    valor=datos.escalares,
+                    nombre=
+                        "escalares",
+
+                    valor=
+                        datos.escalares,
                 )
             )
 
         operacion.resultados.append(
             ResultadoOperacion(
-                resultado=resultado,
+                resultado=
+                    resultado,
             )
         )
 
-        db.add(operacion)
+        db.add(
+            operacion
+        )
+
         db.commit()
-        db.refresh(operacion)
+
+        operacion_id = (
+            operacion.id
+        )
+
+        operacion_guardada = (
+            db.query(Operacion)
+            .options(
+                *_opciones_operacion()
+            )
+            .filter(
+                Operacion.id
+                == operacion_id
+            )
+            .first()
+        )
+
+        if (
+            operacion_guardada
+            is None
+        ):
+            raise RuntimeError(
+                "No se pudo recuperar "
+                "la operación registrada"
+            )
 
         return _operacion_a_dict(
-            operacion
+            operacion_guardada
         )
 
     except Exception:
@@ -484,6 +675,10 @@ def crear_operacion(
         db.close()
 
 
+# ============================================================
+# GUARDAR RESULTADO
+# ============================================================
+
 def guardar_resultado(
     operacion_id: int,
     resultado,
@@ -493,8 +688,12 @@ def guardar_resultado(
     try:
         operacion = (
             db.query(Operacion)
+            .options(
+                *_opciones_operacion()
+            )
             .filter(
-                Operacion.id == operacion_id
+                Operacion.id
+                == operacion_id
             )
             .first()
         )
@@ -506,17 +705,37 @@ def guardar_resultado(
 
         operacion.resultados.append(
             ResultadoOperacion(
-                resultado=resultado,
+                resultado=
+                    resultado,
             )
         )
 
-        operacion.estado = "completada"
+        operacion.estado = (
+            "completada"
+        )
 
         db.commit()
-        db.refresh(operacion)
+
+        operacion_actualizada = (
+            db.query(Operacion)
+            .options(
+                *_opciones_operacion()
+            )
+            .filter(
+                Operacion.id
+                == operacion_id
+            )
+            .first()
+        )
+
+        if (
+            operacion_actualizada
+            is None
+        ):
+            return None
 
         return _operacion_a_dict(
-            operacion
+            operacion_actualizada
         )
 
     except Exception:
@@ -527,6 +746,10 @@ def guardar_resultado(
         db.close()
 
 
+# ============================================================
+# ELIMINAR OPERACIÓN
+# ============================================================
+
 def eliminar_operacion(
     operacion_id: int,
 ) -> bool:
@@ -536,7 +759,8 @@ def eliminar_operacion(
         operacion = (
             db.query(Operacion)
             .filter(
-                Operacion.id == operacion_id
+                Operacion.id
+                == operacion_id
             )
             .first()
         )
@@ -544,7 +768,10 @@ def eliminar_operacion(
         if operacion is None:
             return False
 
-        db.delete(operacion)
+        db.delete(
+            operacion
+        )
+
         db.commit()
 
         return True
