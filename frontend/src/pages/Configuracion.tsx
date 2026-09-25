@@ -1,4 +1,7 @@
-import { useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import {
   Bell,
@@ -13,70 +16,64 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
-  guardarDatos,
-  obtenerDatos,
-  STORAGE_KEYS,
-} from "../services/storageService";
+  aplicarConfiguracionVisual,
+  formatearFecha,
+  formatearMoneda,
+  guardarConfiguracionSistema,
+  obtenerConfiguracionSistema,
+  restaurarConfiguracionSistema,
+  type ConfiguracionSistema,
+  type FormatoFechaSistema,
+  type IdiomaSistema,
+  type MonedaSistema,
+  type ZonaHorariaSistema,
+} from "../services/configuracionService";
 
 import "../styles/Configuracion.css";
-
-// ==========================================================
-// TIPOS
-// ==========================================================
-
-interface ConfiguracionSistema {
-  idioma: string;
-  moneda: string;
-  zonaHoraria: string;
-  formatoFecha: string;
-
-  notificaciones: boolean;
-  alertasInventario: boolean;
-  alertasOperaciones: boolean;
-
-  modoCompacto: boolean;
-}
-
-// ==========================================================
-// CONFIGURACIÓN PREDETERMINADA
-// ==========================================================
-
-const configuracionInicial: ConfiguracionSistema = {
-  idioma: "Español",
-  moneda: "PEN",
-  zonaHoraria: "America/Lima",
-  formatoFecha: "DD/MM/YYYY",
-
-  notificaciones: true,
-  alertasInventario: true,
-  alertasOperaciones: true,
-
-  modoCompacto: false,
-};
 
 // ==========================================================
 // COMPONENTE
 // ==========================================================
 
 function Configuracion() {
-  // ========================================================
-  // CONFIGURACIÓN GUARDADA
-  // ========================================================
-
   const [
     configuracion,
     setConfiguracion,
-  ] = useState<ConfiguracionSistema>(() =>
-    obtenerDatos<ConfiguracionSistema>(
-      STORAGE_KEYS.configuracion,
-      configuracionInicial,
-    ),
-  );
+  ] =
+    useState<ConfiguracionSistema>(
+      () =>
+        obtenerConfiguracionSistema(),
+    );
 
   const [
     guardado,
     setGuardado,
   ] = useState(false);
+
+  // ========================================================
+  // TEXTO SEGÚN IDIOMA
+  // ========================================================
+
+  const texto = (
+    espanol: string,
+    ingles: string,
+  ) =>
+    configuracion.idioma ===
+    "en"
+      ? ingles
+      : espanol;
+
+  // ========================================================
+  // APLICAR VISTA COMPACTA EN TIEMPO REAL
+  // ========================================================
+
+  useEffect(() => {
+    aplicarConfiguracionVisual(
+      configuracion,
+    );
+  }, [
+    configuracion.modoCompacto,
+  ]);
 
   // ========================================================
   // ACTUALIZAR CAMPO
@@ -86,11 +83,13 @@ function Configuracion() {
     K extends keyof ConfiguracionSistema,
   >(
     campo: K,
-    valor: ConfiguracionSistema[K],
+    valor:
+      ConfiguracionSistema[K],
   ) => {
     setConfiguracion(
       (actual) => ({
         ...actual,
+
         [campo]: valor,
       }),
     );
@@ -99,43 +98,67 @@ function Configuracion() {
   };
 
   // ========================================================
-  // GUARDAR CONFIGURACIÓN
+  // GUARDAR
   // ========================================================
 
-  const guardarConfiguracion = () => {
-    guardarDatos(
-      STORAGE_KEYS.configuracion,
+  const guardarConfiguracion =
+    () => {
+      const resultado =
+        guardarConfiguracionSistema(
+          configuracion,
+        );
+
+      setConfiguracion(
+        resultado,
+      );
+
+      setGuardado(true);
+    };
+
+  // ========================================================
+  // RESTAURAR
+  // ========================================================
+
+  const restaurarConfiguracion =
+    () => {
+      const confirmar =
+        window.confirm(
+          texto(
+            "¿Deseas restaurar la configuración predeterminada?",
+            "Do you want to restore the default settings?",
+          ),
+        );
+
+      if (!confirmar) {
+        return;
+      }
+
+      const restaurada =
+        restaurarConfiguracionSistema();
+
+      setConfiguracion(
+        restaurada,
+      );
+
+      setGuardado(true);
+    };
+
+  // ========================================================
+  // VISTA PREVIA
+  // ========================================================
+
+  const monedaEjemplo =
+    formatearMoneda(
+      1250,
       configuracion,
     );
 
-    setGuardado(true);
-  };
-
-  // ========================================================
-  // RESTAURAR CONFIGURACIÓN
-  // ========================================================
-
-  const restaurarConfiguracion = () => {
-    const confirmar =
-      window.confirm(
-        "¿Deseas restaurar la configuración predeterminada de MatrixFlow?",
-      );
-
-    if (!confirmar) {
-      return;
-    }
-
-    setConfiguracion(
-      configuracionInicial,
+  const fechaEjemplo =
+    formatearFecha(
+      new Date(),
+      true,
+      configuracion,
     );
-
-    guardarDatos(
-      STORAGE_KEYS.configuracion,
-      configuracionInicial,
-    );
-
-    setGuardado(true);
-  };
 
   // ========================================================
   // INTERFAZ
@@ -144,9 +167,18 @@ function Configuracion() {
   return (
     <div className="settings-page">
       <PageHeader
-        etiqueta="ADMINISTRACIÓN"
-        titulo="Configuración"
-        descripcion="Administra las preferencias generales de la interfaz de MatrixFlow Enterprise."
+        etiqueta={texto(
+          "ADMINISTRACIÓN",
+          "ADMINISTRATION",
+        )}
+        titulo={texto(
+          "Configuración",
+          "Settings",
+        )}
+        descripcion={texto(
+          "Administra los parámetros generales de MatrixFlow Enterprise.",
+          "Manage the general settings of MatrixFlow Enterprise.",
+        )}
         acciones={
           <button
             type="button"
@@ -156,12 +188,18 @@ function Configuracion() {
             }
           >
             <Save size={16} />
-            Guardar cambios
+
+            {texto(
+              "Guardar cambios",
+              "Save changes",
+            )}
           </button>
         }
       />
 
-      {/* MENSAJE DE GUARDADO */}
+      {/* ================================================= */}
+      {/* MENSAJE */}
+      {/* ================================================= */}
 
       {guardado && (
         <div className="settings-success">
@@ -169,14 +207,17 @@ function Configuracion() {
 
           <div>
             <strong>
-              Configuración guardada
+              {texto(
+                "Configuración guardada",
+                "Settings saved",
+              )}
             </strong>
 
             <span>
-              Las preferencias se
-              conservarán al volver
-              a ingresar a la
-              aplicación.
+              {texto(
+                "Los cambios se conservarán en MatrixFlow.",
+                "Changes will be saved in MatrixFlow.",
+              )}
             </span>
           </div>
         </div>
@@ -186,7 +227,7 @@ function Configuracion() {
         <div className="settings-main">
 
           {/* ============================================= */}
-          {/* PREFERENCIAS REGIONALES */}
+          {/* REGIONAL */}
           {/* ============================================= */}
 
           <section className="settings-card">
@@ -197,17 +238,24 @@ function Configuracion() {
 
               <div>
                 <span>
-                  PREFERENCIAS REGIONALES
+                  {texto(
+                    "PREFERENCIAS REGIONALES",
+                    "REGIONAL PREFERENCES",
+                  )}
                 </span>
 
                 <h2>
-                  Idioma y formato
+                  {texto(
+                    "Idioma y formato",
+                    "Language and format",
+                  )}
                 </h2>
 
                 <p>
-                  Define cómo se muestran
-                  fechas, moneda y datos
-                  regionales.
+                  {texto(
+                    "Configura idioma, moneda, fechas y zona horaria.",
+                    "Configure language, currency, dates and time zone.",
+                  )}
                 </p>
               </div>
             </div>
@@ -218,7 +266,10 @@ function Configuracion() {
 
               <div className="settings-field">
                 <label htmlFor="idioma">
-                  Idioma
+                  {texto(
+                    "Idioma",
+                    "Language",
+                  )}
                 </label>
 
                 <select
@@ -226,15 +277,22 @@ function Configuracion() {
                   value={
                     configuracion.idioma
                   }
-                  onChange={(evento) =>
+                  onChange={(
+                    evento,
+                  ) =>
                     actualizarCampo(
                       "idioma",
-                      evento.target.value,
+                      evento.target
+                        .value as IdiomaSistema,
                     )
                   }
                 >
-                  <option value="Español">
+                  <option value="es">
                     Español
+                  </option>
+
+                  <option value="en">
+                    English
                   </option>
                 </select>
               </div>
@@ -243,7 +301,10 @@ function Configuracion() {
 
               <div className="settings-field">
                 <label htmlFor="moneda">
-                  Moneda
+                  {texto(
+                    "Moneda",
+                    "Currency",
+                  )}
                 </label>
 
                 <select
@@ -251,10 +312,13 @@ function Configuracion() {
                   value={
                     configuracion.moneda
                   }
-                  onChange={(evento) =>
+                  onChange={(
+                    evento,
+                  ) =>
                     actualizarCampo(
                       "moneda",
-                      evento.target.value,
+                      evento.target
+                        .value as MonedaSistema,
                     )
                   }
                 >
@@ -263,53 +327,126 @@ function Configuracion() {
                   </option>
 
                   <option value="USD">
-                    Dólar estadounidense
-                    (USD)
+                    US Dollar (USD)
                   </option>
                 </select>
               </div>
+
+              {/* TIPO DE CAMBIO */}
+
+              {configuracion.moneda ===
+                "USD" && (
+                <div className="settings-field">
+                  <label htmlFor="tipoCambio">
+                    {texto(
+                      "Tipo de cambio",
+                      "Exchange rate",
+                    )}
+                  </label>
+
+                  <input
+                    id="tipoCambio"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={
+                      configuracion
+                        .tipoCambioUsdPen
+                    }
+                    onChange={(
+                      evento,
+                    ) => {
+                      const valor =
+                        Number(
+                          evento
+                            .target
+                            .value,
+                        );
+
+                      actualizarCampo(
+                        "tipoCambioUsdPen",
+                        valor,
+                      );
+                    }}
+                  />
+
+                  <small>
+                    1 USD = S/{" "}
+                    {
+                      configuracion
+                        .tipoCambioUsdPen
+                    }
+                  </small>
+                </div>
+              )}
 
               {/* ZONA HORARIA */}
 
               <div className="settings-field">
                 <label htmlFor="zona">
-                  Zona horaria
+                  {texto(
+                    "Zona horaria",
+                    "Time zone",
+                  )}
                 </label>
 
                 <select
                   id="zona"
                   value={
-                    configuracion.zonaHoraria
+                    configuracion
+                      .zonaHoraria
                   }
-                  onChange={(evento) =>
+                  onChange={(
+                    evento,
+                  ) =>
                     actualizarCampo(
                       "zonaHoraria",
-                      evento.target.value,
+                      evento.target
+                        .value as ZonaHorariaSistema,
                     )
                   }
                 >
                   <option value="America/Lima">
-                    America/Lima
+                    Lima
+                  </option>
+
+                  <option value="America/New_York">
+                    New York
+                  </option>
+
+                  <option value="Europe/Madrid">
+                    Madrid
+                  </option>
+
+                  <option value="UTC">
+                    UTC
                   </option>
                 </select>
               </div>
 
-              {/* FORMATO DE FECHA */}
+              {/* FECHA */}
 
               <div className="settings-field">
                 <label htmlFor="fecha">
-                  Formato de fecha
+                  {texto(
+                    "Formato de fecha",
+                    "Date format",
+                  )}
                 </label>
 
                 <select
                   id="fecha"
                   value={
-                    configuracion.formatoFecha
+                    configuracion
+                      .formatoFecha
                   }
-                  onChange={(evento) =>
+                  onChange={(
+                    evento,
+                  ) =>
                     actualizarCampo(
                       "formatoFecha",
-                      evento.target.value,
+                      evento.target
+                        .value as FormatoFechaSistema,
                     )
                   }
                 >
@@ -320,13 +457,17 @@ function Configuracion() {
                   <option value="YYYY-MM-DD">
                     YYYY-MM-DD
                   </option>
+
+                  <option value="MM/DD/YYYY">
+                    MM/DD/YYYY
+                  </option>
                 </select>
               </div>
             </div>
           </section>
 
           {/* ============================================= */}
-          {/* NOTIFICACIONES */}
+          {/* ALERTAS */}
           {/* ============================================= */}
 
           <section className="settings-card">
@@ -337,50 +478,68 @@ function Configuracion() {
 
               <div>
                 <span>
-                  NOTIFICACIONES
+                  {texto(
+                    "NOTIFICACIONES",
+                    "NOTIFICATIONS",
+                  )}
                 </span>
 
                 <h2>
-                  Alertas del sistema
+                  {texto(
+                    "Alertas del sistema",
+                    "System alerts",
+                  )}
                 </h2>
 
                 <p>
-                  Configura las alertas que
-                  aparecerán en la interfaz.
+                  {texto(
+                    "Controla los avisos mostrados por MatrixFlow.",
+                    "Control notifications shown by MatrixFlow.",
+                  )}
                 </p>
               </div>
             </div>
 
             <div className="settings-options">
 
-              {/* NOTIFICACIONES GENERALES */}
+              {/* GENERAL */}
 
               <div className="settings-option">
                 <div>
                   <strong>
-                    Notificaciones generales
+                    {texto(
+                      "Notificaciones generales",
+                      "General notifications",
+                    )}
                   </strong>
 
                   <span>
-                    Mostrar avisos importantes
-                    del sistema.
+                    {texto(
+                      "Control principal de avisos.",
+                      "Main notification control.",
+                    )}
                   </span>
                 </div>
 
                 <button
                   type="button"
                   className={`settings-switch ${
-                    configuracion.notificaciones
+                    configuracion
+                      .notificaciones
                       ? "settings-switch-active"
                       : ""
                   }`}
                   onClick={() =>
                     actualizarCampo(
                       "notificaciones",
-                      !configuracion.notificaciones,
+                      !configuracion
+                        .notificaciones,
                     )
                   }
-                  aria-label="Cambiar notificaciones"
+                  aria-label={texto(
+                    "Cambiar notificaciones",
+                    "Toggle notifications",
+                  )}
                 >
                   <span />
                 </button>
@@ -391,63 +550,94 @@ function Configuracion() {
               <div className="settings-option">
                 <div>
                   <strong>
-                    Alertas de inventario
+                    {texto(
+                      "Alertas de inventario",
+                      "Inventory alerts",
+                    )}
                   </strong>
 
                   <span>
-                    Avisar cuando existan
-                    productos con stock bajo.
+                    {texto(
+                      "Avisos de stock bajo o agotado.",
+                      "Low or out-of-stock alerts.",
+                    )}
                   </span>
                 </div>
 
                 <button
                   type="button"
+                  disabled={
+                    !configuracion
+                      .notificaciones
+                  }
                   className={`settings-switch ${
-                    configuracion.alertasInventario
+                    configuracion
+                      .notificaciones &&
+                    configuracion
+                      .alertasInventario
                       ? "settings-switch-active"
                       : ""
                   }`}
                   onClick={() =>
                     actualizarCampo(
                       "alertasInventario",
-                      !configuracion.alertasInventario,
+                      !configuracion
+                        .alertasInventario,
                     )
                   }
-                  aria-label="Cambiar alertas de inventario"
+                  aria-label={texto(
+                    "Cambiar alertas de inventario",
+                    "Toggle inventory alerts",
+                  )}
                 >
                   <span />
                 </button>
               </div>
 
-              {/* OPERACIONES */}
+              {/* MATEMÁTICAS */}
 
               <div className="settings-option">
                 <div>
                   <strong>
-                    Alertas matemáticas
+                    {texto(
+                      "Alertas matemáticas",
+                      "Math alerts",
+                    )}
                   </strong>
 
                   <span>
-                    Mostrar avisos de errores
-                    o incompatibilidad de
-                    dimensiones.
+                    {texto(
+                      "Avisos de errores o dimensiones incompatibles.",
+                      "Warnings for errors or incompatible dimensions.",
+                    )}
                   </span>
                 </div>
 
                 <button
                   type="button"
+                  disabled={
+                    !configuracion
+                      .notificaciones
+                  }
                   className={`settings-switch ${
-                    configuracion.alertasOperaciones
+                    configuracion
+                      .notificaciones &&
+                    configuracion
+                      .alertasOperaciones
                       ? "settings-switch-active"
                       : ""
                   }`}
                   onClick={() =>
                     actualizarCampo(
                       "alertasOperaciones",
-                      !configuracion.alertasOperaciones,
+                      !configuracion
+                        .alertasOperaciones,
                     )
                   }
-                  aria-label="Cambiar alertas matemáticas"
+                  aria-label={texto(
+                    "Cambiar alertas matemáticas",
+                    "Toggle math alerts",
+                  )}
                 >
                   <span />
                 </button>
@@ -456,7 +646,7 @@ function Configuracion() {
           </section>
 
           {/* ============================================= */}
-          {/* APARIENCIA */}
+          {/* INTERFAZ */}
           {/* ============================================= */}
 
           <section className="settings-card">
@@ -467,55 +657,74 @@ function Configuracion() {
 
               <div>
                 <span>
-                  INTERFAZ
+                  {texto(
+                    "INTERFAZ",
+                    "INTERFACE",
+                  )}
                 </span>
 
                 <h2>
-                  Apariencia
+                  {texto(
+                    "Identidad visual",
+                    "Visual identity",
+                  )}
                 </h2>
 
                 <p>
-                  Preferencias visuales de
-                  MatrixFlow.
+                  {texto(
+                    "Personaliza la visualización de MatrixFlow Enterprise.",
+                    "Customize the MatrixFlow Enterprise interface.",
+                  )}
                 </p>
               </div>
             </div>
+
+            {/* VISTA COMPACTA */}
 
             <div className="settings-options">
               <div className="settings-option">
                 <div>
                   <strong>
-                    Vista compacta
+                    {texto(
+                      "Vista compacta",
+                      "Compact view",
+                    )}
                   </strong>
 
                   <span>
-                    Reduce visualmente el
-                    espacio entre algunos
-                    elementos.
+                    {texto(
+                      "Reduce el espacio entre los elementos para mostrar más información en pantalla.",
+                      "Reduces spacing between elements to display more information on screen.",
+                    )}
                   </span>
                 </div>
 
                 <button
                   type="button"
                   className={`settings-switch ${
-                    configuracion.modoCompacto
+                    configuracion
+                      .modoCompacto
                       ? "settings-switch-active"
                       : ""
                   }`}
                   onClick={() =>
                     actualizarCampo(
                       "modoCompacto",
-                      !configuracion.modoCompacto,
+                      !configuracion
+                        .modoCompacto,
                     )
                   }
-                  aria-label="Cambiar vista compacta"
+                  aria-label={texto(
+                    "Cambiar vista compacta",
+                    "Toggle compact view",
+                  )}
                 >
                   <span />
                 </button>
               </div>
             </div>
 
-            {/* IDENTIDAD VISUAL */}
+            {/* COLORES */}
 
             <div className="settings-colors">
               <div>
@@ -546,7 +755,10 @@ function Configuracion() {
                 />
 
                 <small>
-                  Primario
+                  {texto(
+                    "Primario",
+                    "Primary",
+                  )}
                 </small>
 
                 <strong>
@@ -564,7 +776,10 @@ function Configuracion() {
                 />
 
                 <small>
-                  Acento
+                  {texto(
+                    "Acento",
+                    "Accent",
+                  )}
                 </small>
 
                 <strong>
@@ -582,7 +797,10 @@ function Configuracion() {
                 />
 
                 <small>
-                  Fondo
+                  {texto(
+                    "Fondo",
+                    "Background",
+                  )}
                 </small>
 
                 <strong>
@@ -594,19 +812,20 @@ function Configuracion() {
         </div>
 
         {/* =============================================== */}
-        {/* INFORMACIÓN DEL SISTEMA */}
+        {/* INFORMACIÓN */}
         {/* =============================================== */}
 
         <aside className="settings-sidebar">
           <section className="settings-info-card">
             <div className="settings-info-icon">
-              <Settings
-                size={22}
-              />
+              <Settings size={22} />
             </div>
 
             <span>
-              SISTEMA
+              {texto(
+                "SISTEMA",
+                "SYSTEM",
+              )}
             </span>
 
             <h3>
@@ -614,14 +833,72 @@ function Configuracion() {
             </h3>
 
             <p>
-              Sistema web empresarial
-              para análisis de ventas,
-              inventario e indicadores
-              mediante álgebra lineal.
+              {texto(
+                "Sistema empresarial de análisis de ventas, inventario e indicadores mediante álgebra lineal.",
+                "Enterprise system for sales, inventory and indicator analysis using linear algebra.",
+              )}
             </p>
           </section>
 
-          {/* RESTAURAR */}
+          {/* VISTA PREVIA */}
+
+          <section className="settings-info-card">
+            <span>
+              {texto(
+                "VISTA PREVIA",
+                "PREVIEW",
+              )}
+            </span>
+
+            <h3>
+              {texto(
+                "Formato actual",
+                "Current format",
+              )}
+            </h3>
+
+            <p>
+              {texto(
+                "Moneda:",
+                "Currency:",
+              )}{" "}
+
+              <strong>
+                {monedaEjemplo}
+              </strong>
+            </p>
+
+            <p>
+              {texto(
+                "Fecha:",
+                "Date:",
+              )}{" "}
+
+              <strong>
+                {fechaEjemplo}
+              </strong>
+            </p>
+
+            <p>
+              {texto(
+                "Vista:",
+                "View:",
+              )}{" "}
+
+              <strong>
+                {configuracion
+                  .modoCompacto
+                  ? texto(
+                      "Compacta",
+                      "Compact",
+                    )
+                  : texto(
+                      "Normal",
+                      "Normal",
+                    )}
+              </strong>
+            </p>
+          </section>
 
           <button
             type="button"
@@ -630,11 +907,12 @@ function Configuracion() {
               restaurarConfiguracion
             }
           >
-            <RotateCcw
-              size={15}
-            />
+            <RotateCcw size={15} />
 
-            Restaurar configuración
+            {texto(
+              "Restaurar configuración",
+              "Restore settings",
+            )}
           </button>
         </aside>
       </div>

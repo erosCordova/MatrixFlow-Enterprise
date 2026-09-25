@@ -26,13 +26,19 @@ export interface MetaAPI {
 }
 
 
+export type EstadoMeta =
+  | "Activa"
+  | "Próxima"
+  | "Finalizada";
+
+
 export interface MetaVista {
   id: number;
   sucursalId: number;
   sucursal: string;
   periodo: string;
   montoMeta: number;
-  estado: "Activa";
+  estado: EstadoMeta;
   fechaRegistro: string;
 }
 
@@ -134,6 +140,67 @@ function obtenerFechasPeriodo(
 }
 
 
+function obtenerFechaActual(): string {
+  const hoy =
+    new Date();
+
+  const anio =
+    hoy.getFullYear();
+
+  const mes =
+    String(
+      hoy.getMonth() + 1,
+    ).padStart(
+      2,
+      "0",
+    );
+
+  const dia =
+    String(
+      hoy.getDate(),
+    ).padStart(
+      2,
+      "0",
+    );
+
+  return `${anio}-${mes}-${dia}`;
+}
+
+
+function obtenerEstadoMeta(
+  meta: MetaAPI,
+): EstadoMeta {
+  const hoy =
+    obtenerFechaActual();
+
+  const fechaInicio =
+    meta.fecha_inicio.slice(
+      0,
+      10,
+    );
+
+  const fechaFin =
+    meta.fecha_fin.slice(
+      0,
+      10,
+    );
+
+  if (
+    hoy < fechaInicio
+  ) {
+    return "Próxima";
+  }
+
+  if (
+    hoy > fechaFin
+  ) {
+    return "Finalizada";
+  }
+
+  return "Activa";
+}
+
+
 export function metaAPresentacion(
   meta: MetaAPI,
   sucursales: SucursalVista[],
@@ -165,7 +232,9 @@ export function metaAPresentacion(
       meta.monto_objetivo,
 
     estado:
-      "Activa",
+      obtenerEstadoMeta(
+        meta,
+      ),
 
     fechaRegistro:
       meta.fecha_inicio,

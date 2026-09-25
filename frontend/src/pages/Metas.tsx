@@ -346,6 +346,10 @@ function Metas() {
     ]);
 
 
+  // ==========================================================
+  // SOLO LAS METAS REALMENTE ACTIVAS
+  // ==========================================================
+
   const metasActivas =
     metas.filter(
       (meta) =>
@@ -814,6 +818,14 @@ function Metas() {
             <option value="Activa">
               Activas
             </option>
+
+            <option value="Próxima">
+              Próximas
+            </option>
+
+            <option value="Finalizada">
+              Finalizadas
+            </option>
           </select>
         </div>
 
@@ -1002,8 +1014,36 @@ function Metas() {
                         </td>
 
                         <td>
-                          <span className="goal-status goal-status-active">
-                            Activa
+                          <span
+                            className={
+                              meta.estado ===
+                              "Activa"
+                                ? "goal-status goal-status-active"
+                                : "goal-status"
+                            }
+                            style={
+                              meta.estado ===
+                              "Próxima"
+                                ? {
+                                    background:
+                                      "#eff6ff",
+                                    color:
+                                      "#2563eb",
+                                  }
+                                : meta.estado ===
+                                    "Finalizada"
+                                  ? {
+                                      background:
+                                        "#f1f5f9",
+                                      color:
+                                        "#64748b",
+                                    }
+                                  : undefined
+                            }
+                          >
+                            {
+                              meta.estado
+                            }
                           </span>
                         </td>
 
@@ -1125,8 +1165,6 @@ function Metas() {
             >
               <div className="goal-form">
 
-                {/* SUCURSAL */}
-
                 <div className="form-group">
                   <label htmlFor="sucursal">
                     Sucursal
@@ -1183,8 +1221,6 @@ function Metas() {
                 </div>
 
 
-                {/* PERIODO */}
-
                 <div className="form-group">
                   <label htmlFor="periodo">
                     Periodo
@@ -1201,16 +1237,13 @@ function Metas() {
                   {errors.periodo && (
                     <span className="form-error">
                       {
-                        errors
-                          .periodo
+                        errors.periodo
                           .message
                       }
                     </span>
                   )}
                 </div>
 
-
-                {/* MONTO */}
 
                 <div className="form-group goal-form-full">
                   <label htmlFor="montoMeta">
@@ -1235,8 +1268,7 @@ function Metas() {
                   {errors.montoMeta && (
                     <span className="form-error">
                       {
-                        errors
-                          .montoMeta
+                        errors.montoMeta
                           .message
                       }
                     </span>

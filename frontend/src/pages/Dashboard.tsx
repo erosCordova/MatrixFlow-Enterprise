@@ -2,7 +2,6 @@ import {
   Activity,
   ArrowRight,
   Calculator,
-  Download,
   PackageCheck,
   RefreshCw,
   ShoppingCart,
@@ -18,15 +17,10 @@ import {
 } from "react-router-dom";
 
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   Legend,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -34,7 +28,11 @@ import {
 } from "recharts";
 
 import PageHeader from "../components/ui/PageHeader";
-import { Button } from "../components/ui/button";
+
+import {
+  Button,
+} from "../components/ui/button";
+
 import StatCard from "../components/ui/StatCard";
 
 import type {
@@ -44,10 +42,6 @@ import type {
 import {
   useReporteGeneral,
 } from "../hooks/useReportes";
-
-import {
-  obtenerRol,
-} from "../services/sessionService";
 
 
 // ============================================================
@@ -64,7 +58,9 @@ function formatoDinero(
       currency: "PEN",
       maximumFractionDigits: 2,
     },
-  ).format(valor);
+  ).format(
+    valor,
+  );
 }
 
 
@@ -72,21 +68,27 @@ function formatearFecha(
   fecha: string,
 ) {
   if (
-    fecha === "Inventario actual"
+    fecha ===
+    "Inventario actual"
   ) {
     return fecha;
   }
 
   const normalizada =
     fecha
-      .replace(" ", "T")
+      .replace(
+        " ",
+        "T",
+      )
       .replace(
         /(\.\d{3})\d+$/,
         "$1",
       );
 
   const valor =
-    new Date(normalizada);
+    new Date(
+      normalizada,
+    );
 
   if (
     Number.isNaN(
@@ -105,47 +107,9 @@ function formatearFecha(
       hour: "2-digit",
       minute: "2-digit",
     },
-  ).format(valor);
-}
-
-
-function nombreOperacion(
-  tipo: string,
-) {
-  const nombres:
-    Record<string, string> = {
-      suma_vector:
-        "Suma de vectores",
-
-      resta_vector:
-        "Resta de vectores",
-
-      escalar_vector:
-        "Escalar por vector",
-
-      producto_escalar:
-        "Producto escalar",
-
-      suma_matriz:
-        "Suma de matrices",
-
-      resta_matriz:
-        "Resta de matrices",
-
-      multiplicacion_matriz:
-        "Multiplicación de matrices",
-
-      transpuesta:
-        "Transpuesta",
-
-      escalar_matriz:
-        "Escalar por matriz",
-
-      combinacion_lineal:
-        "Combinación lineal",
-    };
-
-  return nombres[tipo] ?? tipo;
+  ).format(
+    valor,
+  );
 }
 
 
@@ -156,9 +120,6 @@ function nombreOperacion(
 function Dashboard() {
   const navigate =
     useNavigate();
-
-  const rol =
-    obtenerRol();
 
   const reporteQuery =
     useReporteGeneral();
@@ -186,12 +147,16 @@ function Dashboard() {
 
 
   // ==========================================================
-  // INDICADORES
+  // RESUMEN EJECUTIVO
   // ==========================================================
 
   const totalVentas =
     reporte?.ventas
       .ingresos_totales ?? 0;
+
+  const cantidadVentas =
+    reporte?.ventas
+      .cantidad_ventas ?? 0;
 
   const totalUnidades =
     reporte?.ventas
@@ -201,9 +166,22 @@ function Dashboard() {
     reporte?.inventario
       .unidades_disponibles ?? 0;
 
-  const rotacionEstimada =
+  const stockBajo =
     reporte?.inventario
-      .rotacion_estimada ?? null;
+      .stock_bajo ?? 0;
+
+  const sinStock =
+    reporte?.inventario
+      .sin_stock ?? 0;
+
+  const registrosInventario =
+    reporte?.inventario
+      .registros ?? 0;
+
+  const alertasInventario =
+    stockBajo +
+    sinStock;
+
 
   const totalMeta =
     reporte?.metas
@@ -217,25 +195,26 @@ function Dashboard() {
     reporte?.metas
       .cumplimiento ?? 0;
 
-  const diferenciaMeta =
-    totalMeta > 0
-      ? ventasConMeta -
-        totalMeta
-      : 0;
 
-  const alertasInventario =
-    (
-      reporte?.inventario
-        .stock_bajo ?? 0
-    ) +
-    (
-      reporte?.inventario
-        .sin_stock ?? 0
-    );
+  const totalOperaciones =
+    reporte?.operaciones
+      .total ?? 0;
+
+  const operacionesCompletadas =
+    reporte?.operaciones
+      .completadas ?? 0;
+
+  const operacionesPendientes =
+    reporte?.operaciones
+      .pendientes ?? 0;
+
+  const operacionesErrores =
+    reporte?.operaciones
+      .errores ?? 0;
 
 
   // ==========================================================
-  // TARJETAS
+  // TARJETAS PRINCIPALES
   // ==========================================================
 
   const estadisticasDashboard =
@@ -253,9 +232,9 @@ function Dashboard() {
             ),
 
           variacion:
-            reporte
-              ? `${reporte.ventas.cantidad_ventas} registros`
-              : "Sin registros",
+            cantidadVentas > 0
+              ? `${cantidadVentas} ventas`
+              : "Sin ventas",
 
           tendencia:
             totalVentas > 0
@@ -263,7 +242,9 @@ function Dashboard() {
               : "neutral",
 
           descripcion:
-            "Total de ventas registradas en MatrixFlow.",
+            `${totalUnidades.toLocaleString(
+              "es-PE",
+            )} unidades vendidas.`,
 
           icono:
             ShoppingCart,
@@ -286,7 +267,7 @@ function Dashboard() {
                 100
                 ? "Meta alcanzada"
                 : "En progreso"
-              : "Sin meta",
+              : "Sin meta activa",
 
           tendencia:
             totalMeta > 0
@@ -303,7 +284,7 @@ function Dashboard() {
                 )} de ${formatoDinero(
                   totalMeta,
                 )}`
-              : "No existen metas comerciales activas.",
+              : "No existen metas activas.",
 
           icono:
             Activity,
@@ -311,40 +292,12 @@ function Dashboard() {
 
         {
           titulo:
-            "Unidades vendidas",
+            "Inventario",
 
           valor:
-            totalUnidades
-              .toLocaleString(
-                "es-PE",
-              ),
-
-          variacion:
-            reporte
-              ? `${reporte.productos} productos`
-              : "Sin productos",
-
-          tendencia:
-            totalUnidades > 0
-              ? "positiva"
-              : "neutral",
-
-          descripcion:
-            "Cantidad total de unidades vendidas.",
-
-          icono:
-            PackageCheck,
-        },
-
-        {
-          titulo:
-            "Stock disponible",
-
-          valor:
-            stockTotal
-              .toLocaleString(
-                "es-PE",
-              ),
+            stockTotal.toLocaleString(
+              "es-PE",
+            ),
 
           variacion:
             alertasInventario > 0
@@ -359,50 +312,60 @@ function Dashboard() {
                 : "neutral",
 
           descripcion:
-            rotacionEstimada !== null
-              ? `Rotación estimada: ${rotacionEstimada.toFixed(
-                  2,
-                )} veces. ${
-                  alertasInventario > 0
-                    ? "Existen productos con stock bajo o agotado."
-                    : "El inventario no presenta alertas de stock."
-                }`
-              : alertasInventario > 0
-                ? "Rotación no disponible. Existen productos con stock bajo o agotado."
-                : "Rotación no disponible. El inventario no presenta alertas de stock.",
+            "Unidades disponibles actualmente.",
 
           icono:
             PackageCheck,
         },
+
+        {
+          titulo:
+            "Operaciones",
+
+          valor:
+            totalOperaciones.toLocaleString(
+              "es-PE",
+            ),
+
+          variacion:
+            `${operacionesCompletadas} completadas`,
+
+          tendencia:
+            operacionesErrores > 0
+              ? "negativa"
+              : totalOperaciones > 0
+                ? "positiva"
+                : "neutral",
+
+          descripcion:
+            "Procesamiento matemático registrado.",
+
+          icono:
+            Calculator,
+        },
       ],
       [
-        reporte,
         totalVentas,
+        cantidadVentas,
+        totalUnidades,
         totalMeta,
         cumplimiento,
         ventasConMeta,
-        totalUnidades,
         stockTotal,
-        rotacionEstimada,
         alertasInventario,
+        totalOperaciones,
+        operacionesCompletadas,
+        operacionesErrores,
       ],
     );
 
 
   // ==========================================================
-  // DATOS DE GRÁFICOS
+  // INFORMACIÓN COMPLEMENTARIA
   // ==========================================================
 
   const ventasMensuales =
     reporte?.ventas_mensuales ??
-    [];
-
-  const ventasSucursales =
-    reporte?.ventas_por_sucursal ??
-    [];
-
-  const estadoInventario =
-    reporte?.estado_inventario ??
     [];
 
   const ventasProductos =
@@ -413,124 +376,18 @@ function Dashboard() {
     reporte?.actividad_reciente ??
     [];
 
-  const operacionesRecientes =
-    reporte?.operaciones_recientes ??
-    [];
 
+  const productosDestacados =
+    ventasProductos.slice(
+      0,
+      5,
+    );
 
-  // ==========================================================
-  // EXPORTAR
-  // ==========================================================
-
-  const exportarDashboard =
-    () => {
-      if (!reporte) {
-        return;
-      }
-
-      const contenido = [
-        "MATRIXFLOW ENTERPRISE",
-        "Resumen ejecutivo",
-        "",
-
-        `Ventas acumuladas: ${formatoDinero(
-          totalVentas,
-        )}`,
-
-        `Unidades vendidas: ${totalUnidades}`,
-
-        `Stock disponible: ${stockTotal}`,
-
-        rotacionEstimada !== null
-          ? `Rotación estimada: ${rotacionEstimada.toFixed(
-              2,
-            )} veces`
-          : "Rotación estimada: No disponible",
-
-        totalMeta > 0
-          ? `Meta comercial: ${formatoDinero(
-              totalMeta,
-            )}`
-          : "Meta comercial: Sin metas activas",
-
-        totalMeta > 0
-          ? `Ventas asociadas a metas: ${formatoDinero(
-              ventasConMeta,
-            )}`
-          : "",
-
-        totalMeta > 0
-          ? `Cumplimiento: ${cumplimiento.toFixed(
-              1,
-            )}%`
-          : "",
-
-        "",
-
-        "VENTAS POR SUCURSAL",
-
-        ...ventasSucursales.map(
-          (item) =>
-            `${item.sucursal}: ${formatoDinero(
-              item.ventas,
-            )} | Meta: ${formatoDinero(
-              item.meta,
-            )}`,
-        ),
-
-        "",
-
-        "VENTAS POR PRODUCTO",
-
-        ...ventasProductos.map(
-          (item) =>
-            `${item.producto}: ${item.unidades} unidades | ${formatoDinero(
-              item.ventas,
-            )}`,
-        ),
-      ]
-        .filter(
-          (linea) =>
-            linea !== "",
-        )
-        .join("\n");
-
-      const archivo =
-        new Blob(
-          [contenido],
-          {
-            type:
-              "text/plain;charset=utf-8",
-          },
-        );
-
-      const url =
-        URL.createObjectURL(
-          archivo,
-        );
-
-      const enlace =
-        document.createElement(
-          "a",
-        );
-
-      enlace.href = url;
-
-      enlace.download =
-        "matrixflow-dashboard.txt";
-
-      document.body.appendChild(
-        enlace,
-      );
-
-      enlace.click();
-
-      enlace.remove();
-
-      URL.revokeObjectURL(
-        url,
-      );
-    };
+  const actividadDestacada =
+    actividadesRecientes.slice(
+      0,
+      5,
+    );
 
 
   // ==========================================================
@@ -541,7 +398,7 @@ function Dashboard() {
     <div className="dashboard-page">
 
       {/* ==================================================== */}
-      {/* ANIMACIÓN LOCAL */}
+      {/* ANIMACIÓN */}
       {/* ==================================================== */}
 
       <style>
@@ -553,14 +410,12 @@ function Dashboard() {
             flex-shrink: 0;
             animation: dashboard-girar 0.75s linear infinite;
             transform-origin: center center;
-            will-change: transform;
           }
 
           .dashboard-icono-estatico {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
           }
 
           @keyframes dashboard-girar {
@@ -608,7 +463,7 @@ function Dashboard() {
       <PageHeader
         etiqueta="RESUMEN EJECUTIVO"
         titulo="Dashboard"
-        descripcion="Vista general del rendimiento comercial, inventario y análisis matemático de MatrixFlow Enterprise."
+        descripcion="Resumen general del rendimiento comercial, inventario, metas y procesamiento matemático de MatrixFlow Enterprise."
         acciones={
           <>
             <Button
@@ -619,7 +474,9 @@ function Dashboard() {
               onClick={() =>
                 void cargarDashboard()
               }
-              disabled={cargando}
+              disabled={
+                cargando
+              }
             >
               <span
                 className={
@@ -638,23 +495,22 @@ function Dashboard() {
                 : "Actualizar"}
             </Button>
 
+
             <Button
               type="button"
               size="lg"
               className="h-10 border-blue-600 bg-blue-600 px-4 text-white hover:bg-blue-700"
-              onClick={
-                exportarDashboard
-              }
-              disabled={
-                !reporte ||
-                cargando
+              onClick={() =>
+                navigate(
+                  "/reportes",
+                )
               }
             >
-              <Download
+              Ver reportes
+
+              <ArrowRight
                 size={17}
               />
-
-              Exportar
             </Button>
           </>
         }
@@ -712,7 +568,7 @@ function Dashboard() {
               </strong>
 
               <p>
-                Consultando datos empresariales...
+                Consultando indicadores empresariales...
               </p>
             </div>
 
@@ -722,12 +578,14 @@ function Dashboard() {
         <>
 
           {/* ================================================= */}
-          {/* INDICADORES */}
+          {/* INDICADORES EJECUTIVOS */}
           {/* ================================================= */}
 
           <section className="dashboard-stats">
             {estadisticasDashboard.map(
-              (estadistica) => (
+              (
+                estadistica,
+              ) => (
                 <StatCard
                   key={
                     estadistica.titulo
@@ -742,7 +600,7 @@ function Dashboard() {
 
 
           {/* ================================================= */}
-          {/* VENTAS Y META */}
+          {/* VENTAS + META */}
           {/* ================================================= */}
 
           <section className="dashboard-grid dashboard-grid-main">
@@ -751,7 +609,7 @@ function Dashboard() {
               <div className="dashboard-card-header">
                 <div>
                   <span className="dashboard-card-label">
-                    RENDIMIENTO COMERCIAL
+                    TENDENCIA GENERAL
                   </span>
 
                   <h2>
@@ -759,14 +617,27 @@ function Dashboard() {
                   </h2>
 
                   <p>
-                    Comparación de ventas reales frente a las metas comerciales.
+                    Vista rápida del comportamiento comercial reciente.
                   </p>
                 </div>
 
-                <div className="dashboard-period">
-                  ├Ültimos 6 meses
-                </div>
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() =>
+                    navigate(
+                      "/reportes",
+                    )
+                  }
+                >
+                  Análisis completo
+
+                  <ArrowRight
+                    size={15}
+                  />
+                </button>
               </div>
+
 
               <div className="chart-container">
                 {ventasMensuales.length >
@@ -782,28 +653,40 @@ function Dashboard() {
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
-                        vertical={false}
+                        vertical={
+                          false
+                        }
                         stroke="#e2e8f0"
                       />
 
                       <XAxis
                         dataKey="mes"
-                        axisLine={false}
-                        tickLine={false}
+                        axisLine={
+                          false
+                        }
+                        tickLine={
+                          false
+                        }
                         tick={{
                           fill:
                             "#64748b",
-                          fontSize: 12,
+                          fontSize:
+                            12,
                         }}
                       />
 
                       <YAxis
-                        axisLine={false}
-                        tickLine={false}
+                        axisLine={
+                          false
+                        }
+                        tickLine={
+                          false
+                        }
                         tick={{
                           fill:
                             "#64748b",
-                          fontSize: 12,
+                          fontSize:
+                            12,
                         }}
                         tickFormatter={(
                           valor,
@@ -851,13 +734,15 @@ function Dashboard() {
                         stroke="#06b6d4"
                         strokeWidth={2}
                         strokeDasharray="6 5"
-                        dot={false}
+                        dot={
+                          false
+                        }
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="report-empty">
-                    Todavía no hay ventas ni metas para mostrar.
+                    Todavía no existen datos comerciales para mostrar.
                   </div>
                 )}
               </div>
@@ -868,14 +753,19 @@ function Dashboard() {
               <div className="dashboard-card-header">
                 <div>
                   <span className="dashboard-card-label">
-                    OBJETIVO COMERCIAL
+                    META ACTUAL
                   </span>
 
                   <h2>
-                    Cumplimiento de meta
+                    Cumplimiento comercial
                   </h2>
+
+                  <p>
+                    Avance de las metas vigentes.
+                  </p>
                 </div>
               </div>
+
 
               <div className="goal-content">
                 <div className="goal-circle">
@@ -894,6 +784,7 @@ function Dashboard() {
                   </div>
                 </div>
 
+
                 <div className="goal-values">
                   <div>
                     <span>
@@ -909,7 +800,7 @@ function Dashboard() {
 
                   <div>
                     <span>
-                      Meta establecida
+                      Objetivo
                     </span>
 
                     <strong>
@@ -917,33 +808,29 @@ function Dashboard() {
                         ? formatoDinero(
                             totalMeta,
                           )
-                        : "Sin meta"}
+                        : "Sin meta activa"}
                     </strong>
                   </div>
 
                   <div>
                     <span>
-                      Diferencia
+                      Estado
                     </span>
 
                     <strong
                       className={
-                        diferenciaMeta >=
-                        0
+                        cumplimiento >=
+                        100
                           ? "positive-value"
-                          : ""
+                          : undefined
                       }
                     >
-                      {totalMeta > 0
-                        ? `${
-                            diferenciaMeta >=
-                            0
-                              ? "+"
-                              : ""
-                          }${formatoDinero(
-                            diferenciaMeta,
-                          )}`
-                        : "—"}
+                      {totalMeta <= 0
+                        ? "Sin meta"
+                        : cumplimiento >=
+                            100
+                          ? "Cumplida"
+                          : "En progreso"}
                     </strong>
                   </div>
                 </div>
@@ -953,121 +840,10 @@ function Dashboard() {
 
 
           {/* ================================================= */}
-          {/* SUCURSALES E INVENTARIO */}
+          {/* INVENTARIO + PROCESAMIENTO */}
           {/* ================================================= */}
 
           <section className="dashboard-grid dashboard-grid-half">
-
-            <article className="dashboard-card">
-              <div className="dashboard-card-header">
-                <div>
-                  <span className="dashboard-card-label">
-                    SUCURSALES
-                  </span>
-
-                  <h2>
-                    Ventas por sucursal
-                  </h2>
-
-                  <p>
-                    Comparación del rendimiento comercial por sede.
-                  </p>
-                </div>
-              </div>
-
-              <div className="chart-container chart-medium">
-                {ventasSucursales.length >
-                0 ? (
-                  <ResponsiveContainer
-                    width="100%"
-                    height="100%"
-                  >
-                    <BarChart
-                      data={
-                        ventasSucursales
-                      }
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="#e2e8f0"
-                      />
-
-                      <XAxis
-                        dataKey="sucursal"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{
-                          fill:
-                            "#64748b",
-                          fontSize: 11,
-                        }}
-                      />
-
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{
-                          fill:
-                            "#64748b",
-                          fontSize: 11,
-                        }}
-                        tickFormatter={(
-                          valor,
-                        ) =>
-                          `${Number(
-                            valor,
-                          ) / 1000}k`
-                        }
-                      />
-
-                      <Tooltip
-                        formatter={(
-                          valor,
-                        ) =>
-                          formatoDinero(
-                            Number(
-                              valor,
-                            ),
-                          )
-                        }
-                      />
-
-                      <Legend />
-
-                      <Bar
-                        dataKey="ventas"
-                        name="Ventas"
-                        fill="#2563eb"
-                        radius={[
-                          5,
-                          5,
-                          0,
-                          0,
-                        ]}
-                      />
-
-                      <Bar
-                        dataKey="meta"
-                        name="Meta"
-                        fill="#cbd5e1"
-                        radius={[
-                          5,
-                          5,
-                          0,
-                          0,
-                        ]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="report-empty">
-                    No hay sucursales con información comercial.
-                  </div>
-                )}
-              </div>
-            </article>
-
 
             <article className="dashboard-card">
               <div className="dashboard-card-header">
@@ -1077,122 +853,161 @@ function Dashboard() {
                   </span>
 
                   <h2>
-                    Estado del inventario
+                    Estado general
                   </h2>
 
                   <p>
-                    Distribución actual de productos por nivel de existencias.
+                    Resumen actual de existencias.
                   </p>
                 </div>
+
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() =>
+                    navigate(
+                      "/inventario",
+                    )
+                  }
+                >
+                  Ver inventario
+
+                  <ArrowRight
+                    size={15}
+                  />
+                </button>
               </div>
 
-              <div className="inventory-chart-layout">
-                {(
-                  reporte?.inventario
-                    .registros ?? 0
-                ) > 0 ? (
-                  <>
-                    <div className="pie-chart-container">
-                      <ResponsiveContainer
-                        width="100%"
-                        height="100%"
-                      >
-                        <PieChart>
-                          <Pie
-                            data={
-                              estadoInventario
-                            }
-                            dataKey="cantidad"
-                            nameKey="nombre"
-                            innerRadius={
-                              58
-                            }
-                            outerRadius={
-                              82
-                            }
-                            paddingAngle={
-                              3
-                            }
-                          >
-                            {estadoInventario.map(
-                              (
-                                item,
-                                index,
-                              ) => {
-                                const colores =
-                                  [
-                                    "#2563eb",
-                                    "#f59e0b",
-                                    "#ef4444",
-                                  ];
 
-                                return (
-                                  <Cell
-                                    key={
-                                      item.nombre
-                                    }
-                                    fill={
-                                      colores[
-                                        index
-                                      ]
-                                    }
-                                  />
-                                );
-                              },
-                            )}
-                          </Pie>
+              <div className="goal-values">
+                <div>
+                  <span>
+                    Unidades disponibles
+                  </span>
 
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <strong>
+                    {stockTotal.toLocaleString(
+                      "es-PE",
+                    )}
+                  </strong>
+                </div>
 
-                    <div className="inventory-legend">
-                      {estadoInventario.map(
-                        (
-                          item,
-                          index,
-                        ) => (
-                          <div
-                            className="inventory-legend-item"
-                            key={
-                              item.nombre
-                            }
-                          >
-                            <span
-                              className={`inventory-dot inventory-dot-${index}`}
-                            />
+                <div>
+                  <span>
+                    Registros
+                  </span>
 
-                            <div>
-                              <span>
-                                {
-                                  item.nombre
-                                }
-                              </span>
+                  <strong>
+                    {registrosInventario.toLocaleString(
+                      "es-PE",
+                    )}
+                  </strong>
+                </div>
 
-                              <strong>
-                                {
-                                  item.cantidad
-                                }
-                              </strong>
-                            </div>
-                          </div>
-                        ),
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="report-empty">
-                    No hay registros de inventario.
-                  </div>
-                )}
+                <div>
+                  <span>
+                    Stock bajo
+                  </span>
+
+                  <strong>
+                    {stockBajo}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Sin stock
+                  </span>
+
+                  <strong>
+                    {sinStock}
+                  </strong>
+                </div>
+              </div>
+            </article>
+
+
+            <article className="dashboard-card">
+              <div className="dashboard-card-header">
+                <div>
+                  <span className="dashboard-card-label">
+                    ÁLGEBRA LINEAL
+                  </span>
+
+                  <h2>
+                    Procesamiento matemático
+                  </h2>
+
+                  <p>
+                    Resumen de operaciones ejecutadas.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() =>
+                    navigate(
+                      "/operaciones",
+                    )
+                  }
+                >
+                  Ver operaciones
+
+                  <ArrowRight
+                    size={15}
+                  />
+                </button>
+              </div>
+
+
+              <div className="goal-values">
+                <div>
+                  <span>
+                    Total procesadas
+                  </span>
+
+                  <strong>
+                    {totalOperaciones}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Completadas
+                  </span>
+
+                  <strong className="positive-value">
+                    {operacionesCompletadas}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Pendientes
+                  </span>
+
+                  <strong>
+                    {operacionesPendientes}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>
+                    Errores
+                  </span>
+
+                  <strong>
+                    {operacionesErrores}
+                  </strong>
+                </div>
               </div>
             </article>
           </section>
 
 
           {/* ================================================= */}
-          {/* PRODUCTOS Y ACTIVIDAD */}
+          {/* PRODUCTOS + ACTIVIDAD */}
           {/* ================================================= */}
 
           <section className="dashboard-grid dashboard-grid-half">
@@ -1205,38 +1020,36 @@ function Dashboard() {
                   </span>
 
                   <h2>
-                    Productos con mayores ventas
+                    Productos destacados
                   </h2>
 
                   <p>
-                    Rendimiento comercial según las ventas registradas.
+                    Los cinco productos con mayores ventas.
                   </p>
                 </div>
 
-                {rol ===
-                  "administrador" && (
-                  <button
-                    type="button"
-                    className="text-button"
-                    onClick={() =>
-                      navigate(
-                        "/productos",
-                      )
-                    }
-                  >
-                    Ver productos
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() =>
+                    navigate(
+                      "/reportes",
+                    )
+                  }
+                >
+                  Ver análisis
 
-                    <ArrowRight
-                      size={15}
-                    />
-                  </button>
-                )}
+                  <ArrowRight
+                    size={15}
+                  />
+                </button>
               </div>
 
+
               <div className="product-ranking">
-                {ventasProductos.length >
+                {productosDestacados.length >
                 0 ? (
-                  ventasProductos.map(
+                  productosDestacados.map(
                     (
                       producto,
                       index,
@@ -1295,16 +1108,19 @@ function Dashboard() {
                   </h2>
 
                   <p>
-                    ├Ültimos movimientos registrados en MatrixFlow.
+                    Últimos movimientos registrados en MatrixFlow.
                   </p>
                 </div>
               </div>
 
+
               <div className="activity-list">
-                {actividadesRecientes.length >
+                {actividadDestacada.length >
                 0 ? (
-                  actividadesRecientes.map(
-                    (actividad) => {
+                  actividadDestacada.map(
+                    (
+                      actividad,
+                    ) => {
                       const iconos:
                         Record<
                           string,
@@ -1323,10 +1139,13 @@ function Dashboard() {
                             Activity,
                         };
 
+
                       const Icono =
                         iconos[
                           actividad.tipo
-                        ] ?? Activity;
+                        ] ??
+                        Activity;
+
 
                       return (
                         <div
@@ -1377,144 +1196,6 @@ function Dashboard() {
             </article>
           </section>
 
-
-          {/* ================================================= */}
-          {/* OPERACIONES */}
-          {/* ================================================= */}
-
-          <section className="dashboard-card operations-card">
-            <div className="dashboard-card-header">
-              <div>
-                <span className="dashboard-card-label">
-                  ÁLGEBRA LINEAL
-                </span>
-
-                <h2>
-                  Operaciones matemáticas recientes
-                </h2>
-
-                <p>
-                  ├Ültimos cálculos ejecutados en MatrixFlow.
-                </p>
-              </div>
-
-              {rol ===
-                "administrador" && (
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() =>
-                    navigate(
-                      "/historial",
-                    )
-                  }
-                >
-                  Ver historial
-
-                  <ArrowRight
-                    size={15}
-                  />
-                </button>
-              )}
-            </div>
-
-            <div className="table-responsive">
-              <table className="dashboard-table">
-                <thead>
-                  <tr>
-                    <th>
-                      Operación
-                    </th>
-
-                    <th>
-                      Tipo
-                    </th>
-
-                    <th>
-                      Recurso
-                    </th>
-
-                    <th>
-                      Fecha
-                    </th>
-
-                    <th>
-                      Estado
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {operacionesRecientes.length >
-                  0 ? (
-                    operacionesRecientes.map(
-                      (
-                        operacion,
-                      ) => (
-                        <tr
-                          key={
-                            operacion.id
-                          }
-                        >
-                          <td>
-                            <strong>
-                              {
-                                operacion.nombre
-                              }
-                            </strong>
-                          </td>
-
-                          <td>
-                            {nombreOperacion(
-                              operacion.tipo_operacion,
-                            )}
-                          </td>
-
-                          <td>
-                            <span className="dimension-badge">
-                              {
-                                operacion.tipo_recurso
-                              }
-                            </span>
-                          </td>
-
-                          <td>
-                            {formatearFecha(
-                              operacion.fecha,
-                            )}
-                          </td>
-
-                          <td>
-                            <span className="status-success">
-                              <span />
-
-                              {
-                                operacion.estado
-                              }
-                            </span>
-                          </td>
-                        </tr>
-                      ),
-                    )
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        style={{
-                          textAlign:
-                            "center",
-                          padding:
-                            "28px",
-                        }}
-                      >
-                        No hay operaciones matemáticas registradas.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
         </>
       )}
     </div>

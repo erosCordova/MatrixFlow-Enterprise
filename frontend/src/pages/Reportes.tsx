@@ -1,8 +1,13 @@
 import {
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+
+import {
   BarChart3,
   Boxes,
   Building2,
-  CheckCircle2,
   Download,
   Package,
   RefreshCw,
@@ -29,11 +34,11 @@ import {
 } from "recharts";
 
 import PageHeader from "../components/ui/PageHeader";
-import { Button } from "../components/ui/button";
 
 import {
-  useReporteGeneral,
-} from "../hooks/useReportes";
+  obtenerReporteGeneral,
+  type ReporteGeneralAPI,
+} from "../services/api/reporteService";
 
 import "../styles/Reportes.css";
 
@@ -50,49 +55,7 @@ function formatoDinero(
     {
       style: "currency",
       currency: "PEN",
-      maximumFractionDigits: 0,
-    },
-  ).format(valor);
-}
-
-
-// ============================================================
-// FORMATEAR FECHA
-// ============================================================
-
-function formatearFecha(
-  fecha: string,
-) {
-  if (
-    fecha === "Inventario actual"
-  ) {
-    return fecha;
-  }
-
-  const normalizada =
-    fecha
-      .replace(" ", "T")
-      .replace(
-        /(\.\d{3})\d+$/,
-        "$1",
-      );
-
-  const valor =
-    new Date(normalizada);
-
-  if (
-    Number.isNaN(
-      valor.getTime(),
-    )
-  ) {
-    return fecha;
-  }
-
-  return new Intl.DateTimeFormat(
-    "es-PE",
-    {
-      dateStyle: "short",
-      timeStyle: "short",
+      maximumFractionDigits: 2,
     },
   ).format(valor);
 }
@@ -103,29 +66,64 @@ function formatearFecha(
 // ============================================================
 
 function Reportes() {
-  const reporteQuery =
-    useReporteGeneral();
+  const [
+    reporte,
+    setReporte,
+  ] = useState<
+    ReporteGeneralAPI | null
+  >(null);
 
 
-  const reporte =
-    reporteQuery.data ??
-    null;
+  const [
+    cargando,
+    setCargando,
+  ] = useState(true);
 
-  const cargando =
-    reporteQuery.isFetching;
 
-  const errorCarga =
-    reporteQuery.error
-      ? reporteQuery.error instanceof Error
-        ? reporteQuery.error.message
-        : "No se pudieron cargar los datos del reporte."
-      : "";
+  const [
+    errorCarga,
+    setErrorCarga,
+  ] = useState("");
 
+
+  // ==========================================================
+  // CARGAR REPORTE
+  // ==========================================================
 
   const cargarReporte =
-    async () => {
-      await reporteQuery.refetch();
-    };
+    useCallback(
+      async () => {
+        setCargando(true);
+        setErrorCarga("");
+
+        try {
+          const datos =
+            await obtenerReporteGeneral();
+
+          setReporte(
+            datos,
+          );
+        } catch (error) {
+          setErrorCarga(
+            error instanceof Error
+              ? error.message
+              : "No se pudieron cargar los datos del reporte.",
+          );
+        } finally {
+          setCargando(
+            false,
+          );
+        }
+      },
+      [],
+    );
+
+
+  useEffect(() => {
+    void cargarReporte();
+  }, [
+    cargarReporte,
+  ]);
 
 
   // ==========================================================
@@ -136,59 +134,63 @@ function Reportes() {
     reporte?.ventas
       .ingresos_totales ?? 0;
 
+
   const unidadesVendidas =
     reporte?.ventas
       .unidades_vendidas ?? 0;
+
 
   const cantidadVentas =
     reporte?.ventas
       .cantidad_ventas ?? 0;
 
+
   const stockTotal =
     reporte?.inventario
       .unidades_disponibles ?? 0;
 
-  const rotacionEstimada =
-    reporte?.inventario
-      .rotacion_estimada ?? null;
 
   const montoMeta =
     reporte?.metas
       .monto_objetivo ?? 0;
 
+
   const ventasConMeta =
     reporte?.metas
       .ventas_asociadas ?? 0;
+
 
   const cumplimientoMeta =
     reporte?.metas
       .cumplimiento ?? 0;
 
+
   const metaDisponible =
     montoMeta > 0;
+
 
   const totalOperaciones =
     reporte?.operaciones
       .total ?? 0;
 
+
   const ventasMensuales =
     reporte?.ventas_mensuales ??
     [];
+
 
   const ventasSucursales =
     reporte?.ventas_por_sucursal ??
     [];
 
+
   const ventasProductos =
     reporte?.ventas_por_producto ??
     [];
 
+
   const estadoInventario =
     reporte?.estado_inventario ??
-    [];
-
-  const actividad =
-    reporte?.actividad_reciente ??
     [];
 
 
@@ -236,9 +238,10 @@ function Reportes() {
         return;
       }
 
+
       const contenido = [
         "MATRIXFLOW ENTERPRISE",
-        "Reporte ejecutivo",
+        "REPORTE CONSOLIDADO",
         "",
 
         "RESUMEN GENERAL",
@@ -253,12 +256,6 @@ function Reportes() {
 
         `Stock registrado: ${stockTotal}`,
 
-        rotacionEstimada !== null
-          ? `Rotación estimada: ${rotacionEstimada.toFixed(
-              2,
-            )} veces`
-          : "Rotación estimada: No disponible",
-
         `Operaciones matemáticas: ${totalOperaciones}`,
 
         "",
@@ -272,7 +269,7 @@ function Reportes() {
           : "No existen metas activas.",
 
         metaDisponible
-          ? `Ventas asociadas a metas: ${formatoDinero(
+          ? `Ventas asociadas: ${formatoDinero(
               ventasConMeta,
             )}`
           : "",
@@ -285,10 +282,12 @@ function Reportes() {
 
         "",
 
-        "VENTAS POR SUCURSAL",
+        "ANÁLISIS POR SUCURSAL",
 
         ...ventasSucursales.map(
-          (item) =>
+          (
+            item,
+          ) =>
             `${item.sucursal}: ${formatoDinero(
               item.ventas,
             )} | Meta: ${formatoDinero(
@@ -300,11 +299,13 @@ function Reportes() {
 
         "",
 
-        "VENTAS POR PRODUCTO",
+        "ANÁLISIS POR PRODUCTO",
 
         ...ventasProductos.map(
-          (item) =>
-            `${item.producto}: ${item.unidades} unidades - ${formatoDinero(
+          (
+            item,
+          ) =>
+            `${item.producto}: ${item.unidades} unidades | ${formatoDinero(
               item.ventas,
             )}`,
         ),
@@ -314,7 +315,9 @@ function Reportes() {
         "ESTADO DEL INVENTARIO",
 
         ...estadoInventario.map(
-          (item) =>
+          (
+            item,
+          ) =>
             `${item.nombre}: ${item.cantidad} registros`,
         ),
 
@@ -323,47 +326,65 @@ function Reportes() {
         "OPERACIONES MATEMÁTICAS",
 
         ...operacionesMatematicas.map(
-          (item) =>
+          (
+            item,
+          ) =>
             `${item.operacion}: ${item.cantidad}`,
         ),
       ]
         .filter(
-          (linea) =>
+          (
+            linea,
+          ) =>
             linea !== "",
         )
-        .join("\n");
+        .join(
+          "\n",
+        );
+
 
       const archivo =
         new Blob(
-          [contenido],
+          [
+            contenido,
+          ],
           {
             type:
               "text/plain;charset=utf-8",
           },
         );
 
+
       const url =
         URL.createObjectURL(
           archivo,
         );
+
 
       const enlace =
         document.createElement(
           "a",
         );
 
-      enlace.href = url;
+
+      enlace.href =
+        url;
+
 
       enlace.download =
         "matrixflow-reporte.txt";
+
 
       document.body.appendChild(
         enlace,
       );
 
+
       enlace.click();
 
+
       enlace.remove();
+
 
       URL.revokeObjectURL(
         url,
@@ -372,7 +393,7 @@ function Reportes() {
 
 
   // ==========================================================
-  // COLORES
+  // COLORES DE INVENTARIO
   // ==========================================================
 
   const coloresInventario = [
@@ -396,18 +417,18 @@ function Reportes() {
       <PageHeader
         etiqueta="ANÁLISIS Y CONTROL"
         titulo="Reportes"
-        descripcion="Consulta indicadores consolidados de ventas, metas, productos, inventario y operaciones."
+        descripcion="Analiza información consolidada de ventas, metas, sucursales, productos, inventario y operaciones matemáticas."
         acciones={
           <>
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="lg"
-              className="h-10 border-slate-200 bg-white px-4 text-slate-600 hover:bg-slate-50"
+              className="button-secondary"
               onClick={() =>
                 void cargarReporte()
               }
-              disabled={cargando}
+              disabled={
+                cargando
+              }
             >
               <span
                 className={
@@ -424,12 +445,12 @@ function Reportes() {
               {cargando
                 ? "Actualizando..."
                 : "Actualizar"}
-            </Button>
+            </button>
 
-            <Button
+
+            <button
               type="button"
-              size="lg"
-              className="h-10 border-blue-600 bg-blue-600 px-4 text-white hover:bg-blue-700"
+              className="button-primary"
               onClick={
                 exportarReporte
               }
@@ -443,7 +464,7 @@ function Reportes() {
               />
 
               Exportar reporte
-            </Button>
+            </button>
           </>
         }
       />
@@ -468,7 +489,7 @@ function Reportes() {
             </strong>
 
             <p>
-              Preparando el reporte...
+              Preparando el análisis empresarial...
             </p>
           </div>
         </section>
@@ -495,52 +516,25 @@ function Reportes() {
             </p>
           </div>
 
-          <Button
+          <button
             type="button"
-            variant="outline"
-            size="lg"
-            className="h-10 border-slate-200 bg-white px-4 text-slate-600 hover:bg-slate-50"
+            className="button-secondary"
             onClick={() =>
               void cargarReporte()
             }
           >
             Reintentar
-          </Button>
+          </button>
         </section>
       )}
 
 
       {/* ==================================================== */}
-      {/* TIPO DE REPORTE */}
-      {/* ==================================================== */}
-
-      <section className="reports-controls">
-        <div>
-          <span>
-            TIPO DE REPORTE
-          </span>
-
-          <select
-            value="consolidado"
-            disabled
-          >
-            <option value="consolidado">
-              Resumen consolidado
-            </option>
-          </select>
-        </div>
-
-        <p>
-          Resumen general de la información registrada.
-        </p>
-      </section>
-
-
-      {/* ==================================================== */}
-      {/* KPI */}
+      {/* KPI CONSOLIDADOS */}
       {/* ==================================================== */}
 
       <section className="reports-kpis">
+
         <article>
           <div className="report-kpi-icon">
             <TrendingUp
@@ -550,7 +544,7 @@ function Reportes() {
 
           <div>
             <span>
-              Ventas totales
+              Ingresos acumulados
             </span>
 
             <strong>
@@ -560,8 +554,7 @@ function Reportes() {
             </strong>
 
             <small>
-              {cantidadVentas}{" "}
-              registros de venta
+              {cantidadVentas} registros de venta
             </small>
           </div>
         </article>
@@ -576,7 +569,7 @@ function Reportes() {
 
           <div>
             <span>
-              Cumplimiento de meta
+              Cumplimiento actual
             </span>
 
             <strong>
@@ -594,7 +587,7 @@ function Reportes() {
                   )} de ${formatoDinero(
                     montoMeta,
                   )}`
-                : "No hay metas activas"}
+                : "No existen metas activas"}
             </small>
           </div>
         </article>
@@ -609,15 +602,17 @@ function Reportes() {
 
           <div>
             <span>
-              Unidades vendidas
+              Unidades comercializadas
             </span>
 
             <strong>
-              {unidadesVendidas}
+              {unidadesVendidas.toLocaleString(
+                "es-PE",
+              )}
             </strong>
 
             <small>
-              Según ventas registradas
+              Acumulado de productos vendidos
             </small>
           </div>
         </article>
@@ -625,49 +620,48 @@ function Reportes() {
 
         <article>
           <div className="report-kpi-icon report-orange">
-            <Boxes
+            <Sigma
               size={20}
             />
           </div>
 
           <div>
             <span>
-              Stock registrado
+              Operaciones procesadas
             </span>
 
             <strong>
-              {stockTotal}
+              {totalOperaciones.toLocaleString(
+                "es-PE",
+              )}
             </strong>
 
             <small>
-              {rotacionEstimada !== null
-                ? `Rotación estimada: ${rotacionEstimada.toFixed(
-                    2,
-                  )} veces`
-                : "Rotación estimada no disponible"}
+              Procesamiento matemático registrado
             </small>
           </div>
         </article>
+
       </section>
 
 
       {/* ==================================================== */}
-      {/* GRÁFICOS */}
+      {/* GRÁFICOS PRINCIPALES */}
       {/* ==================================================== */}
 
       <section className="reports-grid">
 
-        {/* EVOLUCIÓN */}
+        {/* EVOLUCIÓN DE VENTAS */}
 
         <article className="report-card report-wide">
           <div className="report-card-header">
             <div>
               <span>
-                VENTAS Y METAS
+                ANÁLISIS TEMPORAL
               </span>
 
               <h2>
-                Evolución de ventas
+                Evolución de ventas y metas
               </h2>
             </div>
 
@@ -675,6 +669,7 @@ function Reportes() {
               size={18}
             />
           </div>
+
 
           <div className="report-chart">
             {ventasMensuales.length >
@@ -690,19 +685,23 @@ function Reportes() {
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    vertical={false}
+                    vertical={
+                      false
+                    }
                   />
 
                   <XAxis
                     dataKey="mes"
                     tick={{
-                      fontSize: 9,
+                      fontSize:
+                        9,
                     }}
                   />
 
                   <YAxis
                     tick={{
-                      fontSize: 9,
+                      fontSize:
+                        9,
                     }}
                   />
 
@@ -751,14 +750,14 @@ function Reportes() {
               </ResponsiveContainer>
             ) : (
               <div className="report-empty">
-                No hay ventas registradas para mostrar.
+                No hay ventas registradas para analizar.
               </div>
             )}
           </div>
         </article>
 
 
-        {/* INVENTARIO */}
+        {/* ESTADO DEL INVENTARIO */}
 
         <article className="report-card">
           <div className="report-card-header">
@@ -768,7 +767,7 @@ function Reportes() {
               </span>
 
               <h2>
-                Estado del stock
+                Distribución del stock
               </h2>
             </div>
 
@@ -776,6 +775,7 @@ function Reportes() {
               size={18}
             />
           </div>
+
 
           <div className="report-chart report-pie-chart">
             {(
@@ -841,11 +841,11 @@ function Reportes() {
           <div className="report-card-header">
             <div>
               <span>
-                SUCURSALES
+                ANÁLISIS POR SUCURSAL
               </span>
 
               <h2>
-                Ventas y metas por sucursal
+                Ventas frente a metas
               </h2>
             </div>
 
@@ -853,6 +853,7 @@ function Reportes() {
               size={18}
             />
           </div>
+
 
           <div className="report-chart">
             {ventasSucursales.length >
@@ -868,19 +869,23 @@ function Reportes() {
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
-                    vertical={false}
+                    vertical={
+                      false
+                    }
                   />
 
                   <XAxis
                     dataKey="sucursal"
                     tick={{
-                      fontSize: 9,
+                      fontSize:
+                        9,
                     }}
                   />
 
                   <YAxis
                     tick={{
-                      fontSize: 9,
+                      fontSize:
+                        9,
                     }}
                   />
 
@@ -930,24 +935,24 @@ function Reportes() {
               </ResponsiveContainer>
             ) : (
               <div className="report-empty">
-                No existen ventas por sucursal para mostrar.
+                No existen datos por sucursal.
               </div>
             )}
           </div>
         </article>
 
 
-        {/* MATEMÁTICA */}
+        {/* OPERACIONES MATEMÁTICAS */}
 
         <article className="report-card">
           <div className="report-card-header">
             <div>
               <span>
-                MATEMÁTICA
+                ÁLGEBRA LINEAL
               </span>
 
               <h2>
-                Operaciones procesadas
+                Estado de procesamiento
               </h2>
             </div>
 
@@ -956,16 +961,22 @@ function Reportes() {
             />
           </div>
 
+
           <div className="math-report-list">
             {operacionesMatematicas.map(
-              (item) => {
+              (
+                item,
+              ) => {
                 const porcentaje =
-                  totalOperaciones > 0
+                  totalOperaciones >
+                  0
                     ? (
                         item.cantidad /
                         totalOperaciones
-                      ) * 100
+                      ) *
+                      100
                     : 0;
+
 
                 return (
                   <div
@@ -1003,6 +1014,7 @@ function Reportes() {
               },
             )}
 
+
             <div>
               <div>
                 <span>
@@ -1010,7 +1022,9 @@ function Reportes() {
                 </span>
 
                 <strong>
-                  {totalOperaciones}
+                  {
+                    totalOperaciones
+                  }
                 </strong>
               </div>
 
@@ -1018,20 +1032,23 @@ function Reportes() {
                 <span
                   style={{
                     width:
-                      totalOperaciones > 0
+                      totalOperaciones >
+                      0
                         ? "100%"
                         : "0%",
                   }}
                 />
               </div>
             </div>
+
           </div>
         </article>
+
       </section>
 
 
       {/* ==================================================== */}
-      {/* PARTE INFERIOR */}
+      {/* ANÁLISIS DETALLADO */}
       {/* ==================================================== */}
 
       <section className="reports-bottom">
@@ -1042,11 +1059,11 @@ function Reportes() {
           <div className="report-card-header">
             <div>
               <span>
-                PRODUCTOS
+                ANÁLISIS POR PRODUCTO
               </span>
 
               <h2>
-                Rendimiento por producto
+                Rendimiento comercial
               </h2>
             </div>
 
@@ -1054,6 +1071,7 @@ function Reportes() {
               size={18}
             />
           </div>
+
 
           <div className="report-products">
             <div className="report-product-header">
@@ -1070,10 +1088,13 @@ function Reportes() {
               </span>
             </div>
 
+
             {ventasProductos.length >
             0 ? (
               ventasProductos.map(
-                (producto) => (
+                (
+                  producto,
+                ) => (
                   <div
                     className="report-product-row"
                     key={
@@ -1102,75 +1123,299 @@ function Reportes() {
               )
             ) : (
               <div className="report-empty">
-                No hay productos con ventas registradas.
+                No existen productos con ventas registradas.
               </div>
             )}
           </div>
         </article>
 
 
-        {/* ACTIVIDAD */}
+        {/* DETALLE POR SUCURSAL */}
 
         <article className="report-card">
           <div className="report-card-header">
             <div>
               <span>
-                ACTIVIDAD
+                CUMPLIMIENTO
               </span>
 
               <h2>
-                Actividad reciente
+                Detalle por sucursal
               </h2>
             </div>
 
-            <CheckCircle2
+            <Building2
               size={18}
             />
           </div>
 
-          <div className="report-activity">
-            {actividad.length >
+
+          <div className="report-products">
+
+            <div
+              className="report-product-header"
+              style={{
+                gridTemplateColumns:
+                  "1.2fr 1fr 1fr 80px",
+              }}
+            >
+              <span>
+                Sucursal
+              </span>
+
+              <span>
+                Ventas
+              </span>
+
+              <span>
+                Meta
+              </span>
+
+              <span>
+                %
+              </span>
+            </div>
+
+
+            {ventasSucursales.length >
             0 ? (
-              actividad.map(
-                (item) => (
+              ventasSucursales.map(
+                (
+                  sucursal,
+                ) => (
                   <div
-                    className="report-activity-item"
+                    className="report-product-row"
                     key={
-                      item.id
+                      sucursal.sucursal_id
                     }
+                    style={{
+                      gridTemplateColumns:
+                        "1.2fr 1fr 1fr 80px",
+                    }}
                   >
-                    <div className="report-activity-dot" />
+                    <strong>
+                      {
+                        sucursal.sucursal
+                      }
+                    </strong>
 
-                    <div>
-                      <strong>
-                        {
-                          item.titulo
-                        }
-                      </strong>
+                    <span>
+                      {formatoDinero(
+                        sucursal.ventas,
+                      )}
+                    </span>
 
-                      <p>
-                        {
-                          item.descripcion
-                        }
-                      </p>
+                    <span>
+                      {formatoDinero(
+                        sucursal.meta,
+                      )}
+                    </span>
 
-                      <span>
-                        {formatearFecha(
-                          item.fecha,
-                        )}
-                      </span>
-                    </div>
+                    <span>
+                      {sucursal.cumplimiento.toFixed(
+                        1,
+                      )}
+                      %
+                    </span>
                   </div>
                 ),
               )
             ) : (
               <div className="report-empty">
-                Todavía no hay actividad registrada.
+                No existen datos de sucursales para analizar.
               </div>
             )}
+
           </div>
         </article>
+
       </section>
+
+
+      {/* ==================================================== */}
+      {/* RESUMEN DE INVENTARIO */}
+      {/* ==================================================== */}
+
+      <section
+        className="report-card"
+        style={{
+          marginTop:
+            "17px",
+          marginBottom:
+            "20px",
+        }}
+      >
+        <div className="report-card-header">
+          <div>
+            <span>
+              INVENTARIO
+            </span>
+
+            <h2>
+              Resumen consolidado
+            </h2>
+          </div>
+
+          <Boxes
+            size={18}
+          />
+        </div>
+
+
+        <div
+          className="report-products"
+          style={{
+            display:
+              "grid",
+            gridTemplateColumns:
+              "repeat(4, minmax(0, 1fr))",
+            gap:
+              "14px",
+            padding:
+              "18px",
+          }}
+        >
+          <div>
+            <span
+              style={{
+                display:
+                  "block",
+                color:
+                  "#94a3b8",
+                fontSize:
+                  "9px",
+              }}
+            >
+              Unidades disponibles
+            </span>
+
+            <strong
+              style={{
+                display:
+                  "block",
+                marginTop:
+                  "5px",
+                fontSize:
+                  "18px",
+                color:
+                  "#0f172a",
+              }}
+            >
+              {stockTotal.toLocaleString(
+                "es-PE",
+              )}
+            </strong>
+          </div>
+
+
+          <div>
+            <span
+              style={{
+                display:
+                  "block",
+                color:
+                  "#94a3b8",
+                fontSize:
+                  "9px",
+              }}
+            >
+              Registros
+            </span>
+
+            <strong
+              style={{
+                display:
+                  "block",
+                marginTop:
+                  "5px",
+                fontSize:
+                  "18px",
+                color:
+                  "#0f172a",
+              }}
+            >
+              {(
+                reporte?.inventario
+                  .registros ??
+                0
+              ).toLocaleString(
+                "es-PE",
+              )}
+            </strong>
+          </div>
+
+
+          <div>
+            <span
+              style={{
+                display:
+                  "block",
+                color:
+                  "#94a3b8",
+                fontSize:
+                  "9px",
+              }}
+            >
+              Stock bajo
+            </span>
+
+            <strong
+              style={{
+                display:
+                  "block",
+                marginTop:
+                  "5px",
+                fontSize:
+                  "18px",
+                color:
+                  "#0f172a",
+              }}
+            >
+              {
+                reporte?.inventario
+                  .stock_bajo ??
+                0
+              }
+            </strong>
+          </div>
+
+
+          <div>
+            <span
+              style={{
+                display:
+                  "block",
+                color:
+                  "#94a3b8",
+                fontSize:
+                  "9px",
+              }}
+            >
+              Sin stock
+            </span>
+
+            <strong
+              style={{
+                display:
+                  "block",
+                marginTop:
+                  "5px",
+                fontSize:
+                  "18px",
+                color:
+                  "#0f172a",
+              }}
+            >
+              {
+                reporte?.inventario
+                  .sin_stock ??
+                0
+              }
+            </strong>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
