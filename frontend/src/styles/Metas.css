@@ -1,0 +1,755 @@
+/* ============================================================
+   MATRIXFLOW ENTERPRISE
+   METAS COMERCIALES
+   ============================================================ */
+
+.goals-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================
+   RESUMEN
+   ============================================================ */
+
+.goals-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.goals-summary article {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  min-height: 104px;
+  padding: 20px;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.goals-summary article > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.goals-summary article span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.goals-summary article strong {
+  color: #0f172a;
+  font-size: 21px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.goal-summary-icon {
+  width: 44px;
+  height: 44px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.goal-blue {
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+.goal-cyan {
+  color: #0891b2;
+  background: #cffafe;
+}
+
+.goal-green {
+  color: #16a34a;
+  background: #dcfce7;
+}
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+
+.goals-card {
+  overflow: hidden;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+/* ============================================================
+   BARRA DE HERRAMIENTAS
+   ============================================================ */
+
+.goals-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  padding: 18px 20px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.goals-search {
+  width: min(420px, 100%);
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 0 13px;
+
+  color: #64748b;
+
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.goals-search:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.goals-search input {
+  width: 100%;
+  height: 40px;
+
+  padding: 0;
+
+  color: #0f172a;
+  font: inherit;
+
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.goals-search input::placeholder {
+  color: #94a3b8;
+}
+
+.goals-toolbar > select {
+  min-width: 180px;
+  height: 42px;
+
+  padding: 0 12px;
+
+  color: #334155;
+  font: inherit;
+
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  outline: none;
+}
+
+.goals-toolbar > select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+/* ============================================================
+   ESTADO VACÍO
+   ============================================================ */
+
+.goals-empty,
+.goals-no-results {
+  min-height: 330px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px 20px;
+
+  text-align: center;
+}
+
+.goals-empty > div:first-child {
+  width: 64px;
+  height: 64px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 15px;
+
+  color: #2563eb;
+
+  background: #eff6ff;
+  border-radius: 18px;
+}
+
+.goals-empty h3 {
+  margin: 0 0 8px;
+
+  color: #0f172a;
+  font-size: 19px;
+}
+
+.goals-empty p {
+  max-width: 460px;
+
+  margin: 0 0 20px;
+
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.goals-no-results {
+  min-height: 220px;
+  color: #64748b;
+}
+
+.goals-no-results strong {
+  margin-top: 10px;
+  color: #334155;
+}
+
+.goals-no-results p {
+  margin: 5px 0 0;
+  font-size: 13px;
+}
+
+/* ============================================================
+   TABLA
+   ============================================================ */
+
+.goals-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.goals-table {
+  width: 100%;
+  min-width: 1050px;
+
+  border-collapse: collapse;
+}
+
+.goals-table th {
+  padding: 13px 16px;
+
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-align: left;
+
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.goals-table td {
+  padding: 16px;
+
+  color: #475569;
+  font-size: 13px;
+
+  border-bottom: 1px solid #eef2f7;
+
+  vertical-align: middle;
+}
+
+.goals-table tbody tr {
+  transition:
+    background 0.15s ease;
+}
+
+.goals-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.goals-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+/* ============================================================
+   SUCURSAL
+   ============================================================ */
+
+.goal-branch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.goal-branch > div {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #2563eb;
+
+  background: #eff6ff;
+  border-radius: 9px;
+}
+
+.goal-branch strong {
+  color: #0f172a;
+}
+
+/* ============================================================
+   VENTAS
+   ============================================================ */
+
+.goal-sales {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.goal-sales strong {
+  color: #0f172a;
+}
+
+.goal-sales small {
+  color: #f59e0b;
+  font-size: 11px;
+}
+
+/* ============================================================
+   PROGRESO
+   ============================================================ */
+
+.goal-progress-cell {
+  width: 150px;
+}
+
+.goal-progress-information {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 6px;
+}
+
+.goal-progress-information strong {
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.goal-progress {
+  width: 100%;
+  height: 7px;
+
+  overflow: hidden;
+
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+
+.goal-progress span {
+  display: block;
+
+  height: 100%;
+
+  background: linear-gradient(
+    90deg,
+    #2563eb,
+    #06b6d4
+  );
+
+  border-radius: inherit;
+
+  transition: width 0.25s ease;
+}
+
+/* ============================================================
+   ESTADOS
+   ============================================================ */
+
+.goal-status {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.goal-status-active {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.goal-status-inactive {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+/* ============================================================
+   ACCIONES
+   ============================================================ */
+
+.goal-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.goal-actions button {
+  width: 32px;
+  height: 32px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  color: #475569;
+
+  cursor: pointer;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.goal-actions button:hover {
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.goal-actions .goal-delete:hover {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+.goal-modal-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.goal-modal {
+  width: min(620px, 100%);
+  max-height: calc(100vh - 40px);
+
+  overflow-y: auto;
+
+  background: #ffffff;
+  border-radius: 16px;
+
+  box-shadow:
+    0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+.goal-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+
+  padding: 22px 24px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.goal-modal-header > div {
+  min-width: 0;
+}
+
+.goal-modal-header span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+}
+
+.goal-modal-header h2 {
+  margin: 0;
+
+  color: #0f172a;
+  font-size: 21px;
+}
+
+.goal-modal-header p {
+  margin: 6px 0 0;
+
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.goal-modal-header > button {
+  width: 35px;
+  height: 35px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  color: #64748b;
+
+  cursor: pointer;
+
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.goal-modal-header > button:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+/* ============================================================
+   FORMULARIO
+   ============================================================ */
+
+.goal-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+
+  padding: 24px;
+}
+
+.goal-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.goal-form .form-group label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.goal-form .form-group input,
+.goal-form .form-group select {
+  width: 100%;
+  height: 42px;
+
+  padding: 0 12px;
+
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.goal-form .form-group input:focus,
+.goal-form .form-group select:focus {
+  border-color: #2563eb;
+
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.goal-form-full {
+  grid-column: 1 / -1;
+}
+
+.goal-form .form-error {
+  color: #dc2626;
+  font-size: 11px;
+}
+
+.goal-form-warning {
+  color: #d97706;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   INFORMACIÓN
+   ============================================================ */
+
+.goal-information {
+  grid-column: 1 / -1;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+
+  padding: 14px;
+
+  color: #1d4ed8;
+
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+}
+
+.goal-information > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.goal-information strong {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #1e40af;
+  font-size: 12px;
+}
+
+.goal-information p {
+  margin: 0;
+
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   BOTONES DEL MODAL
+   ============================================================ */
+
+.goal-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+
+  padding: 17px 24px;
+
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.goal-modal-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1100px) {
+  .goals-summary {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .goals-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .goals-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .goals-search {
+    width: 100%;
+  }
+
+  .goals-toolbar > select {
+    width: 100%;
+  }
+
+  .goal-form {
+    grid-template-columns: 1fr;
+  }
+
+  .goal-form-full,
+  .goal-information {
+    grid-column: auto;
+  }
+
+  .goal-modal-overlay {
+    padding: 10px;
+  }
+
+  .goal-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .goal-modal-header,
+  .goal-form,
+  .goal-modal-actions {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .goal-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .goal-modal-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}

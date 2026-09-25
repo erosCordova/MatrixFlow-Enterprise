@@ -1,0 +1,484 @@
+.matrices-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 15px;
+    margin-bottom: 18px;
+  }
+  
+  .matrices-summary article {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 17px;
+    border: 1px solid #e2e8f0;
+    border-radius: 11px;
+    background: #ffffff;
+  }
+  
+  .matrices-summary article > div:last-child {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .matrices-summary span {
+    color: #64748b;
+    font-size: 10px;
+  }
+  
+  .matrices-summary strong {
+    margin-top: 3px;
+    color: #0f172a;
+    font-size: 20px;
+  }
+  
+  .matrix-summary-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  
+  .matrix-cyan {
+    background: #ecfeff;
+    color: #0891b2;
+  }
+  
+  .matrix-purple {
+    background: #f5f3ff;
+    color: #7c3aed;
+  }
+  
+  .matrix-green {
+    background: #ecfdf5;
+    color: #059669;
+  }
+  
+  .matrices-card {
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+  }
+  
+  .matrices-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 17px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .matrices-search {
+    width: min(480px, 100%);
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #94a3b8;
+  }
+  
+  .matrices-search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #0f172a;
+    font-size: 11px;
+  }
+  
+  .matrices-count {
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  
+  .matrices-empty {
+    min-height: 330px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 40px;
+    text-align: center;
+  }
+  
+  .matrices-empty > div {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 14px;
+    border-radius: 13px;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  
+  .matrices-empty h3 {
+    color: #0f172a;
+    font-size: 14px;
+  }
+  
+  .matrices-empty p {
+    max-width: 400px;
+    margin: 7px 0 18px;
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.6;
+  }
+  
+  .matrices-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+    padding: 17px;
+  }
+  
+  .matrix-card {
+    min-width: 0;
+    padding: 17px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+  
+  .matrix-card:hover {
+    border-color: #bfdbfe;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  }
+  
+  .matrix-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  
+  .matrix-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .matrix-card-title > div:first-child {
+    width: 35px;
+    height: 35px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  
+  .matrix-card-title > div:last-child {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .matrix-card-title strong {
+    color: #0f172a;
+    font-size: 11px;
+  }
+  
+  .matrix-card-title span {
+    margin-top: 2px;
+    color: #94a3b8;
+    font-size: 9px;
+  }
+  
+  .matrix-card-actions {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .matrix-card-actions button {
+    width: 29px;
+    height: 29px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #64748b;
+  }
+  
+  .matrix-card-actions button:hover {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  
+  .matrix-card-actions .matrix-delete:hover {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #dc2626;
+  }
+  
+  .matrix-display {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: 18px 0;
+  }
+  
+  .matrix-bracket {
+    display: flex;
+    align-items: center;
+    color: #2563eb;
+    font-family: Georgia, serif;
+    font-size: 52px;
+  }
+  
+  .matrix-values {
+    display: grid;
+    gap: 6px;
+  }
+  
+  .matrix-row {
+    display: flex;
+    gap: 6px;
+  }
+  
+  .matrix-row strong {
+    min-width: 38px;
+    padding: 7px;
+    border: 1px solid #dbeafe;
+    border-radius: 6px;
+    background: #f8fbff;
+    color: #0f172a;
+    font-size: 10px;
+    text-align: center;
+  }
+  
+  .matrix-card-info {
+    padding-top: 11px;
+    border-top: 1px solid #f1f5f9;
+  }
+  
+  .matrix-card-info p {
+    min-height: 30px;
+    color: #64748b;
+    font-size: 9px;
+    line-height: 1.5;
+  }
+  
+  .matrix-card-info span {
+    display: block;
+    margin-top: 7px;
+    color: #94a3b8;
+    font-size: 8px;
+  }
+  
+  /* MODAL */
+  
+  .matrix-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(3px);
+  }
+  
+  .matrix-modal {
+    width: min(780px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    border-radius: 13px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  }
+  
+  .matrix-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 21px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .matrix-modal-header h2 {
+    color: #0f172a;
+    font-size: 17px;
+  }
+  
+  .matrix-modal-header p {
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 10px;
+  }
+  
+  .matrix-modal-header > button {
+    width: 33px;
+    height: 33px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #64748b;
+  }
+  
+  .matrix-form {
+    display: grid;
+    gap: 18px;
+    padding: 22px;
+  }
+  
+  .matrix-form-main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+  
+  .matrix-dimensions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+  
+  .matrix-editor-section {
+    padding: 16px;
+    border: 1px solid #dbeafe;
+    border-radius: 10px;
+    background: #f8fbff;
+  }
+  
+  .matrix-editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 16px;
+  }
+  
+  .matrix-editor-header > div {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .matrix-editor-header strong {
+    color: #0f172a;
+    font-size: 11px;
+  }
+  
+  .matrix-editor-header span {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 9px;
+  }
+  
+  .matrix-dimension-badge {
+    padding: 5px 9px;
+    border-radius: 20px;
+    background: #dbeafe;
+    color: #2563eb !important;
+    font-weight: 800;
+  }
+  
+  .matrix-editor-wrapper {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 5px;
+  }
+  
+  .matrix-editor-bracket {
+    display: flex;
+    align-items: center;
+    color: #2563eb;
+    font-family: Georgia, serif;
+    font-size: 60px;
+  }
+  
+  .matrix-editor {
+    display: grid;
+    gap: 7px;
+  }
+  
+  .matrix-editor-row {
+    display: flex;
+    gap: 7px;
+  }
+  
+  .matrix-editor-row input {
+    width: 70px;
+    height: 38px;
+    padding: 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    outline: none;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 10px;
+    text-align: center;
+  }
+  
+  .matrix-editor-row input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  }
+  
+  .matrix-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    padding: 17px 22px;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+  }
+  
+  @media (max-width: 900px) {
+    .matrices-summary,
+    .matrices-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  
+  @media (max-width: 650px) {
+    .matrices-summary,
+    .matrices-grid,
+    .matrix-form-main,
+    .matrix-dimensions {
+      grid-template-columns: 1fr;
+    }
+  
+    .matrices-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  
+    .matrices-search {
+      width: 100%;
+    }
+  
+    .matrix-modal-actions {
+      flex-direction: column-reverse;
+    }
+  
+    .matrix-modal-actions button {
+      width: 100%;
+    }
+  
+    .matrix-editor-row input {
+      width: 55px;
+    }
+  }
