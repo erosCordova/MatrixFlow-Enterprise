@@ -1,3 +1,5 @@
+from sqlalchemy.orm import joinedload
+
 from app.core.database import SessionLocal
 from app.models import (
     Inventario,
@@ -9,6 +11,10 @@ from app.schemas.inventario import (
     InventarioCrear,
 )
 
+
+# ============================================================
+# CALCULAR ESTADO DEL INVENTARIO
+# ============================================================
 
 def calcular_estado(
     cantidad: int,
@@ -23,23 +29,44 @@ def calcular_estado(
     return "Normal"
 
 
+# ============================================================
+# CONVERTIR INVENTARIO A DICCIONARIO
+# ============================================================
+
 def _inventario_a_dict(
     inventario: Inventario,
 ) -> dict:
-    stock_minimo = inventario.producto.stock_minimo
+    stock_minimo = (
+        inventario.producto.stock_minimo
+    )
 
     return {
-        "id": inventario.id,
-        "sucursal_id": inventario.sucursal_id,
-        "producto_id": inventario.producto_id,
-        "cantidad": inventario.cantidad,
-        "stock_minimo": stock_minimo,
-        "estado": calcular_estado(
+        "id":
+            inventario.id,
+
+        "sucursal_id":
+            inventario.sucursal_id,
+
+        "producto_id":
+            inventario.producto_id,
+
+        "cantidad":
             inventario.cantidad,
+
+        "stock_minimo":
             stock_minimo,
-        ),
+
+        "estado":
+            calcular_estado(
+                inventario.cantidad,
+                stock_minimo,
+            ),
     }
 
+
+# ============================================================
+# LISTAR INVENTARIOS
+# ============================================================
 
 def listar_inventarios() -> list[dict]:
     db = SessionLocal()
@@ -47,18 +74,49 @@ def listar_inventarios() -> list[dict]:
     try:
         inventarios = (
             db.query(Inventario)
-            .order_by(Inventario.id)
+
+            # =================================================
+            # OPTIMIZACIÓN
+            # =================================================
+            # Carga el producto junto con cada registro de
+            # inventario.
+            #
+            # Sin joinedload, al acceder a:
+            #
+            # inventario.producto.stock_minimo
+            #
+            # SQLAlchemy puede realizar una consulta adicional
+            # por cada inventario.
+            # =================================================
+
+            .options(
+                joinedload(
+                    Inventario.producto
+                )
+            )
+
+            .order_by(
+                Inventario.id
+            )
+
             .all()
         )
 
         return [
-            _inventario_a_dict(inventario)
-            for inventario in inventarios
+            _inventario_a_dict(
+                inventario
+            )
+            for inventario
+            in inventarios
         ]
 
     finally:
         db.close()
 
+
+# ============================================================
+# OBTENER INVENTARIO
+# ============================================================
 
 def obtener_inventario(
     inventario_id: int,
@@ -68,20 +126,35 @@ def obtener_inventario(
     try:
         inventario = (
             db.query(Inventario)
-            .filter(
-                Inventario.id == inventario_id
+
+            .options(
+                joinedload(
+                    Inventario.producto
+                )
             )
+
+            .filter(
+                Inventario.id
+                == inventario_id
+            )
+
             .first()
         )
 
         if inventario is None:
             return None
 
-        return _inventario_a_dict(inventario)
+        return _inventario_a_dict(
+            inventario
+        )
 
     finally:
         db.close()
 
+
+# ============================================================
+# OBTENER INVENTARIO POR SUCURSAL Y PRODUCTO
+# ============================================================
 
 def obtener_inventario_por_sucursal_producto(
     sucursal_id: int,
@@ -92,23 +165,38 @@ def obtener_inventario_por_sucursal_producto(
     try:
         inventario = (
             db.query(Inventario)
+
+            .options(
+                joinedload(
+                    Inventario.producto
+                )
+            )
+
             .filter(
                 Inventario.sucursal_id
                 == sucursal_id,
+
                 Inventario.producto_id
                 == producto_id,
             )
+
             .first()
         )
 
         if inventario is None:
             return None
 
-        return _inventario_a_dict(inventario)
+        return _inventario_a_dict(
+            inventario
+        )
 
     finally:
         db.close()
 
+
+# ============================================================
+# CREAR INVENTARIO
+# ============================================================
 
 def crear_inventario(
     datos: InventarioCrear,
@@ -116,11 +204,18 @@ def crear_inventario(
     db = SessionLocal()
 
     try:
+        # ====================================================
+        # VALIDAR SUCURSAL
+        # ====================================================
+
         sucursal = (
             db.query(Sucursal)
+
             .filter(
-                Sucursal.id == datos.sucursal_id
+                Sucursal.id
+                == datos.sucursal_id
             )
+
             .first()
         )
 
@@ -129,11 +224,18 @@ def crear_inventario(
                 "La sucursal indicada no existe"
             )
 
+        # ====================================================
+        # VALIDAR PRODUCTO
+        # ====================================================
+
         producto = (
             db.query(Producto)
+
             .filter(
-                Producto.id == datos.producto_id
+                Producto.id
+                == datos.producto_id
             )
+
             .first()
         )
 
@@ -142,14 +244,21 @@ def crear_inventario(
                 "El producto indicado no existe"
             )
 
+        # ====================================================
+        # COMPROBAR DUPLICADO
+        # ====================================================
+
         existente = (
             db.query(Inventario)
+
             .filter(
                 Inventario.sucursal_id
                 == datos.sucursal_id,
+
                 Inventario.producto_id
                 == datos.producto_id,
             )
+
             .first()
         )
 
@@ -159,17 +268,61 @@ def crear_inventario(
                 "producto en esa sucursal"
             )
 
+        # ====================================================
+        # CREAR INVENTARIO
+        # ====================================================
+
         inventario = Inventario(
-            sucursal_id=datos.sucursal_id,
-            producto_id=datos.producto_id,
-            cantidad=datos.cantidad,
+            sucursal_id=
+                datos.sucursal_id,
+
+            producto_id=
+                datos.producto_id,
+
+            cantidad=
+                datos.cantidad,
         )
 
-        db.add(inventario)
-        db.commit()
-        db.refresh(inventario)
+        db.add(
+            inventario
+        )
 
-        return _inventario_a_dict(inventario)
+        db.commit()
+
+        inventario_id = (
+            inventario.id
+        )
+
+        # ====================================================
+        # RECARGAR CON PRODUCTO
+        # ====================================================
+
+        inventario_guardado = (
+            db.query(Inventario)
+
+            .options(
+                joinedload(
+                    Inventario.producto
+                )
+            )
+
+            .filter(
+                Inventario.id
+                == inventario_id
+            )
+
+            .first()
+        )
+
+        if inventario_guardado is None:
+            raise RuntimeError(
+                "No se pudo recuperar "
+                "el inventario registrado"
+            )
+
+        return _inventario_a_dict(
+            inventario_guardado
+        )
 
     except Exception:
         db.rollback()
@@ -178,6 +331,10 @@ def crear_inventario(
     finally:
         db.close()
 
+
+# ============================================================
+# ACTUALIZAR INVENTARIO
+# ============================================================
 
 def actualizar_inventario(
     inventario_id: int,
@@ -188,34 +345,56 @@ def actualizar_inventario(
     try:
         inventario = (
             db.query(Inventario)
-            .filter(
-                Inventario.id == inventario_id
+
+            .options(
+                joinedload(
+                    Inventario.producto
+                )
             )
+
+            .filter(
+                Inventario.id
+                == inventario_id
+            )
+
             .first()
         )
 
         if inventario is None:
             return None
 
-        cambios = datos.model_dump(
-            exclude_unset=True
+        cambios = (
+            datos.model_dump(
+                exclude_unset=True
+            )
         )
 
-        nuevo_sucursal_id = cambios.get(
-            "sucursal_id",
-            inventario.sucursal_id,
+        nuevo_sucursal_id = (
+            cambios.get(
+                "sucursal_id",
+                inventario.sucursal_id,
+            )
         )
 
-        nuevo_producto_id = cambios.get(
-            "producto_id",
-            inventario.producto_id,
+        nuevo_producto_id = (
+            cambios.get(
+                "producto_id",
+                inventario.producto_id,
+            )
         )
+
+        # ====================================================
+        # VALIDAR SUCURSAL
+        # ====================================================
 
         sucursal = (
             db.query(Sucursal)
+
             .filter(
-                Sucursal.id == nuevo_sucursal_id
+                Sucursal.id
+                == nuevo_sucursal_id
             )
+
             .first()
         )
 
@@ -224,11 +403,18 @@ def actualizar_inventario(
                 "La sucursal indicada no existe"
             )
 
+        # ====================================================
+        # VALIDAR PRODUCTO
+        # ====================================================
+
         producto = (
             db.query(Producto)
+
             .filter(
-                Producto.id == nuevo_producto_id
+                Producto.id
+                == nuevo_producto_id
             )
+
             .first()
         )
 
@@ -237,15 +423,24 @@ def actualizar_inventario(
                 "El producto indicado no existe"
             )
 
+        # ====================================================
+        # COMPROBAR DUPLICADO
+        # ====================================================
+
         duplicado = (
             db.query(Inventario)
+
             .filter(
                 Inventario.sucursal_id
                 == nuevo_sucursal_id,
+
                 Inventario.producto_id
                 == nuevo_producto_id,
-                Inventario.id != inventario_id,
+
+                Inventario.id
+                != inventario_id,
             )
+
             .first()
         )
 
@@ -255,34 +450,93 @@ def actualizar_inventario(
                 "producto en esa sucursal"
             )
 
+        # ====================================================
+        # ACTUALIZAR SUCURSAL
+        # ====================================================
+
         if (
-            "sucursal_id" in cambios
-            and cambios["sucursal_id"] is not None
-        ):
-            inventario.sucursal_id = cambios[
+            "sucursal_id"
+            in cambios
+            and cambios[
                 "sucursal_id"
             ]
+            is not None
+        ):
+            inventario.sucursal_id = (
+                cambios[
+                    "sucursal_id"
+                ]
+            )
+
+        # ====================================================
+        # ACTUALIZAR PRODUCTO
+        # ====================================================
 
         if (
-            "producto_id" in cambios
-            and cambios["producto_id"] is not None
-        ):
-            inventario.producto_id = cambios[
+            "producto_id"
+            in cambios
+            and cambios[
                 "producto_id"
             ]
+            is not None
+        ):
+            inventario.producto_id = (
+                cambios[
+                    "producto_id"
+                ]
+            )
+
+        # ====================================================
+        # ACTUALIZAR CANTIDAD
+        # ====================================================
 
         if (
-            "cantidad" in cambios
-            and cambios["cantidad"] is not None
-        ):
-            inventario.cantidad = cambios[
+            "cantidad"
+            in cambios
+            and cambios[
                 "cantidad"
             ]
+            is not None
+        ):
+            inventario.cantidad = (
+                cambios[
+                    "cantidad"
+                ]
+            )
+
+        # ====================================================
+        # GUARDAR
+        # ====================================================
 
         db.commit()
-        db.refresh(inventario)
 
-        return _inventario_a_dict(inventario)
+        # ====================================================
+        # RECARGAR REGISTRO CON PRODUCTO
+        # ====================================================
+
+        inventario_actualizado = (
+            db.query(Inventario)
+
+            .options(
+                joinedload(
+                    Inventario.producto
+                )
+            )
+
+            .filter(
+                Inventario.id
+                == inventario_id
+            )
+
+            .first()
+        )
+
+        if inventario_actualizado is None:
+            return None
+
+        return _inventario_a_dict(
+            inventario_actualizado
+        )
 
     except Exception:
         db.rollback()
@@ -292,6 +546,10 @@ def actualizar_inventario(
         db.close()
 
 
+# ============================================================
+# ELIMINAR INVENTARIO
+# ============================================================
+
 def eliminar_inventario(
     inventario_id: int,
 ) -> bool:
@@ -300,16 +558,22 @@ def eliminar_inventario(
     try:
         inventario = (
             db.query(Inventario)
+
             .filter(
-                Inventario.id == inventario_id
+                Inventario.id
+                == inventario_id
             )
+
             .first()
         )
 
         if inventario is None:
             return False
 
-        db.delete(inventario)
+        db.delete(
+            inventario
+        )
+
         db.commit()
 
         return True
