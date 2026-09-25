@@ -1,4 +1,6 @@
+import logging
 from datetime import date, datetime
+from time import perf_counter
 
 from app.services import (
     empresa_service,
@@ -9,6 +11,9 @@ from app.services import (
     sucursal_service,
     venta_service,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -1006,42 +1011,127 @@ def obtener_actividad_reciente(
 # ============================================================
 
 def obtener_reporte_general() -> dict:
+    inicio_total = perf_counter()
+
+    # ========================================================
+    # EMPRESAS
+    # ========================================================
+
+    inicio = perf_counter()
+
     empresas = (
         empresa_service
         .listar_empresas()
     )
+
+    logger.warning(
+        "[REPORTE] Empresas: %.3f s",
+        perf_counter() - inicio,
+    )
+
+    # ========================================================
+    # SUCURSALES
+    # ========================================================
+
+    inicio = perf_counter()
 
     sucursales = (
         sucursal_service
         .listar_sucursales()
     )
 
+    logger.warning(
+        "[REPORTE] Sucursales: %.3f s",
+        perf_counter() - inicio,
+    )
+
+    # ========================================================
+    # PRODUCTOS
+    # ========================================================
+
+    inicio = perf_counter()
+
     productos = (
         producto_service
         .listar_productos()
     )
+
+    logger.warning(
+        "[REPORTE] Productos: %.3f s",
+        perf_counter() - inicio,
+    )
+
+    # ========================================================
+    # VENTAS
+    # ========================================================
+
+    inicio = perf_counter()
 
     ventas = (
         venta_service
         .listar_ventas()
     )
 
+    logger.warning(
+        "[REPORTE] Ventas: %.3f s",
+        perf_counter() - inicio,
+    )
+
+    # ========================================================
+    # INVENTARIO
+    # ========================================================
+
+    inicio = perf_counter()
+
     inventarios = (
         inventario_service
         .listar_inventarios()
     )
+
+    logger.warning(
+        "[REPORTE] Inventario: %.3f s",
+        perf_counter() - inicio,
+    )
+
+    # ========================================================
+    # METAS
+    # ========================================================
+
+    inicio = perf_counter()
 
     metas = (
         meta_service
         .listar_metas()
     )
 
+    logger.warning(
+        "[REPORTE] Metas: %.3f s",
+        perf_counter() - inicio,
+    )
+
+    # ========================================================
+    # OPERACIONES
+    # ========================================================
+
+    inicio = perf_counter()
+
     operaciones = (
         operacion_service
         .listar_operaciones()
     )
 
-    return {
+    logger.warning(
+        "[REPORTE] Operaciones: %.3f s",
+        perf_counter() - inicio,
+    )
+
+    # ========================================================
+    # CÁLCULOS DEL REPORTE
+    # ========================================================
+
+    inicio_calculos = perf_counter()
+
+    resultado = {
         "empresas":
             len(empresas),
 
@@ -1110,3 +1200,15 @@ def obtener_reporte_general() -> dict:
                 productos,
             ),
     }
+
+    logger.warning(
+        "[REPORTE] Cálculos: %.3f s",
+        perf_counter() - inicio_calculos,
+    )
+
+    logger.warning(
+        "[REPORTE] TOTAL: %.3f s",
+        perf_counter() - inicio_total,
+    )
+
+    return resultado
