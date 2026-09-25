@@ -1,7 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
-import logging
-from time import perf_counter
 
 from app.services import (
     empresa_service,
@@ -15,32 +13,7 @@ from app.services import (
 
 
 # ============================================================
-# LOGS
-# ============================================================
-
-logger = logging.getLogger(__name__)
-
-
-# ============================================================
 # EJECUTOR PARA REPORTES
-# ============================================================
-#
-# Las consultas que alimentan el reporte son independientes.
-#
-# Antes se ejecutaban de forma secuencial:
-#
-# empresas
-# sucursales
-# productos
-# ventas
-# inventario
-# metas
-# operaciones
-#
-# Ahora pueden ejecutarse en paralelo.
-#
-# Cada servicio utiliza su propia SessionLocal, por lo que
-# ninguna sesión de SQLAlchemy se comparte entre hilos.
 # ============================================================
 
 _executor_reportes = ThreadPoolExecutor(
@@ -1122,8 +1095,6 @@ def _cargar_datos_reporte() -> dict:
 # ============================================================
 
 def obtener_reporte_general() -> dict:
-    inicio = perf_counter()
-
     datos = (
         _cargar_datos_reporte()
     )
@@ -1156,7 +1127,7 @@ def obtener_reporte_general() -> dict:
         datos["operaciones"]
     )
 
-    reporte = {
+    return {
         "empresas":
             len(empresas),
 
@@ -1225,15 +1196,3 @@ def obtener_reporte_general() -> dict:
                 productos,
             ),
     }
-
-    tiempo_total = (
-        perf_counter()
-        - inicio
-    )
-
-    logger.warning(
-        "[REPORTE] TOTAL: %.3f s",
-        tiempo_total,
-    )
-
-    return reporte

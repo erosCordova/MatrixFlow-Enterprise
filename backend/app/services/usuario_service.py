@@ -1,6 +1,3 @@
-import logging
-from time import perf_counter
-
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
@@ -14,9 +11,6 @@ from app.schemas.usuario import (
     UsuarioActualizar,
     UsuarioCrear,
 )
-
-
-logger = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -164,17 +158,9 @@ def validar_credenciales(
     correo: str,
     password: str,
 ) -> dict | None:
-    inicio_total = perf_counter()
-
     db = SessionLocal()
 
     try:
-        # ====================================================
-        # CONSULTA DEL USUARIO
-        # ====================================================
-
-        inicio_consulta = perf_counter()
-
         usuario = (
             _consulta_usuario_con_rol(
                 db
@@ -188,27 +174,7 @@ def validar_credenciales(
             .first()
         )
 
-        tiempo_consulta = (
-            perf_counter()
-            - inicio_consulta
-        )
-
-        logger.warning(
-            "[LOGIN] Consulta usuario: %.3f s",
-            tiempo_consulta,
-        )
-
         if usuario is None:
-            logger.warning(
-                "[LOGIN] Usuario no encontrado"
-            )
-
-            logger.warning(
-                "[LOGIN] validar_credenciales TOTAL: %.3f s",
-                perf_counter()
-                - inicio_total,
-            )
-
             return None
 
         password_guardado = (
@@ -216,16 +182,12 @@ def validar_credenciales(
         )
 
         # ====================================================
-        # VERIFICACIÓN BCRYPT
+        # CONTRASEÑA BCRYPT
         # ====================================================
 
         if _es_hash_bcrypt(
             password_guardado
         ):
-            inicio_bcrypt = (
-                perf_counter()
-            )
-
             password_correcto = (
                 verificar_password(
                     password,
@@ -233,80 +195,29 @@ def validar_credenciales(
                 )
             )
 
-            tiempo_bcrypt = (
-                perf_counter()
-                - inicio_bcrypt
-            )
-
-            logger.warning(
-                "[LOGIN] bcrypt: %.3f s",
-                tiempo_bcrypt,
-            )
-
             if not password_correcto:
-                logger.warning(
-                    "[LOGIN] validar_credenciales TOTAL: %.3f s",
-                    perf_counter()
-                    - inicio_total,
-                )
-
                 return None
 
-            # ================================================
-            # CONVERTIR A DICCIONARIO
-            # ================================================
-
-            inicio_conversion = (
-                perf_counter()
+            return _usuario_a_dict(
+                usuario
             )
-
-            resultado = (
-                _usuario_a_dict(
-                    usuario
-                )
-            )
-
-            tiempo_conversion = (
-                perf_counter()
-                - inicio_conversion
-            )
-
-            logger.warning(
-                "[LOGIN] Conversión usuario: %.3f s",
-                tiempo_conversion,
-            )
-
-            logger.warning(
-                "[LOGIN] validar_credenciales TOTAL: %.3f s",
-                perf_counter()
-                - inicio_total,
-            )
-
-            return resultado
 
         # ====================================================
-        # USUARIO ANTIGUO SIN BCRYPT
+        # USUARIO ANTIGUO
+        # ====================================================
+        #
+        # Se mantiene compatibilidad con usuarios creados
+        # durante las primeras fases del proyecto.
+        #
+        # Si la contraseña antigua coincide se convierte
+        # inmediatamente a bcrypt.
         # ====================================================
 
         if (
             password_guardado
             != password
         ):
-            logger.warning(
-                "[LOGIN] validar_credenciales TOTAL: %.3f s",
-                perf_counter()
-                - inicio_total,
-            )
-
             return None
-
-        # ====================================================
-        # MIGRAR CONTRASEÑA ANTIGUA A BCRYPT
-        # ====================================================
-
-        inicio_hash = (
-            perf_counter()
-        )
 
         usuario.password_hash = (
             generar_hash_password(
@@ -314,39 +225,11 @@ def validar_credenciales(
             )
         )
 
-        tiempo_hash = (
-            perf_counter()
-            - inicio_hash
-        )
-
-        logger.warning(
-            "[LOGIN] Generar hash bcrypt: %.3f s",
-            tiempo_hash,
-        )
-
         usuario_id = (
             usuario.id
         )
 
-        inicio_commit = (
-            perf_counter()
-        )
-
         db.commit()
-
-        tiempo_commit = (
-            perf_counter()
-            - inicio_commit
-        )
-
-        logger.warning(
-            "[LOGIN] Commit migración: %.3f s",
-            tiempo_commit,
-        )
-
-        inicio_recarga = (
-            perf_counter()
-        )
 
         usuario_actualizado = (
             _consulta_usuario_con_rol(
@@ -359,32 +242,12 @@ def validar_credenciales(
             .first()
         )
 
-        tiempo_recarga = (
-            perf_counter()
-            - inicio_recarga
-        )
-
-        logger.warning(
-            "[LOGIN] Recarga usuario: %.3f s",
-            tiempo_recarga,
-        )
-
         if usuario_actualizado is None:
             return None
 
-        resultado = (
-            _usuario_a_dict(
-                usuario_actualizado
-            )
+        return _usuario_a_dict(
+            usuario_actualizado
         )
-
-        logger.warning(
-            "[LOGIN] validar_credenciales TOTAL: %.3f s",
-            perf_counter()
-            - inicio_total,
-        )
-
-        return resultado
 
     except Exception:
         db.rollback()
@@ -426,20 +289,11 @@ def crear_usuario(
         )
 
         usuario = Usuario(
-            nombre=
-                datos.nombre,
-
-            correo=
-                datos.correo,
-
-            password_hash=
-                password_hash,
-
-            rol_id=
-                rol.id,
-
-            activo=
-                datos.activo,
+            nombre=datos.nombre,
+            correo=datos.correo,
+            password_hash=password_hash,
+            rol_id=rol.id,
+            activo=datos.activo,
         )
 
         db.add(
@@ -514,79 +368,79 @@ def actualizar_usuario(
             )
         )
 
+        # ====================================================
+        # NOMBRE
+        # ====================================================
+
         if (
             "nombre"
             in cambios
-            and cambios[
-                "nombre"
-            ]
+            and cambios["nombre"]
             is not None
         ):
             usuario.nombre = (
-                cambios[
-                    "nombre"
-                ]
+                cambios["nombre"]
             )
+
+        # ====================================================
+        # CORREO
+        # ====================================================
 
         if (
             "correo"
             in cambios
-            and cambios[
-                "correo"
-            ]
+            and cambios["correo"]
             is not None
         ):
             usuario.correo = (
-                cambios[
-                    "correo"
-                ]
+                cambios["correo"]
             )
+
+        # ====================================================
+        # ESTADO
+        # ====================================================
 
         if (
             "activo"
             in cambios
-            and cambios[
-                "activo"
-            ]
+            and cambios["activo"]
             is not None
         ):
             usuario.activo = (
-                cambios[
-                    "activo"
-                ]
+                cambios["activo"]
             )
+
+        # ====================================================
+        # CONTRASEÑA
+        # ====================================================
 
         if (
             "password"
             in cambios
-            and cambios[
-                "password"
-            ]
+            and cambios["password"]
             is not None
         ):
             usuario.password_hash = (
                 generar_hash_password(
-                    cambios[
-                        "password"
-                    ]
+                    cambios["password"]
                 )
             )
+
+        # ====================================================
+        # ROL
+        # ====================================================
 
         if (
             "rol"
             in cambios
-            and cambios[
-                "rol"
-            ]
+            and cambios["rol"]
             is not None
         ):
             rol = (
                 db.query(Rol)
                 .filter(
                     Rol.nombre
-                    == cambios[
-                        "rol"
-                    ]
+                    == cambios["rol"]
                 )
                 .first()
             )

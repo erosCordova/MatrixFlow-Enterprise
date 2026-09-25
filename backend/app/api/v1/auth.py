@@ -1,5 +1,4 @@
 import logging
-from time import perf_counter
 
 from fastapi import (
     APIRouter,
@@ -22,9 +21,7 @@ from app.services import (
 )
 
 
-logger = logging.getLogger(
-    __name__
-)
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(
@@ -60,27 +57,14 @@ def registrar_auditoria_login(
 ) -> None:
     try:
         auditoria_service.registrar_evento(
-            usuario_id=
-                usuario_id,
-
-            accion=
-                "inicio_sesion",
-
-            entidad=
-                "auth",
-
+            usuario_id=usuario_id,
+            accion="inicio_sesion",
+            entidad="auth",
             detalles={
-                "correo":
-                    correo,
-
-                "ip":
-                    ip,
-
-                "estado":
-                    estado_evento,
-
-                "resultado":
-                    resultado,
+                "correo": correo,
+                "ip": ip,
+                "estado": estado_evento,
+                "resultado": resultado,
             },
         )
 
@@ -104,20 +88,8 @@ def iniciar_sesion(
     request: Request,
     background_tasks: BackgroundTasks,
 ):
-    inicio_total = (
-        perf_counter()
-    )
-
     ip = obtener_ip(
         request
-    )
-
-    # ========================================================
-    # VALIDAR CREDENCIALES
-    # ========================================================
-
-    inicio_validacion = (
-        perf_counter()
     )
 
     usuario = (
@@ -128,25 +100,11 @@ def iniciar_sesion(
         )
     )
 
-    tiempo_validacion = (
-        perf_counter()
-        - inicio_validacion
-    )
-
-    logger.warning(
-        "[LOGIN] Validación: %.3f s",
-        tiempo_validacion,
-    )
-
     # ========================================================
     # CREDENCIALES INCORRECTAS
     # ========================================================
 
     if usuario is None:
-        # Para intentos fallidos mantenemos la auditoría
-        # inmediata, porque queremos asegurarnos de registrar
-        # correctamente el intento de acceso.
-
         registrar_auditoria_login(
             usuario_id=None,
             correo=datos.correo,
@@ -155,23 +113,11 @@ def iniciar_sesion(
             resultado=401,
         )
 
-        tiempo_total = (
-            perf_counter()
-            - inicio_total
-        )
-
-        logger.warning(
-            "[LOGIN] TOTAL error 401: %.3f s",
-            tiempo_total,
-        )
-
         raise HTTPException(
             status_code=(
                 status.HTTP_401_UNAUTHORIZED
             ),
-            detail=(
-                "Credenciales incorrectas"
-            ),
+            detail="Credenciales incorrectas",
         )
 
     # ========================================================
@@ -180,107 +126,45 @@ def iniciar_sesion(
 
     if not usuario["activo"]:
         registrar_auditoria_login(
-            usuario_id=
-                usuario["id"],
-
-            correo=
-                usuario["correo"],
-
-            ip=
-                ip,
-
-            estado_evento=
-                "error",
-
-            resultado=
-                403,
-        )
-
-        tiempo_total = (
-            perf_counter()
-            - inicio_total
-        )
-
-        logger.warning(
-            "[LOGIN] TOTAL error 403: %.3f s",
-            tiempo_total,
+            usuario_id=usuario["id"],
+            correo=usuario["correo"],
+            ip=ip,
+            estado_evento="error",
+            resultado=403,
         )
 
         raise HTTPException(
             status_code=(
                 status.HTTP_403_FORBIDDEN
             ),
-            detail=(
-                "Usuario inactivo"
-            ),
+            detail="Usuario inactivo",
         )
 
     # ========================================================
-    # GENERAR JWT
+    # GENERAR TOKEN
     # ========================================================
 
-    inicio_token = (
-        perf_counter()
-    )
-
     access_token = crear_token_acceso(
-        usuario_id=
-            usuario["id"],
-
-        correo=
-            usuario["correo"],
-
-        rol=
-            usuario["rol"],
-    )
-
-    tiempo_token = (
-        perf_counter()
-        - inicio_token
-    )
-
-    logger.warning(
-        "[LOGIN] Token JWT: %.3f s",
-        tiempo_token,
+        usuario_id=usuario["id"],
+        correo=usuario["correo"],
+        rol=usuario["rol"],
     )
 
     # ========================================================
     # AUDITORÍA EN SEGUNDO PLANO
     # ========================================================
     #
-    # Antes el navegador tenía que esperar a que se insertara
-    # la auditoría en PostgreSQL.
-    #
-    # Ahora FastAPI devuelve primero la respuesta del login y
-    # la auditoría se registra después como BackgroundTask.
+    # En un login correcto no bloqueamos la respuesta.
+    # La auditoría se registra después de devolver el token.
     # ========================================================
 
     background_tasks.add_task(
         registrar_auditoria_login,
-        usuario_id=
-            usuario["id"],
-
-        correo=
-            usuario["correo"],
-
-        ip=
-            ip,
-
-        estado_evento=
-            "exitoso",
-
-        resultado=
-            200,
-    )
-
-    tiempo_total = (
-        perf_counter()
-        - inicio_total
-    )
-
-    logger.warning(
-        "[LOGIN] TOTAL respuesta: %.3f s",
-        tiempo_total,
+        usuario_id=usuario["id"],
+        correo=usuario["correo"],
+        ip=ip,
+        estado_evento="exitoso",
+        resultado=200,
     )
 
     # ========================================================
@@ -288,31 +172,15 @@ def iniciar_sesion(
     # ========================================================
 
     return {
-        "autenticado":
-            True,
-
-        "mensaje":
-            "Inicio de sesión correcto",
-
-        "access_token":
-            access_token,
-
-        "token_type":
-            "bearer",
-
-        "expira_en_minutos":
-            configuracion
-            .JWT_EXPIRE_MINUTES,
-
-        "usuario_id":
-            usuario["id"],
-
-        "nombre":
-            usuario["nombre"],
-
-        "correo":
-            usuario["correo"],
-
-        "rol":
-            usuario["rol"],
+        "autenticado": True,
+        "mensaje": "Inicio de sesión correcto",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expira_en_minutos": (
+            configuracion.JWT_EXPIRE_MINUTES
+        ),
+        "usuario_id": usuario["id"],
+        "nombre": usuario["nombre"],
+        "correo": usuario["correo"],
+        "rol": usuario["rol"],
     }
