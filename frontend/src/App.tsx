@@ -1,4 +1,10 @@
 import {
+  lazy,
+  Suspense,
+  type ReactNode,
+} from "react";
+
+import {
   Navigate,
   Route,
   Routes,
@@ -11,27 +17,235 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import RutaProtegida from "./components/RutaProtegida";
 import RutaPublica from "./components/RutaPublica";
 
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Empresa from "./pages/Empresa";
-import Sucursales from "./pages/Sucursales";
-import Productos from "./pages/Productos";
-import Ventas from "./pages/Ventas";
-import Metas from "./pages/Metas";
-import Inventario from "./pages/Inventario";
-import Vectores from "./pages/Vectores";
-import Matrices from "./pages/Matrices";
-import Operaciones from "./pages/Operaciones";
-import CombinacionesLineales from "./pages/CombinacionesLineales";
-import Historial from "./pages/Historial";
-import Reportes from "./pages/Reportes";
-import Usuarios from "./pages/Usuarios";
-import Configuracion from "./pages/Configuracion";
 
+// ==========================================================
+// LOGIN
+// ==========================================================
+//
+// Login permanece cargado normalmente porque es la primera
+// pantalla que ve el usuario.
+//
+
+import Login from "./pages/Login";
+
+
+// ==========================================================
+// CARGA DIFERIDA DE PÁGINAS
+// ==========================================================
+//
+// Estas páginas solamente se descargan cuando el usuario
+// realmente entra en ellas.
+//
+
+const Dashboard = lazy(
+  () =>
+    import(
+      "./pages/Dashboard"
+    ),
+);
+
+const Empresa = lazy(
+  () =>
+    import(
+      "./pages/Empresa"
+    ),
+);
+
+const Sucursales = lazy(
+  () =>
+    import(
+      "./pages/Sucursales"
+    ),
+);
+
+const Productos = lazy(
+  () =>
+    import(
+      "./pages/Productos"
+    ),
+);
+
+const Ventas = lazy(
+  () =>
+    import(
+      "./pages/Ventas"
+    ),
+);
+
+const Metas = lazy(
+  () =>
+    import(
+      "./pages/Metas"
+    ),
+);
+
+const Inventario = lazy(
+  () =>
+    import(
+      "./pages/Inventario"
+    ),
+);
+
+const Vectores = lazy(
+  () =>
+    import(
+      "./pages/Vectores"
+    ),
+);
+
+const Matrices = lazy(
+  () =>
+    import(
+      "./pages/Matrices"
+    ),
+);
+
+const Operaciones = lazy(
+  () =>
+    import(
+      "./pages/Operaciones"
+    ),
+);
+
+const CombinacionesLineales =
+  lazy(
+    () =>
+      import(
+        "./pages/CombinacionesLineales"
+      ),
+  );
+
+const Historial = lazy(
+  () =>
+    import(
+      "./pages/Historial"
+    ),
+);
+
+const Reportes = lazy(
+  () =>
+    import(
+      "./pages/Reportes"
+    ),
+);
+
+const Usuarios = lazy(
+  () =>
+    import(
+      "./pages/Usuarios"
+    ),
+);
+
+const Configuracion = lazy(
+  () =>
+    import(
+      "./pages/Configuracion"
+    ),
+);
+
+
+// ==========================================================
+// PANTALLA DE CARGA
+// ==========================================================
+
+function CargandoPagina() {
+  return (
+    <div
+      style={{
+        minHeight: "260px",
+
+        display: "flex",
+
+        alignItems: "center",
+
+        justifyContent:
+          "center",
+
+        flexDirection:
+          "column",
+
+        gap: "12px",
+
+        color: "#64748b",
+      }}
+    >
+      <div
+        style={{
+          width: "34px",
+
+          height: "34px",
+
+          border:
+            "4px solid #e2e8f0",
+
+          borderTopColor:
+            "#2563eb",
+
+          borderRadius:
+            "50%",
+
+          animation:
+            "matrixflow-loading 0.7s linear infinite",
+        }}
+      />
+
+      <strong
+        style={{
+          color: "#0f172a",
+
+          fontSize: "13px",
+        }}
+      >
+        Cargando módulo...
+      </strong>
+
+      <style>
+        {`
+          @keyframes matrixflow-loading {
+            from {
+              transform: rotate(0deg);
+            }
+
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}
+      </style>
+    </div>
+  );
+}
+
+
+// ==========================================================
+// ENVOLVER PÁGINAS LAZY
+// ==========================================================
+
+function Pagina({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <CargandoPagina />
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
+
+
+// ==========================================================
+// APP
+// ==========================================================
 
 function App() {
   return (
     <Routes>
+
       {/* ================================================== */}
       {/* RUTAS PÚBLICAS */}
       {/* ================================================== */}
@@ -43,7 +257,9 @@ function App() {
       >
         <Route
           path="/login"
-          element={<Login />}
+          element={
+            <Login />
+          }
         />
       </Route>
 
@@ -62,6 +278,7 @@ function App() {
             <DashboardLayout />
           }
         >
+
           {/* ============================================== */}
           {/* GENERAL */}
           {/* ============================================== */}
@@ -76,7 +293,9 @@ function App() {
                   "consulta",
                 ]}
               >
-                <Dashboard />
+                <Pagina>
+                  <Dashboard />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -94,7 +313,9 @@ function App() {
                   "administrador",
                 ]}
               >
-                <Empresa />
+                <Pagina>
+                  <Empresa />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -107,7 +328,9 @@ function App() {
                   "administrador",
                 ]}
               >
-                <Sucursales />
+                <Pagina>
+                  <Sucursales />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -120,7 +343,9 @@ function App() {
                   "administrador",
                 ]}
               >
-                <Productos />
+                <Pagina>
+                  <Productos />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -134,7 +359,9 @@ function App() {
                   "analista",
                 ]}
               >
-                <Ventas />
+                <Pagina>
+                  <Ventas />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -148,7 +375,9 @@ function App() {
                   "analista",
                 ]}
               >
-                <Metas />
+                <Pagina>
+                  <Metas />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -162,7 +391,9 @@ function App() {
                   "analista",
                 ]}
               >
-                <Inventario />
+                <Pagina>
+                  <Inventario />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -181,7 +412,9 @@ function App() {
                   "analista",
                 ]}
               >
-                <Vectores />
+                <Pagina>
+                  <Vectores />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -195,7 +428,9 @@ function App() {
                   "analista",
                 ]}
               >
-                <Matrices />
+                <Pagina>
+                  <Matrices />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -209,7 +444,9 @@ function App() {
                   "analista",
                 ]}
               >
-                <Operaciones />
+                <Pagina>
+                  <Operaciones />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -223,7 +460,9 @@ function App() {
                   "analista",
                 ]}
               >
-                <CombinacionesLineales />
+                <Pagina>
+                  <CombinacionesLineales />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -241,7 +480,9 @@ function App() {
                   "administrador",
                 ]}
               >
-                <Historial />
+                <Pagina>
+                  <Historial />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -256,7 +497,9 @@ function App() {
                   "consulta",
                 ]}
               >
-                <Reportes />
+                <Pagina>
+                  <Reportes />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -274,7 +517,9 @@ function App() {
                   "administrador",
                 ]}
               >
-                <Usuarios />
+                <Pagina>
+                  <Usuarios />
+                </Pagina>
               </RutaProtegida>
             }
           />
@@ -287,10 +532,13 @@ function App() {
                   "administrador",
                 ]}
               >
-                <Configuracion />
+                <Pagina>
+                  <Configuracion />
+                </Pagina>
               </RutaProtegida>
             }
           />
+
         </Route>
       </Route>
 
@@ -323,6 +571,7 @@ function App() {
           />
         }
       />
+
     </Routes>
   );
 }
