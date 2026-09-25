@@ -1,4 +1,5 @@
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 from app.core.database import SessionLocal
 from app.core.security import (
@@ -20,11 +21,20 @@ def _usuario_a_dict(
     usuario: Usuario,
 ) -> dict:
     return {
-        "id": usuario.id,
-        "nombre": usuario.nombre,
-        "correo": usuario.correo,
-        "rol": usuario.rol.nombre,
-        "activo": usuario.activo,
+        "id":
+            usuario.id,
+
+        "nombre":
+            usuario.nombre,
+
+        "correo":
+            usuario.correo,
+
+        "rol":
+            usuario.rol.nombre,
+
+        "activo":
+            usuario.activo,
     }
 
 
@@ -40,6 +50,19 @@ def _es_hash_bcrypt(
     )
 
 
+def _consulta_usuario_con_rol(
+    db,
+):
+    return (
+        db.query(Usuario)
+        .options(
+            joinedload(
+                Usuario.rol
+            )
+        )
+    )
+
+
 # ============================================================
 # LISTAR USUARIOS
 # ============================================================
@@ -49,14 +72,21 @@ def listar_usuarios() -> list[dict]:
 
     try:
         usuarios = (
-            db.query(Usuario)
-            .order_by(Usuario.id)
+            _consulta_usuario_con_rol(
+                db
+            )
+            .order_by(
+                Usuario.id
+            )
             .all()
         )
 
         return [
-            _usuario_a_dict(usuario)
-            for usuario in usuarios
+            _usuario_a_dict(
+                usuario
+            )
+            for usuario
+            in usuarios
         ]
 
     finally:
@@ -74,9 +104,12 @@ def obtener_usuario(
 
     try:
         usuario = (
-            db.query(Usuario)
+            _consulta_usuario_con_rol(
+                db
+            )
             .filter(
-                Usuario.id == usuario_id
+                Usuario.id
+                == usuario_id
             )
             .first()
         )
@@ -84,7 +117,9 @@ def obtener_usuario(
         if usuario is None:
             return None
 
-        return _usuario_a_dict(usuario)
+        return _usuario_a_dict(
+            usuario
+        )
 
     finally:
         db.close()
@@ -101,7 +136,9 @@ def obtener_usuario_por_correo(
 
     try:
         usuario = (
-            db.query(Usuario)
+            _consulta_usuario_con_rol(
+                db
+            )
             .filter(
                 func.lower(
                     Usuario.correo
@@ -114,7 +151,9 @@ def obtener_usuario_por_correo(
         if usuario is None:
             return None
 
-        return _usuario_a_dict(usuario)
+        return _usuario_a_dict(
+            usuario
+        )
 
     finally:
         db.close()
@@ -131,8 +170,24 @@ def validar_credenciales(
     db = SessionLocal()
 
     try:
+        # ====================================================
+        # OPTIMIZACIÓN
+        # ====================================================
+        #
+        # Se carga el rol en la misma consulta del usuario.
+        #
+        # Antes:
+        #
+        # SELECT usuario
+        # SELECT rol
+        #
+        # Ahora SQLAlchemy obtiene ambos juntos.
+        # ====================================================
+
         usuario = (
-            db.query(Usuario)
+            _consulta_usuario_con_rol(
+                db
+            )
             .filter(
                 func.lower(
                     Usuario.correo
@@ -149,9 +204,9 @@ def validar_credenciales(
             usuario.password_hash
         )
 
-        # ----------------------------------------------------
-        # USUARIO QUE YA UTILIZA BCRYPT
-        # ----------------------------------------------------
+        # ====================================================
+        # USUARIO CON BCRYPT
+        # ====================================================
 
         if _es_hash_bcrypt(
             password_guardado
@@ -166,35 +221,60 @@ def validar_credenciales(
             if not password_correcto:
                 return None
 
-        # ----------------------------------------------------
-        # USUARIO ANTIGUO
-        # ----------------------------------------------------
-        #
-        # Durante las fases anteriores MatrixFlow guardaba
-        # provisionalmente la contraseña sin bcrypt.
-        #
-        # Si la contraseña antigua coincide, se reemplaza
-        # inmediatamente por un hash bcrypt.
-        # ----------------------------------------------------
-
-        else:
-            if (
-                password_guardado
-                != password
-            ):
-                return None
-
-            usuario.password_hash = (
-                generar_hash_password(
-                    password
-                )
+            return _usuario_a_dict(
+                usuario
             )
 
-            db.commit()
-            db.refresh(usuario)
+        # ====================================================
+        # USUARIO ANTIGUO
+        # ====================================================
+        #
+        # Mantiene compatibilidad con cuentas creadas durante
+        # las fases iniciales que todavía guardaban la
+        # contraseña sin bcrypt.
+        #
+        # Cuando inicia sesión correctamente se migra
+        # automáticamente a bcrypt.
+        # ====================================================
+
+        if (
+            password_guardado
+            != password
+        ):
+            return None
+
+        usuario.password_hash = (
+            generar_hash_password(
+                password
+            )
+        )
+
+        usuario_id = (
+            usuario.id
+        )
+
+        db.commit()
+
+        # ====================================================
+        # RECARGAR CON ROL
+        # ====================================================
+
+        usuario_actualizado = (
+            _consulta_usuario_con_rol(
+                db
+            )
+            .filter(
+                Usuario.id
+                == usuario_id
+            )
+            .first()
+        )
+
+        if usuario_actualizado is None:
+            return None
 
         return _usuario_a_dict(
-            usuario
+            usuario_actualizado
         )
 
     except Exception:
@@ -237,19 +317,54 @@ def crear_usuario(
         )
 
         usuario = Usuario(
-            nombre=datos.nombre,
-            correo=datos.correo,
-            password_hash=password_hash,
-            rol_id=rol.id,
-            activo=datos.activo,
+            nombre=
+                datos.nombre,
+
+            correo=
+                datos.correo,
+
+            password_hash=
+                password_hash,
+
+            rol_id=
+                rol.id,
+
+            activo=
+                datos.activo,
         )
 
-        db.add(usuario)
+        db.add(
+            usuario
+        )
+
+        # Obtenemos el ID antes del commit.
+        db.flush()
+
+        usuario_id = (
+            usuario.id
+        )
+
         db.commit()
-        db.refresh(usuario)
+
+        usuario_guardado = (
+            _consulta_usuario_con_rol(
+                db
+            )
+            .filter(
+                Usuario.id
+                == usuario_id
+            )
+            .first()
+        )
+
+        if usuario_guardado is None:
+            raise RuntimeError(
+                "No se pudo recuperar "
+                "el usuario registrado"
+            )
 
         return _usuario_a_dict(
-            usuario
+            usuario_guardado
         )
 
     except Exception:
@@ -272,9 +387,12 @@ def actualizar_usuario(
 
     try:
         usuario = (
-            db.query(Usuario)
+            _consulta_usuario_con_rol(
+                db
+            )
             .filter(
-                Usuario.id == usuario_id
+                Usuario.id
+                == usuario_id
             )
             .first()
         )
@@ -288,52 +406,70 @@ def actualizar_usuario(
             )
         )
 
-        # ----------------------------------------------------
+        # ====================================================
         # NOMBRE
-        # ----------------------------------------------------
+        # ====================================================
 
         if (
-            "nombre" in cambios
-            and cambios["nombre"]
+            "nombre"
+            in cambios
+            and cambios[
+                "nombre"
+            ]
             is not None
         ):
             usuario.nombre = (
-                cambios["nombre"]
+                cambios[
+                    "nombre"
+                ]
             )
 
-        # ----------------------------------------------------
+        # ====================================================
         # CORREO
-        # ----------------------------------------------------
+        # ====================================================
 
         if (
-            "correo" in cambios
-            and cambios["correo"]
+            "correo"
+            in cambios
+            and cambios[
+                "correo"
+            ]
             is not None
         ):
             usuario.correo = (
-                cambios["correo"]
+                cambios[
+                    "correo"
+                ]
             )
 
-        # ----------------------------------------------------
+        # ====================================================
         # ESTADO
-        # ----------------------------------------------------
+        # ====================================================
 
         if (
-            "activo" in cambios
-            and cambios["activo"]
+            "activo"
+            in cambios
+            and cambios[
+                "activo"
+            ]
             is not None
         ):
             usuario.activo = (
-                cambios["activo"]
+                cambios[
+                    "activo"
+                ]
             )
 
-        # ----------------------------------------------------
+        # ====================================================
         # CONTRASEÑA
-        # ----------------------------------------------------
+        # ====================================================
 
         if (
-            "password" in cambios
-            and cambios["password"]
+            "password"
+            in cambios
+            and cambios[
+                "password"
+            ]
             is not None
         ):
             usuario.password_hash = (
@@ -344,20 +480,25 @@ def actualizar_usuario(
                 )
             )
 
-        # ----------------------------------------------------
+        # ====================================================
         # ROL
-        # ----------------------------------------------------
+        # ====================================================
 
         if (
-            "rol" in cambios
-            and cambios["rol"]
+            "rol"
+            in cambios
+            and cambios[
+                "rol"
+            ]
             is not None
         ):
             rol = (
                 db.query(Rol)
                 .filter(
                     Rol.nombre
-                    == cambios["rol"]
+                    == cambios[
+                        "rol"
+                    ]
                 )
                 .first()
             )
@@ -369,13 +510,28 @@ def actualizar_usuario(
                     "no existe"
                 )
 
-            usuario.rol_id = rol.id
+            usuario.rol_id = (
+                rol.id
+            )
 
         db.commit()
-        db.refresh(usuario)
+
+        usuario_actualizado = (
+            _consulta_usuario_con_rol(
+                db
+            )
+            .filter(
+                Usuario.id
+                == usuario_id
+            )
+            .first()
+        )
+
+        if usuario_actualizado is None:
+            return None
 
         return _usuario_a_dict(
-            usuario
+            usuario_actualizado
         )
 
     except Exception:
@@ -399,7 +555,8 @@ def eliminar_usuario(
         usuario = (
             db.query(Usuario)
             .filter(
-                Usuario.id == usuario_id
+                Usuario.id
+                == usuario_id
             )
             .first()
         )
@@ -407,7 +564,10 @@ def eliminar_usuario(
         if usuario is None:
             return False
 
-        db.delete(usuario)
+        db.delete(
+            usuario
+        )
+
         db.commit()
 
         return True

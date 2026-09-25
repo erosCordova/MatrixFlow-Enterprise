@@ -1,5 +1,6 @@
-import logging
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
+import logging
 from time import perf_counter
 
 from app.services import (
@@ -13,7 +14,39 @@ from app.services import (
 )
 
 
+# ============================================================
+# LOGS
+# ============================================================
+
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# EJECUTOR PARA REPORTES
+# ============================================================
+#
+# Las consultas que alimentan el reporte son independientes.
+#
+# Antes se ejecutaban de forma secuencial:
+#
+# empresas
+# sucursales
+# productos
+# ventas
+# inventario
+# metas
+# operaciones
+#
+# Ahora pueden ejecutarse en paralelo.
+#
+# Cada servicio utiliza su propia SessionLocal, por lo que
+# ninguna sesión de SQLAlchemy se comparte entre hilos.
+# ============================================================
+
+_executor_reportes = ThreadPoolExecutor(
+    max_workers=7,
+    thread_name_prefix="matrixflow-reportes",
+)
 
 
 # ============================================================
@@ -234,7 +267,8 @@ def obtener_resumen_inventario(
         int(
             inventario["cantidad"]
         )
-        for inventario in inventarios
+        for inventario
+        in inventarios
     )
 
     stock_normal = sum(
@@ -605,19 +639,26 @@ def obtener_ventas_por_producto(
                         productos,
                     ),
 
-                "ventas": 0.0,
-                "unidades": 0,
+                "ventas":
+                    0.0,
+
+                "unidades":
+                    0,
             }
 
         acumulados[
             producto_id
-        ]["ventas"] += float(
+        ][
+            "ventas"
+        ] += float(
             venta["subtotal"]
         )
 
         acumulados[
             producto_id
-        ]["unidades"] += int(
+        ][
+            "unidades"
+        ] += int(
             venta["cantidad"]
         )
 
@@ -684,7 +725,9 @@ def obtener_ventas_mensuales(
 
         periodos[
             periodo
-        ]["ventas"] += float(
+        ][
+            "ventas"
+        ] += float(
             venta["subtotal"]
         )
 
@@ -722,7 +765,9 @@ def obtener_ventas_mensuales(
 
         periodos[
             periodo
-        ]["meta"] += float(
+        ][
+            "meta"
+        ] += float(
             meta["monto_objetivo"]
         )
 
@@ -763,34 +808,43 @@ def obtener_estado_inventario(
 ) -> list[dict]:
     return [
         {
-            "nombre": "Disponible",
-            "cantidad": sum(
-                1
-                for item
-                in inventarios
-                if item["estado"]
-                == "Normal"
-            ),
+            "nombre":
+                "Disponible",
+
+            "cantidad":
+                sum(
+                    1
+                    for item
+                    in inventarios
+                    if item["estado"]
+                    == "Normal"
+                ),
         },
         {
-            "nombre": "Stock bajo",
-            "cantidad": sum(
-                1
-                for item
-                in inventarios
-                if item["estado"]
-                == "Stock bajo"
-            ),
+            "nombre":
+                "Stock bajo",
+
+            "cantidad":
+                sum(
+                    1
+                    for item
+                    in inventarios
+                    if item["estado"]
+                    == "Stock bajo"
+                ),
         },
         {
-            "nombre": "Agotado",
-            "cantidad": sum(
-                1
-                for item
-                in inventarios
-                if item["estado"]
-                == "Sin stock"
-            ),
+            "nombre":
+                "Agotado",
+
+            "cantidad":
+                sum(
+                    1
+                    for item
+                    in inventarios
+                    if item["estado"]
+                    == "Sin stock"
+                ),
         },
     ]
 
@@ -1007,131 +1061,102 @@ def obtener_actividad_reciente(
 
 
 # ============================================================
+# CARGAR DATOS DEL REPORTE EN PARALELO
+# ============================================================
+
+def _cargar_datos_reporte() -> dict:
+    futuros = {
+        "empresas":
+            _executor_reportes.submit(
+                empresa_service
+                .listar_empresas
+            ),
+
+        "sucursales":
+            _executor_reportes.submit(
+                sucursal_service
+                .listar_sucursales
+            ),
+
+        "productos":
+            _executor_reportes.submit(
+                producto_service
+                .listar_productos
+            ),
+
+        "ventas":
+            _executor_reportes.submit(
+                venta_service
+                .listar_ventas
+            ),
+
+        "inventarios":
+            _executor_reportes.submit(
+                inventario_service
+                .listar_inventarios
+            ),
+
+        "metas":
+            _executor_reportes.submit(
+                meta_service
+                .listar_metas
+            ),
+
+        "operaciones":
+            _executor_reportes.submit(
+                operacion_service
+                .listar_operaciones
+            ),
+    }
+
+    return {
+        nombre:
+            futuro.result()
+        for nombre, futuro
+        in futuros.items()
+    }
+
+
+# ============================================================
 # REPORTE GENERAL
 # ============================================================
 
 def obtener_reporte_general() -> dict:
-    inicio_total = perf_counter()
-
-    # ========================================================
-    # EMPRESAS
-    # ========================================================
-
     inicio = perf_counter()
+
+    datos = (
+        _cargar_datos_reporte()
+    )
 
     empresas = (
-        empresa_service
-        .listar_empresas()
+        datos["empresas"]
     )
-
-    logger.warning(
-        "[REPORTE] Empresas: %.3f s",
-        perf_counter() - inicio,
-    )
-
-    # ========================================================
-    # SUCURSALES
-    # ========================================================
-
-    inicio = perf_counter()
 
     sucursales = (
-        sucursal_service
-        .listar_sucursales()
+        datos["sucursales"]
     )
-
-    logger.warning(
-        "[REPORTE] Sucursales: %.3f s",
-        perf_counter() - inicio,
-    )
-
-    # ========================================================
-    # PRODUCTOS
-    # ========================================================
-
-    inicio = perf_counter()
 
     productos = (
-        producto_service
-        .listar_productos()
+        datos["productos"]
     )
-
-    logger.warning(
-        "[REPORTE] Productos: %.3f s",
-        perf_counter() - inicio,
-    )
-
-    # ========================================================
-    # VENTAS
-    # ========================================================
-
-    inicio = perf_counter()
 
     ventas = (
-        venta_service
-        .listar_ventas()
+        datos["ventas"]
     )
-
-    logger.warning(
-        "[REPORTE] Ventas: %.3f s",
-        perf_counter() - inicio,
-    )
-
-    # ========================================================
-    # INVENTARIO
-    # ========================================================
-
-    inicio = perf_counter()
 
     inventarios = (
-        inventario_service
-        .listar_inventarios()
+        datos["inventarios"]
     )
-
-    logger.warning(
-        "[REPORTE] Inventario: %.3f s",
-        perf_counter() - inicio,
-    )
-
-    # ========================================================
-    # METAS
-    # ========================================================
-
-    inicio = perf_counter()
 
     metas = (
-        meta_service
-        .listar_metas()
+        datos["metas"]
     )
-
-    logger.warning(
-        "[REPORTE] Metas: %.3f s",
-        perf_counter() - inicio,
-    )
-
-    # ========================================================
-    # OPERACIONES
-    # ========================================================
-
-    inicio = perf_counter()
 
     operaciones = (
-        operacion_service
-        .listar_operaciones()
+        datos["operaciones"]
     )
 
-    logger.warning(
-        "[REPORTE] Operaciones: %.3f s",
-        perf_counter() - inicio,
-    )
-
-    # ========================================================
-    # CÁLCULOS DEL REPORTE
-    # ========================================================
-
-    inicio_calculos = perf_counter()
-
-    resultado = {
+    reporte = {
         "empresas":
             len(empresas),
 
@@ -1201,14 +1226,14 @@ def obtener_reporte_general() -> dict:
             ),
     }
 
-    logger.warning(
-        "[REPORTE] Cálculos: %.3f s",
-        perf_counter() - inicio_calculos,
+    tiempo_total = (
+        perf_counter()
+        - inicio
     )
 
     logger.warning(
         "[REPORTE] TOTAL: %.3f s",
-        perf_counter() - inicio_total,
+        tiempo_total,
     )
 
-    return resultado
+    return reporte
