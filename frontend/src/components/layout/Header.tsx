@@ -1,5 +1,4 @@
 import {
-  Bell,
   ChevronDown,
   Menu,
   Search,
@@ -8,6 +7,8 @@ import {
 import {
   useAppSettings,
 } from "../../context/AppSettingsContext";
+
+import NotificationBell from "./NotificationBell";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -54,17 +55,7 @@ function Header({
       </div>
 
       <div className="header-actions">
-        <button
-          className="notification-button"
-          aria-label={texto(
-            "Notificaciones",
-            "Notifications",
-          )}
-        >
-          <Bell size={20} />
-
-          <span className="notification-dot" />
-        </button>
+        <NotificationBell />
 
         <div className="header-divider" />
 

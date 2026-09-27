@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -26,6 +27,10 @@ import {
   useDatosOperaciones,
   useEjecutarOperacion,
 } from "../hooks/useMatricesOperaciones";
+
+import {
+  emitirNotificacion,
+} from "../services/notificationService";
 
 import "../styles/Operaciones.css";
 
@@ -270,7 +275,37 @@ function Operaciones() {
   ] = useState("");
 
 
-  const calculando =
+  
+  // matrixflow-alerta-error-local
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    emitirNotificacion({
+      tipo: "operacion",
+
+      tituloEs:
+        "Error matemático",
+
+      tituloEn:
+        "Math error",
+
+      mensajeEs:
+        error,
+
+      mensajeEn:
+        "A mathematical operation could not be completed.",
+
+      ruta:
+        "/operaciones",
+    });
+  }, [
+    error,
+  ]);
+
+
+const calculando =
     ejecutarOperacionMutation.isPending;
 
 

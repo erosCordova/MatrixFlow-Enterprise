@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -29,6 +30,10 @@ import {
 import {
   useEjecutarOperacion,
 } from "../hooks/useMatricesOperaciones";
+
+import {
+  emitirNotificacion,
+} from "../services/notificationService";
 
 import "../styles/CombinacionesLineales.css";
 
@@ -121,7 +126,37 @@ function CombinacionesLineales() {
   ] = useState("");
 
 
-  // ========================================================
+  
+  // matrixflow-alerta-error-local
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
+    emitirNotificacion({
+      tipo: "operacion",
+
+      tituloEs:
+        "Error matemático",
+
+      tituloEn:
+        "Math error",
+
+      mensajeEs:
+        error,
+
+      mensajeEn:
+        "A mathematical operation could not be completed.",
+
+      ruta:
+        "/combinaciones-lineales",
+    });
+  }, [
+    error,
+  ]);
+
+
+// ========================================================
   // OBTENER VECTOR
   // ========================================================
 
