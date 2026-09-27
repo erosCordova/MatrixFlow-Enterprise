@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -19,6 +20,9 @@ import {
 } from "../context/AppSettingsContext";
 
 import {
+  CONFIGURACION_PREDETERMINADA,
+  formatearFecha as formatearFechaVistaPrevia,
+  formatearMoneda as formatearMonedaVistaPrevia,
   type ConfiguracionSistema,
   type FormatoFechaSistema,
   type IdiomaSistema,
@@ -30,23 +34,40 @@ import "../styles/Configuracion.css";
 
 function Configuracion() {
   const {
-    configuracion,
-
-    actualizarCampo:
-      actualizarCampoGlobal,
+    configuracion:
+      configuracionAplicada,
 
     guardarConfiguracion:
       guardarConfiguracionGlobal,
 
-    restaurarConfiguracion:
-      restaurarConfiguracionGlobal,
-
     texto,
-
-    formatearMoneda,
-
-    formatearFecha,
   } = useAppSettings();
+
+  // ========================================================
+  // CONFIGURACIÓN TEMPORAL
+  //
+  // Los controles modifican solamente esta copia.
+  // MatrixFlow no cambia hasta pulsar "Guardar cambios".
+  // ========================================================
+
+  const [
+    configuracion,
+    setConfiguracion,
+  ] = useState<ConfiguracionSistema>(
+    () => ({
+      ...configuracionAplicada,
+    }),
+  );
+
+  // Si la configuración global cambia después de guardar,
+  // sincronizamos la copia local.
+  useEffect(() => {
+    setConfiguracion({
+      ...configuracionAplicada,
+    });
+  }, [
+    configuracionAplicada,
+  ]);
 
   const [
     guardado,
@@ -65,9 +86,13 @@ function Configuracion() {
     valor:
       ConfiguracionSistema[K],
   ) => {
-    actualizarCampoGlobal(
-      campo,
-      valor,
+    setConfiguracion(
+      (actual) => ({
+        ...actual,
+
+        [campo]:
+          valor,
+      }),
     );
 
     setGuardado(false);
@@ -79,7 +104,9 @@ function Configuracion() {
 
   const guardarConfiguracion =
     () => {
-      guardarConfiguracionGlobal();
+      guardarConfiguracionGlobal(
+        configuracion,
+      );
 
       setGuardado(true);
     };
@@ -93,8 +120,8 @@ function Configuracion() {
       const confirmar =
         window.confirm(
           texto(
-            "¿Deseas restaurar la configuración predeterminada?",
-            "Do you want to restore the default settings?",
+            "¿Deseas preparar la configuración predeterminada? Los cambios se aplicarán al guardar.",
+            "Do you want to prepare the default settings? Changes will be applied when you save.",
           ),
         );
 
@@ -102,9 +129,11 @@ function Configuracion() {
         return;
       }
 
-      restaurarConfiguracionGlobal();
+      setConfiguracion({
+        ...CONFIGURACION_PREDETERMINADA,
+      });
 
-      setGuardado(true);
+      setGuardado(false);
     };
 
   // ========================================================
@@ -112,14 +141,16 @@ function Configuracion() {
   // ========================================================
 
   const monedaEjemplo =
-    formatearMoneda(
+    formatearMonedaVistaPrevia(
       1250,
+      configuracion,
     );
 
   const fechaEjemplo =
-    formatearFecha(
+    formatearFechaVistaPrevia(
       new Date(),
       true,
+      configuracion,
     );
 
   return (

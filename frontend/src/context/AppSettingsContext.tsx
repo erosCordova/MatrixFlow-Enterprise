@@ -26,7 +26,9 @@ interface AppSettingsContextValue {
     valor: ConfiguracionSistema[K],
   ) => void;
 
-  guardarConfiguracion: () => void;
+  guardarConfiguracion: (
+    nuevaConfiguracion?: ConfiguracionSistema,
+  ) => void;
 
   restaurarConfiguracion: () => void;
 
@@ -115,10 +117,14 @@ export function AppSettingsProvider({
   // ========================================================
 
   const guardarConfiguracion =
-    () => {
+    (
+      nuevaConfiguracion?:
+        ConfiguracionSistema,
+    ) => {
       const guardada =
         guardarConfiguracionSistema(
-          configuracion,
+          nuevaConfiguracion ??
+            configuracion,
         );
 
       setConfiguracion(
