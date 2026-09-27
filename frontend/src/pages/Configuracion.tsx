@@ -658,15 +658,15 @@ function Configuracion() {
 
                 <h2>
                   {texto(
-                    "Identidad visual",
-                    "Visual identity",
+                    "Apariencia",
+                    "Appearance",
                   )}
                 </h2>
 
                 <p>
                   {texto(
-                    "Personaliza la visualización de MatrixFlow Enterprise.",
-                    "Customize the MatrixFlow Enterprise interface.",
+                    "Configura la apariencia de MatrixFlow Enterprise.",
+                    "Configure the appearance of MatrixFlow Enterprise.",
                   )}
                 </p>
               </div>
@@ -709,89 +709,6 @@ function Configuracion() {
                 >
                   <span />
                 </button>
-              </div>
-            </div>
-
-            <div className="settings-colors">
-              <div>
-                <span
-                  className="settings-color"
-                  style={{
-                    background:
-                      "#0F172A",
-                  }}
-                />
-
-                <small>
-                  Sidebar
-                </small>
-
-                <strong>
-                  #0F172A
-                </strong>
-              </div>
-
-              <div>
-                <span
-                  className="settings-color"
-                  style={{
-                    background:
-                      "#2563EB",
-                  }}
-                />
-
-                <small>
-                  {texto(
-                    "Primario",
-                    "Primary",
-                  )}
-                </small>
-
-                <strong>
-                  #2563EB
-                </strong>
-              </div>
-
-              <div>
-                <span
-                  className="settings-color"
-                  style={{
-                    background:
-                      "#06B6D4",
-                  }}
-                />
-
-                <small>
-                  {texto(
-                    "Acento",
-                    "Accent",
-                  )}
-                </small>
-
-                <strong>
-                  #06B6D4
-                </strong>
-              </div>
-
-              <div>
-                <span
-                  className="settings-color settings-color-light"
-                  style={{
-                    background:
-                      "#F8FAFC",
-                  }}
-                />
-
-                <small>
-                  {texto(
-                    "Fondo",
-                    "Background",
-                  )}
-                </small>
-
-                <strong>
-                  #F8FAFC
-                </strong>
               </div>
             </div>
           </section>
