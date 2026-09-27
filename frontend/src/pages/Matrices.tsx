@@ -25,6 +25,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   matrizSchema,
   type MatrizFormulario,
 } from "../schemas/matrizSchema";
@@ -75,6 +79,10 @@ function obtenerMensajeError(
 
 
 function Matrices() {
+  const {
+    texto,
+  } = useAppSettings();
+
   const matricesQuery =
     useMatrices();
 
@@ -584,9 +592,18 @@ function Matrices() {
   return (
     <div className="matrices-page">
       <PageHeader
-        etiqueta="ANÁLISIS MATEMÁTICO"
-        titulo="Matrices"
-        descripcion="Crea y administra matrices numéricas para representar información empresarial organizada en filas y columnas."
+        etiqueta={texto(
+          "ANÁLISIS MATEMÁTICO",
+          "MATHEMATICAL ANALYSIS",
+        )}
+        titulo={texto(
+          "Matrices",
+          "Matrices",
+        )}
+        descripcion={texto(
+          "Crea y administra matrices numéricas para representar información empresarial organizada en filas y columnas.",
+          "Create and manage numerical matrices to represent business information in rows and columns.",
+        )}
         acciones={
           <button
             type="button"
@@ -597,10 +614,12 @@ function Matrices() {
           >
             <Plus
               size={17}
-            />
-
-            Nueva matriz
-          </button>
+            />{
+                  texto(
+                    "Nueva matriz",
+                    "New matrix",
+                  )
+                }</button>
         }
       />
 
@@ -656,9 +675,12 @@ function Matrices() {
           </div>
 
           <div>
-            <span>
-              Matrices creadas
-            </span>
+            <span>{
+                  texto(
+                    "Matrices creadas",
+                    "Matrices created",
+                  )
+                }</span>
 
             <strong>
               {matrices.length}
@@ -675,9 +697,12 @@ function Matrices() {
           </div>
 
           <div>
-            <span>
-              Total de elementos
-            </span>
+            <span>{
+                  texto(
+                    "Total de elementos",
+                    "Total elements",
+                  )
+                }</span>
 
             <strong>
               {totalElementos}
@@ -694,9 +719,12 @@ function Matrices() {
           </div>
 
           <div>
-            <span>
-              Matrices cuadradas
-            </span>
+            <span>{
+                  texto(
+                    "Matrices cuadradas",
+                    "Square matrices",
+                  )
+                }</span>
 
             <strong>
               {matricesCuadradas}
@@ -713,9 +741,12 @@ function Matrices() {
           </div>
 
           <div>
-            <span>
-              Mayor tamaño
-            </span>
+            <span>{
+                  texto(
+                    "Mayor tamaño",
+                    "Largest size",
+                  )
+                }</span>
 
             <strong>
               {
@@ -738,7 +769,10 @@ function Matrices() {
 
             <input
               type="text"
-              placeholder="Buscar matriz..."
+              placeholder={texto(
+                "Buscar matriz...",
+                "Search matrices...",
+              )}
               value={
                 busqueda
               }
@@ -771,13 +805,19 @@ function Matrices() {
               />
             </div>
 
-            <h3>
-              Cargando matrices...
-            </h3>
+            <h3>{
+                  texto(
+                    "Cargando matrices...",
+                    "Loading matrices...",
+                  )
+                }</h3>
 
-            <p>
-              Cargando matrices...
-            </p>
+            <p>{
+                  texto(
+                    "Cargando matrices...",
+                    "Loading matrices...",
+                  )
+                }</p>
           </div>
         ) : matrices.length ===
           0 ? (
@@ -788,9 +828,12 @@ function Matrices() {
               />
             </div>
 
-            <h3>
-              No hay matrices creadas
-            </h3>
+            <h3>{
+                  texto(
+                    "No hay matrices creadas",
+                    "No matrices created",
+                  )
+                }</h3>
 
             <p>
               Crea una matriz definiendo su número de filas, columnas y valores.
@@ -805,10 +848,12 @@ function Matrices() {
             >
               <Plus
                 size={16}
-              />
-
-              Crear matriz
-            </button>
+              />{
+                  texto(
+                    "Crear matriz",
+                    "Create matrix",
+                  )
+                }</button>
           </div>
         ) : matricesFiltradas.length ===
           0 ? (
@@ -819,9 +864,12 @@ function Matrices() {
               />
             </div>
 
-            <h3>
-              No se encontraron matrices
-            </h3>
+            <h3>{
+                  texto(
+                    "No se encontraron matrices",
+                    "No matrices found",
+                  )
+                }</h3>
 
             <p>
               Modifica el término utilizado en la búsqueda.
@@ -863,7 +911,10 @@ function Matrices() {
                     <div className="matrix-card-actions">
                       <button
                         type="button"
-                        title="Editar matriz"
+                        title={texto(
+                "Editar matriz",
+                "Edit matrix",
+              )}
                         onClick={() =>
                           abrirEdicion(
                             matriz,
@@ -878,7 +929,10 @@ function Matrices() {
                       <button
                         type="button"
                         className="matrix-delete"
-                        title="Eliminar matriz"
+                        title={texto(
+                "Eliminar matriz",
+                "Delete matrix",
+              )}
                         onClick={() =>
                           void eliminarMatriz(
                             matriz.id,
@@ -971,18 +1025,30 @@ function Matrices() {
           <div className="matrix-modal">
             <div className="matrix-modal-header">
               <div>
-                <span className="dashboard-card-label">
-                  EDITOR DE MATRICES
-                </span>
+                <span className="dashboard-card-label">{
+                  texto(
+                    "EDITOR DE MATRICES",
+                    "MATRIX EDITOR",
+                  )
+                }</span>
 
                 <h2>
                   {matrizEditando
-                    ? "Editar matriz"
-                    : "Nueva matriz"}
+                    ? texto(
+                        "Editar matriz",
+                        "Edit matrix",
+                      )
+                    : texto(
+                        "Nueva matriz",
+                        "New matrix",
+                      )}
                 </h2>
 
                 <p>
-                  Define las dimensiones e introduce los valores numéricos.
+                  {texto(
+                    "Define las dimensiones e introduce los valores numéricos.",
+                    "Define the dimensions and enter the numerical values.",
+                  )}
                 </p>
               </div>
 
@@ -991,7 +1057,10 @@ function Matrices() {
                 onClick={
                   cerrarModal
                 }
-                aria-label="Cerrar"
+                aria-label={texto(
+                "Cerrar",
+                "Close",
+              )}
               >
                 <X
                   size={19}
@@ -1010,9 +1079,12 @@ function Matrices() {
               <div className="matrix-form">
                 <div className="matrix-form-main">
                   <div className="form-group">
-                    <label htmlFor="nombre">
-                      Nombre de la matriz
-                    </label>
+                    <label htmlFor="nombre">{
+                  texto(
+                    "Nombre de la matriz",
+                    "Matrix name",
+                  )
+                }</label>
 
                     <input
                       id="nombre"
@@ -1036,9 +1108,12 @@ function Matrices() {
 
 
                   <div className="form-group">
-                    <label htmlFor="descripcion">
-                      Descripción
-                    </label>
+                    <label htmlFor="descripcion">{
+                  texto(
+                    "Descripción",
+                    "Description",
+                  )
+                }</label>
 
                     <input
                       id="descripcion"
@@ -1066,9 +1141,12 @@ function Matrices() {
 
                 <div className="matrix-dimensions">
                   <div className="form-group">
-                    <label htmlFor="filas">
-                      Filas
-                    </label>
+                    <label htmlFor="filas">{
+                  texto(
+                    "Filas",
+                    "Rows",
+                  )
+                }</label>
 
                     <input
                       id="filas"
@@ -1108,9 +1186,12 @@ function Matrices() {
 
 
                   <div className="form-group">
-                    <label htmlFor="columnas">
-                      Columnas
-                    </label>
+                    <label htmlFor="columnas">{
+                  texto(
+                    "Columnas",
+                    "Columns",
+                  )
+                }</label>
 
                     <input
                       id="columnas"
@@ -1155,12 +1236,18 @@ function Matrices() {
                 <div className="matrix-editor-section">
                   <div className="matrix-editor-header">
                     <div>
-                      <strong>
-                        Valores de la matriz
-                      </strong>
+                      <strong>{
+                  texto(
+                    "Valores de la matriz",
+                    "Matrix values",
+                  )
+                }</strong>
 
                       <span>
-                        Introduce un valor en cada posición.
+                        {texto(
+                          "Introduce un valor en cada posición.",
+                          "Enter a value in each position.",
+                        )}
                       </span>
                     </div>
 
@@ -1202,10 +1289,16 @@ function Matrices() {
                                   value={
                                     valor
                                   }
-                                  aria-label={`Fila ${
+                                  aria-label={`${texto(
+                                    "Fila",
+                                    "Row",
+                                  )} ${
                                     indiceFila +
                                     1
-                                  }, columna ${
+                                  }, ${texto(
+                                    "columna",
+                                    "column",
+                                  )} ${
                                     indiceColumna +
                                     1
                                   }`}
@@ -1266,9 +1359,12 @@ function Matrices() {
                   disabled={
                     isSubmitting
                   }
-                >
-                  Cancelar
-                </button>
+                >{
+                  texto(
+                    "Cancelar",
+                    "Cancel",
+                  )
+                }</button>
 
                 <button
                   type="submit"
@@ -1284,8 +1380,8 @@ function Matrices() {
                       />
 
                       {isSubmitting
-                        ? "Guardando..."
-                        : "Guardar cambios"}
+                        ? texto('Guardando...', 'Saving...')
+                        : texto('Guardar cambios', 'Save changes')}
                     </>
                   ) : (
                     <>
@@ -1294,8 +1390,8 @@ function Matrices() {
                       />
 
                       {isSubmitting
-                        ? "Creando..."
-                        : "Crear matriz"}
+                        ? texto('Creando...', 'Creating...')
+                        : texto('Crear matriz', 'Create matrix')}
                     </>
                   )}
                 </button>

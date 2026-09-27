@@ -28,6 +28,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   usuarioSchema,
   type UsuarioFormulario,
 } from "../schemas/usuarioSchema";
@@ -57,6 +61,10 @@ function obtenerMensajeError(
 
 
 function Usuarios() {
+  const {
+    texto,
+  } = useAppSettings();
+
   const usuariosQuery =
     useUsuarios();
 
@@ -542,9 +550,18 @@ function Usuarios() {
   return (
     <div className="users-page">
       <PageHeader
-        etiqueta="ADMINISTRACIÓN"
-        titulo="Usuarios"
-        descripcion="Administra visualmente los usuarios del sistema y asigna los roles definidos para MatrixFlow Enterprise."
+        etiqueta={texto(
+          "ADMINISTRACIÓN",
+          "ADMINISTRATION",
+        )}
+        titulo={texto(
+          "Usuarios",
+          "Users",
+        )}
+        descripcion={texto(
+          "Administra visualmente los usuarios del sistema y asigna los roles definidos para MatrixFlow Enterprise.",
+          "Manage system users and assign the roles defined for MatrixFlow Enterprise.",
+        )}
         acciones={
           <button
             type="button"
@@ -558,10 +575,12 @@ function Usuarios() {
           >
             <UserPlus
               size={17}
-            />
-
-            Nuevo usuario
-          </button>
+            />{
+                  texto(
+                    "Nuevo usuario",
+                    "New user",
+                  )
+                }</button>
         }
       />
 
@@ -604,9 +623,12 @@ function Usuarios() {
           </div>
 
           <div>
-            <span>
-              Usuarios registrados
-            </span>
+            <span>{
+                  texto(
+                    "Usuarios registrados",
+                    "Registered users",
+                  )
+                }</span>
 
             <strong>
               {usuarios.length}
@@ -622,9 +644,12 @@ function Usuarios() {
           </div>
 
           <div>
-            <span>
-              Usuarios activos
-            </span>
+            <span>{
+                  texto(
+                    "Usuarios activos",
+                    "Active users",
+                  )
+                }</span>
 
             <strong>
               {activos}
@@ -640,9 +665,12 @@ function Usuarios() {
           </div>
 
           <div>
-            <span>
-              Administradores
-            </span>
+            <span>{
+                  texto(
+                    "Administradores",
+                    "Administrators",
+                  )
+                }</span>
 
             <strong>
               {administradores}
@@ -656,9 +684,12 @@ function Usuarios() {
           </div>
 
           <div>
-            <span>
-              Analistas
-            </span>
+            <span>{
+                  texto(
+                    "Analistas",
+                    "Analysts",
+                  )
+                }</span>
 
             <strong>
               {analistas}
@@ -678,7 +709,10 @@ function Usuarios() {
 
             <input
               type="text"
-              placeholder="Buscar por nombre o correo..."
+              placeholder={texto(
+                "Buscar por nombre o correo...",
+                "Search by name or email...",
+              )}
               value={busqueda}
               onChange={(
                 evento,
@@ -705,21 +739,33 @@ function Usuarios() {
                 )
               }
             >
-              <option value="Todos">
-                Todos los roles
-              </option>
+              <option value="Todos">{
+                  texto(
+                    "Todos los roles",
+                    "All roles",
+                  )
+                }</option>
 
-              <option value="Administrador">
-                Administrador
-              </option>
+              <option value="Administrador">{
+                  texto(
+                    "Administrador",
+                    "Administrator",
+                  )
+                }</option>
 
-              <option value="Analista">
-                Analista
-              </option>
+              <option value="Analista">{
+                  texto(
+                    "Analista",
+                    "Analyst",
+                  )
+                }</option>
 
-              <option value="Consulta">
-                Consulta
-              </option>
+              <option value="Consulta">{
+                  texto(
+                    "Consulta",
+                    "Viewer",
+                  )
+                }</option>
             </select>
 
             <select
@@ -735,17 +781,26 @@ function Usuarios() {
                 )
               }
             >
-              <option value="Todos">
-                Todos los estados
-              </option>
+              <option value="Todos">{
+                  texto(
+                    "Todos los estados",
+                    "All statuses",
+                  )
+                }</option>
 
-              <option value="Activo">
-                Activo
-              </option>
+              <option value="Activo">{
+                  texto(
+                    "Activo",
+                    "Active",
+                  )
+                }</option>
 
-              <option value="Inactivo">
-                Inactivo
-              </option>
+              <option value="Inactivo">{
+                  texto(
+                    "Inactivo",
+                    "Inactive",
+                  )
+                }</option>
             </select>
           </div>
         </div>
@@ -758,13 +813,19 @@ function Usuarios() {
               />
             </div>
 
-            <h3>
-              Cargando usuarios...
-            </h3>
+            <h3>{
+                  texto(
+                    "Cargando usuarios...",
+                    "Loading users...",
+                  )
+                }</h3>
 
-            <p>
-              Consultando los usuarios registrados.
-            </p>
+            <p>{
+                  texto(
+                    "Consultando los usuarios registrados.",
+                    "Loading registered users.",
+                  )
+                }</p>
           </div>
         ) : usuarios.length ===
         0 ? (
@@ -775,10 +836,7 @@ function Usuarios() {
               />
             </div>
 
-            <h3>
-              No hay usuarios
-              registrados
-            </h3>
+            <h3>{texto('No hay usuarios registrados', 'No users registered')}</h3>
 
             <p>
               Registra usuarios
@@ -795,35 +853,49 @@ function Usuarios() {
             >
               <UserPlus
                 size={16}
-              />
-
-              Registrar usuario
-            </button>
+              />{
+                  texto(
+                    "Registrar usuario",
+                    "Register user",
+                  )
+                }</button>
           </div>
         ) : (
           <div className="users-table-wrapper">
             <table className="users-table">
               <thead>
                 <tr>
-                  <th>
-                    USUARIO
-                  </th>
+                  <th>{
+                  texto(
+                    "USUARIO",
+                    "USER",
+                  )
+                }</th>
 
-                  <th>
-                    ROL
-                  </th>
+                  <th>{
+                  texto(
+                    "ROL",
+                    "ROLE",
+                  )
+                }</th>
 
-                  <th>
-                    ESTADO
-                  </th>
+                  <th>{
+                  texto(
+                    "ESTADO",
+                    "STATUS",
+                  )
+                }</th>
 
                   <th>
                     ID
                   </th>
 
-                  <th>
-                    ACCIONES
-                  </th>
+                  <th>{
+                  texto(
+                    "ACCIONES",
+                    "ACTIONS",
+                  )
+                }</th>
                 </tr>
               </thead>
 
@@ -896,7 +968,10 @@ function Usuarios() {
                         <div className="user-actions">
                           <button
                             type="button"
-                            title="Editar usuario"
+                            title={texto(
+                "Editar usuario",
+                "Edit user",
+              )}
                             onClick={() =>
                               abrirEdicion(
                                 usuario,
@@ -915,8 +990,14 @@ function Usuarios() {
                             title={
                               usuario.estado ===
                               "Activo"
-                                ? "Desactivar"
-                                : "Activar"
+                                ? texto(
+                                    "Desactivar",
+                                    "Deactivate",
+                                  )
+                                : texto(
+                                    "Activar",
+                                    "Activate",
+                                  )
                             }
                             onClick={() =>
                               void cambiarEstado(
@@ -943,7 +1024,10 @@ function Usuarios() {
                           <button
                             type="button"
                             className="user-delete"
-                            title="Eliminar usuario"
+                            title={texto(
+                "Eliminar usuario",
+                "Delete user",
+              )}
                             onClick={() =>
                               void eliminarUsuario(
                                 usuario.id,
@@ -971,10 +1055,7 @@ function Usuarios() {
                   size={27}
                 />
 
-                <strong>
-                  No se encontraron
-                  usuarios
-                </strong>
+                <strong>{texto('No se encontraron usuarios', 'No users found')}</strong>
 
                 <p>
                   Cambia los filtros
@@ -1005,15 +1086,18 @@ function Usuarios() {
           <div className="user-modal">
             <div className="user-modal-header">
               <div>
-                <span>
-                  ADMINISTRACIÓN
-                  DE USUARIOS
-                </span>
+                <span>{texto('ADMINISTRACIÓN DE USUARIOS', 'USER MANAGEMENT')}</span>
 
                 <h2>
                   {usuarioEditando
-                    ? "Editar usuario"
-                    : "Nuevo usuario"}
+                    ? texto(
+                        "Editar usuario",
+                        "Edit user",
+                      )
+                    : texto(
+                        "Nuevo usuario",
+                        "New user",
+                      )}
                 </h2>
 
                 <p>
@@ -1025,7 +1109,10 @@ function Usuarios() {
 
               <button
                 type="button"
-                aria-label="Cerrar"
+                aria-label={texto(
+                "Cerrar",
+                "Close",
+              )}
                 onClick={
                   cerrarModal
                 }
@@ -1043,14 +1130,20 @@ function Usuarios() {
                 {/* NOMBRE */}
 
                 <div className="form-group">
-                  <label htmlFor="nombre">
-                    Nombre completo
-                  </label>
+                  <label htmlFor="nombre">{
+                  texto(
+                    "Nombre completo",
+                    "Full name",
+                  )
+                }</label>
 
                   <input
                     id="nombre"
                     type="text"
-                    placeholder="Nombre del usuario"
+                    placeholder={texto(
+                "Nombre del usuario",
+                "User name",
+              )}
                     {...register(
                       "nombre",
                     )}
@@ -1069,9 +1162,12 @@ function Usuarios() {
                 {/* CORREO */}
 
                 <div className="form-group">
-                  <label htmlFor="correo">
-                    Correo electrónico
-                  </label>
+                  <label htmlFor="correo">{
+                  texto(
+                    "Correo electrónico",
+                    "Email address",
+                  )
+                }</label>
 
                   <input
                     id="correo"
@@ -1094,15 +1190,21 @@ function Usuarios() {
 
                 {!usuarioEditando && (
                   <div className="form-group">
-                    <label htmlFor="password">
-                      Contraseña
-                    </label>
+                    <label htmlFor="password">{
+                  texto(
+                    "Contraseña",
+                    "Password",
+                  )
+                }</label>
 
                     <input
                       id="password"
                       type="password"
                       autoComplete="new-password"
-                      placeholder="Contraseña del usuario"
+                      placeholder={texto(
+                "Contraseña del usuario",
+                "User password",
+              )}
                       value={password}
                       onChange={(evento) =>
                         setPassword(
@@ -1113,7 +1215,10 @@ function Usuarios() {
                     />
 
                     <small>
-                      Esta contraseña se utilizará para iniciar sesión.
+                      {texto(
+                        "Esta contraseña se utilizará para iniciar sesión.",
+                        "This password will be used to sign in.",
+                      )}
                     </small>
                   </div>
                 )}
@@ -1121,9 +1226,12 @@ function Usuarios() {
                 {/* ROL */}
 
                 <div className="form-group">
-                  <label htmlFor="rol">
-                    Rol
-                  </label>
+                  <label htmlFor="rol">{
+                  texto(
+                    "Rol",
+                    "Role",
+                  )
+                }</label>
 
                   <select
                     id="rol"
@@ -1131,17 +1239,26 @@ function Usuarios() {
                       "rol",
                     )}
                   >
-                    <option value="Administrador">
-                      Administrador
-                    </option>
+                    <option value="Administrador">{
+                  texto(
+                    "Administrador",
+                    "Administrator",
+                  )
+                }</option>
 
-                    <option value="Analista">
-                      Analista
-                    </option>
+                    <option value="Analista">{
+                  texto(
+                    "Analista",
+                    "Analyst",
+                  )
+                }</option>
 
-                    <option value="Consulta">
-                      Consulta
-                    </option>
+                    <option value="Consulta">{
+                  texto(
+                    "Consulta",
+                    "Viewer",
+                  )
+                }</option>
                   </select>
 
                   {errors.rol && (
@@ -1166,9 +1283,12 @@ function Usuarios() {
                   disabled={
                     procesando
                   }
-                >
-                  Cancelar
-                </button>
+                >{
+                  texto(
+                    "Cancelar",
+                    "Cancel",
+                  )
+                }</button>
 
                 <button
                   type="submit"
@@ -1183,18 +1303,22 @@ function Usuarios() {
                     <>
                       <Edit3
                         size={16}
-                      />
-
-                      Guardar cambios
-                    </>
+                      />{
+                  texto(
+                    "Guardar cambios",
+                    "Save changes",
+                  )
+                }</>
                   ) : (
                     <>
                       <UserPlus
                         size={16}
-                      />
-
-                      Registrar usuario
-                    </>
+                      />{
+                  texto(
+                    "Registrar usuario",
+                    "Register user",
+                  )
+                }</>
                   )}
                 </button>
               </div>

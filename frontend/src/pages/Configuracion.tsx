@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useState,
 } from "react";
 
@@ -16,12 +15,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
-  aplicarConfiguracionVisual,
-  formatearFecha,
-  formatearMoneda,
-  guardarConfiguracionSistema,
-  obtenerConfiguracionSistema,
-  restaurarConfiguracionSistema,
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   type ConfiguracionSistema,
   type FormatoFechaSistema,
   type IdiomaSistema,
@@ -31,49 +28,30 @@ import {
 
 import "../styles/Configuracion.css";
 
-// ==========================================================
-// COMPONENTE
-// ==========================================================
-
 function Configuracion() {
-  const [
+  const {
     configuracion,
-    setConfiguracion,
-  ] =
-    useState<ConfiguracionSistema>(
-      () =>
-        obtenerConfiguracionSistema(),
-    );
+
+    actualizarCampo:
+      actualizarCampoGlobal,
+
+    guardarConfiguracion:
+      guardarConfiguracionGlobal,
+
+    restaurarConfiguracion:
+      restaurarConfiguracionGlobal,
+
+    texto,
+
+    formatearMoneda,
+
+    formatearFecha,
+  } = useAppSettings();
 
   const [
     guardado,
     setGuardado,
   ] = useState(false);
-
-  // ========================================================
-  // TEXTO SEGÚN IDIOMA
-  // ========================================================
-
-  const texto = (
-    espanol: string,
-    ingles: string,
-  ) =>
-    configuracion.idioma ===
-    "en"
-      ? ingles
-      : espanol;
-
-  // ========================================================
-  // APLICAR VISTA COMPACTA EN TIEMPO REAL
-  // ========================================================
-
-  useEffect(() => {
-    aplicarConfiguracionVisual(
-      configuracion,
-    );
-  }, [
-    configuracion.modoCompacto,
-  ]);
 
   // ========================================================
   // ACTUALIZAR CAMPO
@@ -83,15 +61,13 @@ function Configuracion() {
     K extends keyof ConfiguracionSistema,
   >(
     campo: K,
+
     valor:
       ConfiguracionSistema[K],
   ) => {
-    setConfiguracion(
-      (actual) => ({
-        ...actual,
-
-        [campo]: valor,
-      }),
+    actualizarCampoGlobal(
+      campo,
+      valor,
     );
 
     setGuardado(false);
@@ -103,14 +79,7 @@ function Configuracion() {
 
   const guardarConfiguracion =
     () => {
-      const resultado =
-        guardarConfiguracionSistema(
-          configuracion,
-        );
-
-      setConfiguracion(
-        resultado,
-      );
+      guardarConfiguracionGlobal();
 
       setGuardado(true);
     };
@@ -133,12 +102,7 @@ function Configuracion() {
         return;
       }
 
-      const restaurada =
-        restaurarConfiguracionSistema();
-
-      setConfiguracion(
-        restaurada,
-      );
+      restaurarConfiguracionGlobal();
 
       setGuardado(true);
     };
@@ -150,19 +114,13 @@ function Configuracion() {
   const monedaEjemplo =
     formatearMoneda(
       1250,
-      configuracion,
     );
 
   const fechaEjemplo =
     formatearFecha(
       new Date(),
       true,
-      configuracion,
     );
-
-  // ========================================================
-  // INTERFAZ
-  // ========================================================
 
   return (
     <div className="settings-page">
@@ -187,7 +145,9 @@ function Configuracion() {
               guardarConfiguracion
             }
           >
-            <Save size={16} />
+            <Save
+              size={16}
+            />
 
             {texto(
               "Guardar cambios",
@@ -197,13 +157,11 @@ function Configuracion() {
         }
       />
 
-      {/* ================================================= */}
-      {/* MENSAJE */}
-      {/* ================================================= */}
-
       {guardado && (
         <div className="settings-success">
-          <Check size={17} />
+          <Check
+            size={17}
+          />
 
           <div>
             <strong>
@@ -225,15 +183,12 @@ function Configuracion() {
 
       <div className="settings-layout">
         <div className="settings-main">
-
-          {/* ============================================= */}
-          {/* REGIONAL */}
-          {/* ============================================= */}
-
           <section className="settings-card">
             <div className="settings-card-header">
               <div className="settings-icon">
-                <Globe2 size={19} />
+                <Globe2
+                  size={19}
+                />
               </div>
 
               <div>
@@ -265,7 +220,9 @@ function Configuracion() {
               {/* IDIOMA */}
 
               <div className="settings-field">
-                <label htmlFor="idioma">
+                <label
+                  htmlFor="idioma"
+                >
                   {texto(
                     "Idioma",
                     "Language",
@@ -275,13 +232,15 @@ function Configuracion() {
                 <select
                   id="idioma"
                   value={
-                    configuracion.idioma
+                    configuracion
+                      .idioma
                   }
                   onChange={(
                     evento,
                   ) =>
                     actualizarCampo(
                       "idioma",
+
                       evento.target
                         .value as IdiomaSistema,
                     )
@@ -300,7 +259,9 @@ function Configuracion() {
               {/* MONEDA */}
 
               <div className="settings-field">
-                <label htmlFor="moneda">
+                <label
+                  htmlFor="moneda"
+                >
                   {texto(
                     "Moneda",
                     "Currency",
@@ -310,34 +271,45 @@ function Configuracion() {
                 <select
                   id="moneda"
                   value={
-                    configuracion.moneda
+                    configuracion
+                      .moneda
                   }
                   onChange={(
                     evento,
                   ) =>
                     actualizarCampo(
                       "moneda",
+
                       evento.target
                         .value as MonedaSistema,
                     )
                   }
                 >
                   <option value="PEN">
-                    Sol peruano (PEN)
+                    {texto(
+                      "Sol peruano (PEN)",
+                      "Peruvian Sol (PEN)",
+                    )}
                   </option>
 
                   <option value="USD">
-                    US Dollar (USD)
+                    {texto(
+                      "Dólar estadounidense (USD)",
+                      "US Dollar (USD)",
+                    )}
                   </option>
                 </select>
               </div>
 
               {/* TIPO DE CAMBIO */}
 
-              {configuracion.moneda ===
+              {configuracion
+                .moneda ===
                 "USD" && (
                 <div className="settings-field">
-                  <label htmlFor="tipoCambio">
+                  <label
+                    htmlFor="tipoCambio"
+                  >
                     {texto(
                       "Tipo de cambio",
                       "Exchange rate",
@@ -383,7 +355,9 @@ function Configuracion() {
               {/* ZONA HORARIA */}
 
               <div className="settings-field">
-                <label htmlFor="zona">
+                <label
+                  htmlFor="zona"
+                >
                   {texto(
                     "Zona horaria",
                     "Time zone",
@@ -401,6 +375,7 @@ function Configuracion() {
                   ) =>
                     actualizarCampo(
                       "zonaHoraria",
+
                       evento.target
                         .value as ZonaHorariaSistema,
                     )
@@ -424,10 +399,12 @@ function Configuracion() {
                 </select>
               </div>
 
-              {/* FECHA */}
+              {/* FORMATO FECHA */}
 
               <div className="settings-field">
-                <label htmlFor="fecha">
+                <label
+                  htmlFor="fecha"
+                >
                   {texto(
                     "Formato de fecha",
                     "Date format",
@@ -445,6 +422,7 @@ function Configuracion() {
                   ) =>
                     actualizarCampo(
                       "formatoFecha",
+
                       evento.target
                         .value as FormatoFechaSistema,
                     )
@@ -466,14 +444,14 @@ function Configuracion() {
             </div>
           </section>
 
-          {/* ============================================= */}
-          {/* ALERTAS */}
-          {/* ============================================= */}
+          {/* NOTIFICACIONES */}
 
           <section className="settings-card">
             <div className="settings-card-header">
               <div className="settings-icon settings-icon-cyan">
-                <Bell size={19} />
+                <Bell
+                  size={19}
+                />
               </div>
 
               <div>
@@ -501,9 +479,6 @@ function Configuracion() {
             </div>
 
             <div className="settings-options">
-
-              {/* GENERAL */}
-
               <div className="settings-option">
                 <div>
                   <strong>
@@ -532,20 +507,15 @@ function Configuracion() {
                   onClick={() =>
                     actualizarCampo(
                       "notificaciones",
+
                       !configuracion
                         .notificaciones,
                     )
                   }
-                  aria-label={texto(
-                    "Cambiar notificaciones",
-                    "Toggle notifications",
-                  )}
                 >
                   <span />
                 </button>
               </div>
-
-              {/* INVENTARIO */}
 
               <div className="settings-option">
                 <div>
@@ -581,20 +551,15 @@ function Configuracion() {
                   onClick={() =>
                     actualizarCampo(
                       "alertasInventario",
+
                       !configuracion
                         .alertasInventario,
                     )
                   }
-                  aria-label={texto(
-                    "Cambiar alertas de inventario",
-                    "Toggle inventory alerts",
-                  )}
                 >
                   <span />
                 </button>
               </div>
-
-              {/* MATEMÁTICAS */}
 
               <div className="settings-option">
                 <div>
@@ -630,14 +595,11 @@ function Configuracion() {
                   onClick={() =>
                     actualizarCampo(
                       "alertasOperaciones",
+
                       !configuracion
                         .alertasOperaciones,
                     )
                   }
-                  aria-label={texto(
-                    "Cambiar alertas matemáticas",
-                    "Toggle math alerts",
-                  )}
                 >
                   <span />
                 </button>
@@ -645,14 +607,14 @@ function Configuracion() {
             </div>
           </section>
 
-          {/* ============================================= */}
           {/* INTERFAZ */}
-          {/* ============================================= */}
 
           <section className="settings-card">
             <div className="settings-card-header">
               <div className="settings-icon settings-icon-purple">
-                <Palette size={19} />
+                <Palette
+                  size={19}
+                />
               </div>
 
               <div>
@@ -678,8 +640,6 @@ function Configuracion() {
                 </p>
               </div>
             </div>
-
-            {/* VISTA COMPACTA */}
 
             <div className="settings-options">
               <div className="settings-option">
@@ -710,21 +670,16 @@ function Configuracion() {
                   onClick={() =>
                     actualizarCampo(
                       "modoCompacto",
+
                       !configuracion
                         .modoCompacto,
                     )
                   }
-                  aria-label={texto(
-                    "Cambiar vista compacta",
-                    "Toggle compact view",
-                  )}
                 >
                   <span />
                 </button>
               </div>
             </div>
-
-            {/* COLORES */}
 
             <div className="settings-colors">
               <div>
@@ -811,14 +766,14 @@ function Configuracion() {
           </section>
         </div>
 
-        {/* =============================================== */}
-        {/* INFORMACIÓN */}
-        {/* =============================================== */}
+        {/* PANEL DERECHO */}
 
         <aside className="settings-sidebar">
           <section className="settings-info-card">
             <div className="settings-info-icon">
-              <Settings size={22} />
+              <Settings
+                size={22}
+              />
             </div>
 
             <span>
@@ -839,8 +794,6 @@ function Configuracion() {
               )}
             </p>
           </section>
-
-          {/* VISTA PREVIA */}
 
           <section className="settings-info-card">
             <span>
@@ -907,7 +860,9 @@ function Configuracion() {
               restaurarConfiguracion
             }
           >
-            <RotateCcw size={15} />
+            <RotateCcw
+              size={15}
+            />
 
             {texto(
               "Restaurar configuración",

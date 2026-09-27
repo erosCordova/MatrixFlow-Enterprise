@@ -29,6 +29,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   inventarioSchema,
   type InventarioFormulario,
 } from "../schemas/inventarioSchema";
@@ -74,6 +78,10 @@ function obtenerMensajeError(
 
 
 function Inventario() {
+  const {
+    texto,
+  } = useAppSettings();
+
   const datosInventario =
     useDatosInventario();
 
@@ -580,9 +588,18 @@ function Inventario() {
   return (
     <div className="inventory-page">
       <PageHeader
-        etiqueta="GESTIÓN EMPRESARIAL"
-        titulo="Inventario"
-        descripcion="Controla las existencias de productos por sucursal y detecta niveles bajos de stock."
+        etiqueta={texto(
+          "GESTIÓN EMPRESARIAL",
+          "BUSINESS MANAGEMENT",
+        )}
+        titulo={texto(
+          "Inventario",
+          "Inventory",
+        )}
+        descripcion={texto(
+          "Controla las existencias de productos por sucursal y detecta niveles bajos de stock.",
+          "Control product stock by branch and detect low inventory levels.",
+        )}
         acciones={
           <button
             type="button"
@@ -595,9 +612,12 @@ function Inventario() {
               !puedeRegistrar
             }
           >
-            <Plus size={17} />
-            Nuevo registro
-          </button>
+            <Plus size={17} />{
+                  texto(
+                    "Nuevo registro",
+                    "New record",
+                  )
+                }</button>
         }
       />
 
@@ -607,9 +627,12 @@ function Inventario() {
             size={28}
           />
 
-          <h3>
-            No se pudo completar la operación
-          </h3>
+          <h3>{
+                  texto(
+                    "No se pudo completar la operación",
+                    "The operation could not be completed",
+                  )
+                }</h3>
 
           <p>
             {errorAPI}
@@ -620,9 +643,12 @@ function Inventario() {
       {mensaje && (
         <div className="company-empty-state">
           <div>
-            <strong>
-              Operación completada
-            </strong>
+            <strong>{
+                  texto(
+                    "Operación completada",
+                    "Operation completed",
+                  )
+                }</strong>
 
             <p>
               {mensaje}
@@ -638,9 +664,12 @@ function Inventario() {
           </div>
 
           <div>
-            <span>
-              Unidades en inventario
-            </span>
+            <span>{
+                  texto(
+                    "Unidades en inventario",
+                    "Inventory units",
+                  )
+                }</span>
 
             <strong>
               {totalUnidades}
@@ -656,9 +685,12 @@ function Inventario() {
           </div>
 
           <div>
-            <span>
-              Stock disponible
-            </span>
+            <span>{
+                  texto(
+                    "Stock disponible",
+                    "Available stock",
+                  )
+                }</span>
 
             <strong>
               {
@@ -676,9 +708,12 @@ function Inventario() {
           </div>
 
           <div>
-            <span>
-              Stock bajo
-            </span>
+            <span>{
+                  texto(
+                    "Stock bajo",
+                    "Low stock",
+                  )
+                }</span>
 
             <strong>
               {
@@ -694,9 +729,12 @@ function Inventario() {
           </div>
 
           <div>
-            <span>
-              Agotados
-            </span>
+            <span>{
+                  texto(
+                    "Agotados",
+                    "Out of stock",
+                  )
+                }</span>
 
             <strong>
               {
@@ -714,7 +752,10 @@ function Inventario() {
 
             <input
               type="text"
-              placeholder="Buscar por producto o sucursal..."
+              placeholder={texto(
+                "Buscar por producto o sucursal...",
+                "Search by product or branch...",
+              )}
               value={busqueda}
               onChange={(evento) =>
                 setBusqueda(
@@ -734,21 +775,33 @@ function Inventario() {
               )
             }
           >
-            <option value="Todos">
-              Todos los estados
-            </option>
+            <option value="Todos">{
+                  texto(
+                    "Todos los estados",
+                    "All statuses",
+                  )
+                }</option>
 
-            <option value="Disponible">
-              Disponible
-            </option>
+            <option value="Disponible">{
+                  texto(
+                    "Disponible",
+                    "Available",
+                  )
+                }</option>
 
-            <option value="Bajo">
-              Stock bajo
-            </option>
+            <option value="Bajo">{
+                  texto(
+                    "Stock bajo",
+                    "Low stock",
+                  )
+                }</option>
 
-            <option value="Agotado">
-              Agotado
-            </option>
+            <option value="Agotado">{
+                  texto(
+                    "Agotado",
+                    "Out of stock",
+                  )
+                }</option>
           </select>
         </div>
 
@@ -758,14 +811,14 @@ function Inventario() {
               size={28}
             />
 
-            <h3>
-              Cargando inventario
-            </h3>
+            <h3>{
+                  texto(
+                    "Cargando inventario",
+                    "Loading inventory",
+                  )
+                }</h3>
 
-            <p>
-              Cargando existencias,
-              sucursales y productos...
-            </p>
+            <p>{texto('Cargando existencias, sucursales y productos...', 'Loading stock, branches and products...')}</p>
           </div>
         ) : !puedeRegistrar &&
           registros.length === 0 ? (
@@ -774,9 +827,12 @@ function Inventario() {
               size={28}
             />
 
-            <h3>
-              Faltan datos empresariales
-            </h3>
+            <h3>{
+                  texto(
+                    "Faltan datos empresariales",
+                    "Business data required",
+                  )
+                }</h3>
 
             <p>
               Para registrar inventario
@@ -793,9 +849,12 @@ function Inventario() {
               />
             </div>
 
-            <h3>
-              No hay inventario registrado
-            </h3>
+            <h3>{
+                  texto(
+                    "No hay inventario registrado",
+                    "No inventory registered",
+                  )
+                }</h3>
 
             <p>
               Registra las existencias de
@@ -810,9 +869,12 @@ function Inventario() {
                 abrirRegistro
               }
             >
-              <Plus size={16} />
-              Registrar inventario
-            </button>
+              <Plus size={16} />{
+                  texto(
+                    "Registrar inventario",
+                    "Register inventory",
+                  )
+                }</button>
           </div>
         ) : registrosFiltrados.length ===
           0 ? (
@@ -821,9 +883,12 @@ function Inventario() {
               <Search size={28} />
             </div>
 
-            <h3>
-              No se encontraron registros
-            </h3>
+            <h3>{
+                  texto(
+                    "No se encontraron registros",
+                    "No records found",
+                  )
+                }</h3>
 
             <p>
               Modifica la búsqueda o el
@@ -835,16 +900,42 @@ function Inventario() {
             <table className="inventory-table">
               <thead>
                 <tr>
-                  <th>Sucursal</th>
-                  <th>Producto</th>
-                  <th>
-                    Stock actual
-                  </th>
-                  <th>
-                    Stock mínimo
-                  </th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
+                  <th>{
+                  texto(
+                    "Sucursal",
+                    "Branch",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Producto",
+                    "Product",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Stock actual",
+                    "Current stock",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Stock mínimo",
+                    "Minimum stock",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Estado",
+                    "Status",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Acciones",
+                    "Actions",
+                  )
+                }</th>
                 </tr>
               </thead>
 
@@ -912,7 +1003,10 @@ function Inventario() {
                         <div className="inventory-actions">
                           <button
                             type="button"
-                            title="Editar inventario"
+                            title={texto(
+                              "Editar inventario",
+                              "Edit inventory",
+                            )}
                             onClick={() =>
                               abrirEdicion(
                                 registro,
@@ -927,7 +1021,10 @@ function Inventario() {
                           <button
                             type="button"
                             className="inventory-delete"
-                            title="Eliminar registro"
+                            title={texto(
+                              "Eliminar registro",
+                              "Delete record",
+                            )}
                             onClick={() =>
                               void eliminarRegistro(
                                 registro,
@@ -966,14 +1063,23 @@ function Inventario() {
           <div className="inventory-modal">
             <div className="inventory-modal-header">
               <div>
-                <span className="dashboard-card-label">
-                  CONTROL DE INVENTARIO
-                </span>
+                <span className="dashboard-card-label">{
+                  texto(
+                    "CONTROL DE INVENTARIO",
+                    "INVENTORY CONTROL",
+                  )
+                }</span>
 
                 <h2>
                   {registroEditando
-                    ? "Editar inventario"
-                    : "Nuevo registro"}
+                    ? texto(
+                        "Editar inventario",
+                        "Edit inventory",
+                      )
+                    : texto(
+                        "Nuevo registro",
+                        "New record",
+                      )}
                 </h2>
 
                 <p>
@@ -1002,9 +1108,12 @@ function Inventario() {
             >
               <div className="inventory-form-grid">
                 <div className="form-group">
-                  <label htmlFor="sucursal">
-                    Sucursal
-                  </label>
+                  <label htmlFor="sucursal">{
+                  texto(
+                    "Sucursal",
+                    "Branch",
+                  )
+                }</label>
 
                   <select
                     id="sucursal"
@@ -1012,9 +1121,12 @@ function Inventario() {
                       "sucursal",
                     )}
                   >
-                    <option value="">
-                      Seleccionar sucursal
-                    </option>
+                    <option value="">{
+                  texto(
+                    "Seleccionar sucursal",
+                    "Select branch",
+                  )
+                }</option>
 
                     {sucursalesDisponibles.map(
                       (sucursal) => (
@@ -1045,9 +1157,12 @@ function Inventario() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="producto">
-                    Producto
-                  </label>
+                  <label htmlFor="producto">{
+                  texto(
+                    "Producto",
+                    "Product",
+                  )
+                }</label>
 
                   <select
                     id="producto"
@@ -1055,9 +1170,12 @@ function Inventario() {
                       "producto",
                     )}
                   >
-                    <option value="">
-                      Seleccionar producto
-                    </option>
+                    <option value="">{
+                  texto(
+                    "Seleccionar producto",
+                    "Select product",
+                  )
+                }</option>
 
                     {productosDisponibles.map(
                       (producto) => (
@@ -1088,9 +1206,12 @@ function Inventario() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="stockActual">
-                    Stock actual
-                  </label>
+                  <label htmlFor="stockActual">{
+                  texto(
+                    "Stock actual",
+                    "Current stock",
+                  )
+                }</label>
 
                   <input
                     id="stockActual"
@@ -1117,9 +1238,12 @@ function Inventario() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="stockMinimo">
-                    Stock mínimo
-                  </label>
+                  <label htmlFor="stockMinimo">{
+                  texto(
+                    "Stock mínimo",
+                    "Minimum stock",
+                  )
+                }</label>
 
                   <input
                     id="stockMinimo"
@@ -1153,9 +1277,12 @@ function Inventario() {
                 </div>
 
                 <div className="inventory-preview">
-                  <span>
-                    Estado calculado
-                  </span>
+                  <span>{
+                  texto(
+                    "Estado calculado",
+                    "Calculated status",
+                  )
+                }</span>
 
                   <strong
                     className={`inventory-preview-${estadoFormulario.toLowerCase()}`}
@@ -1183,9 +1310,12 @@ function Inventario() {
                     cerrarModal
                   }
                   disabled={procesando}
-                >
-                  Cancelar
-                </button>
+                >{
+                  texto(
+                    "Cancelar",
+                    "Cancel",
+                  )
+                }</button>
 
                 <button
                   type="submit"
@@ -1202,16 +1332,22 @@ function Inventario() {
                     <>
                       <Edit3
                         size={16}
-                      />
-                      Guardar cambios
-                    </>
+                      />{
+                  texto(
+                    "Guardar cambios",
+                    "Save changes",
+                  )
+                }</>
                   ) : (
                     <>
                       <Plus
                         size={16}
-                      />
-                      Registrar inventario
-                    </>
+                      />{
+                  texto(
+                    "Registrar inventario",
+                    "Register inventory",
+                  )
+                }</>
                   )}
                 </button>
               </div>

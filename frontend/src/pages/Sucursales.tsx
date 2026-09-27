@@ -29,6 +29,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   sucursalSchema,
   type SucursalFormulario,
 } from "../schemas/sucursalSchema";
@@ -76,6 +80,10 @@ function obtenerMensajeError(
 
 
 function Sucursales() {
+  const {
+    texto,
+  } = useAppSettings();
+
   const empresaQuery =
     useEmpresaPrincipal();
 
@@ -451,9 +459,18 @@ function Sucursales() {
   return (
     <div className="branches-page">
       <PageHeader
-        etiqueta="GESTIÓN EMPRESARIAL"
-        titulo="Sucursales"
-        descripcion="Registra y administra las sucursales que forman parte de la estructura empresarial."
+        etiqueta={texto(
+          "GESTIÓN EMPRESARIAL",
+          "BUSINESS MANAGEMENT",
+        )}
+        titulo={texto(
+          "Sucursales",
+          "Branches",
+        )}
+        descripcion={texto(
+          "Registra y administra las sucursales que forman parte de la estructura empresarial.",
+          "Register and manage the branches that are part of the business structure.",
+        )}
         acciones={
           <button
             type="button"
@@ -466,17 +483,23 @@ function Sucursales() {
               cargando
             }
           >
-            <Plus size={17} />
-            Nueva sucursal
-          </button>
+            <Plus size={17} />{
+                  texto(
+                    "Nueva sucursal",
+                    "New branch",
+                  )
+                }</button>
         }
       />
 
       {errorAPI && (
         <div className="branches-empty">
-          <h3>
-            No se pudo completar la operación
-          </h3>
+          <h3>{
+                  texto(
+                    "No se pudo completar la operación",
+                    "The operation could not be completed",
+                  )
+                }</h3>
 
           <p>
             {errorAPI}
@@ -487,9 +510,12 @@ function Sucursales() {
       {mensaje && (
         <div className="company-empty-state">
           <div>
-            <strong>
-              Operación completada
-            </strong>
+            <strong>{
+                  texto(
+                    "Operación completada",
+                    "Operation completed",
+                  )
+                }</strong>
 
             <p>
               {mensaje}
@@ -503,9 +529,12 @@ function Sucursales() {
           <div className="branches-empty">
             <Building2 size={27} />
 
-            <h3>
-              Empresa requerida
-            </h3>
+            <h3>{
+                  texto(
+                    "Empresa requerida",
+                    "Company required",
+                  )
+                }</h3>
 
             <p>
               Debes registrar primero una
@@ -522,9 +551,12 @@ function Sucursales() {
           </div>
 
           <div>
-            <span>
-              Total de sucursales
-            </span>
+            <span>{
+                  texto(
+                    "Total de sucursales",
+                    "Total branches",
+                  )
+                }</span>
 
             <strong>
               {sucursales.length}
@@ -538,9 +570,12 @@ function Sucursales() {
           </div>
 
           <div>
-            <span>
-              Sucursales activas
-            </span>
+            <span>{
+                  texto(
+                    "Sucursales activas",
+                    "Active branches",
+                  )
+                }</span>
 
             <strong>
               {totalActivas}
@@ -554,9 +589,12 @@ function Sucursales() {
           </div>
 
           <div>
-            <span>
-              Sucursales inactivas
-            </span>
+            <span>{
+                  texto(
+                    "Sucursales inactivas",
+                    "Inactive branches",
+                  )
+                }</span>
 
             <strong>
               {totalInactivas}
@@ -572,7 +610,10 @@ function Sucursales() {
 
             <input
               type="text"
-              placeholder="Buscar por nombre, código, ciudad o responsable..."
+              placeholder={texto(
+                "Buscar por nombre, código, ciudad o responsable...",
+                "Search by name, code, city or manager...",
+              )}
               value={busqueda}
               onChange={(evento) =>
                 setBusqueda(
@@ -592,17 +633,26 @@ function Sucursales() {
               )
             }
           >
-            <option value="Todas">
-              Todas
-            </option>
+            <option value="Todas">{
+                  texto(
+                    "Todas",
+                    "All",
+                  )
+                }</option>
 
-            <option value="Activa">
-              Activas
-            </option>
+            <option value="Activa">{
+                  texto(
+                    "Activas",
+                    "Active",
+                  )
+                }</option>
 
-            <option value="Inactiva">
-              Inactivas
-            </option>
+            <option value="Inactiva">{
+                  texto(
+                    "Inactivas",
+                    "Inactive",
+                  )
+                }</option>
           </select>
         </div>
 
@@ -610,13 +660,14 @@ function Sucursales() {
           <div className="branches-empty">
             <Store size={27} />
 
-            <h3>
-              Cargando sucursales
-            </h3>
+            <h3>{
+                  texto(
+                    "Cargando sucursales",
+                    "Loading branches",
+                  )
+                }</h3>
 
-            <p>
-              Cargando información...
-            </p>
+            <p>{texto('Cargando información...', 'Loading information...')}</p>
           </div>
         ) : sucursales.length === 0 ? (
           <div className="branches-empty">
@@ -624,9 +675,12 @@ function Sucursales() {
               <Store size={27} />
             </div>
 
-            <h3>
-              No hay sucursales registradas
-            </h3>
+            <h3>{
+                  texto(
+                    "No hay sucursales registradas",
+                    "No branches registered",
+                  )
+                }</h3>
 
             <p>
               Registra la primera sucursal
@@ -642,9 +696,12 @@ function Sucursales() {
                   abrirRegistro
                 }
               >
-                <Plus size={16} />
-                Registrar sucursal
-              </button>
+                <Plus size={16} />{
+                  texto(
+                    "Registrar sucursal",
+                    "Register branch",
+                  )
+                }</button>
             )}
           </div>
         ) : sucursalesFiltradas.length ===
@@ -654,9 +711,12 @@ function Sucursales() {
               <Search size={27} />
             </div>
 
-            <h3>
-              No se encontraron resultados
-            </h3>
+            <h3>{
+                  texto(
+                    "No se encontraron resultados",
+                    "No results found",
+                  )
+                }</h3>
 
             <p>
               Cambia los términos de búsqueda
@@ -668,13 +728,48 @@ function Sucursales() {
             <table className="branches-table">
               <thead>
                 <tr>
-                  <th>Sucursal</th>
-                  <th>Código</th>
-                  <th>Ciudad</th>
-                  <th>Responsable</th>
-                  <th>Contacto</th>
-                  <th>Estado</th>
-                  <th>Acciones</th>
+                  <th>{
+                  texto(
+                    "Sucursal",
+                    "Branch",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Código",
+                    "Code",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Ciudad",
+                    "City",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Responsable",
+                    "Manager",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Contacto",
+                    "Contact",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Estado",
+                    "Status",
+                  )
+                }</th>
+                  <th>{
+                  texto(
+                    "Acciones",
+                    "Actions",
+                  )
+                }</th>
                 </tr>
               </thead>
 
@@ -773,7 +868,10 @@ function Sucursales() {
                         <div className="branch-actions">
                           <button
                             type="button"
-                            title="Editar"
+                            title={texto(
+                              "Editar",
+                              "Edit",
+                            )}
                             onClick={() =>
                               abrirEdicion(
                                 sucursal,
@@ -790,8 +888,14 @@ function Sucursales() {
                             title={
                               sucursal.estado ===
                               "Activa"
-                                ? "Desactivar"
-                                : "Activar"
+                                ? texto(
+                                    "Desactivar",
+                                    "Deactivate",
+                                  )
+                                : texto(
+                                    "Activar",
+                                    "Activate",
+                                  )
                             }
                             onClick={() =>
                               void cambiarEstado(
@@ -807,7 +911,10 @@ function Sucursales() {
                           <button
                             type="button"
                             className="branch-delete"
-                            title="Eliminar"
+                            title={texto(
+                              "Eliminar",
+                              "Delete",
+                            )}
                             onClick={() =>
                               void eliminarSucursal(
                                 sucursal,
@@ -844,14 +951,23 @@ function Sucursales() {
           <div className="branch-modal">
             <div className="branch-modal-header">
               <div>
-                <span className="dashboard-card-label">
-                  GESTIÓN DE SUCURSALES
-                </span>
+                <span className="dashboard-card-label">{
+                  texto(
+                    "GESTIÓN DE SUCURSALES",
+                    "BRANCH MANAGEMENT",
+                  )
+                }</span>
 
                 <h2>
                   {sucursalEditando
-                    ? "Editar sucursal"
-                    : "Nueva sucursal"}
+                    ? texto(
+                        "Editar sucursal",
+                        "Edit branch",
+                      )
+                    : texto(
+                        "Nueva sucursal",
+                        "New branch",
+                      )}
                 </h2>
 
                 <p>
@@ -879,9 +995,12 @@ function Sucursales() {
             >
               <div className="branch-form-grid">
                 <div className="form-group">
-                  <label htmlFor="nombre">
-                    Nombre
-                  </label>
+                  <label htmlFor="nombre">{
+                  texto(
+                    "Nombre",
+                    "Name",
+                  )
+                }</label>
 
                   <input
                     id="nombre"
@@ -903,9 +1022,12 @@ function Sucursales() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="codigo">
-                    Código
-                  </label>
+                  <label htmlFor="codigo">{
+                  texto(
+                    "Código",
+                    "Code",
+                  )
+                }</label>
 
                   <input
                     id="codigo"
@@ -927,9 +1049,12 @@ function Sucursales() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="ciudad">
-                    Ciudad
-                  </label>
+                  <label htmlFor="ciudad">{
+                  texto(
+                    "Ciudad",
+                    "City",
+                  )
+                }</label>
 
                   <input
                     id="ciudad"
@@ -951,9 +1076,12 @@ function Sucursales() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="telefono">
-                    Teléfono
-                  </label>
+                  <label htmlFor="telefono">{
+                  texto(
+                    "Teléfono",
+                    "Phone",
+                  )
+                }</label>
 
                   <input
                     id="telefono"
@@ -975,9 +1103,12 @@ function Sucursales() {
                 </div>
 
                 <div className="form-group form-group-full">
-                  <label htmlFor="direccion">
-                    Dirección
-                  </label>
+                  <label htmlFor="direccion">{
+                  texto(
+                    "Dirección",
+                    "Address",
+                  )
+                }</label>
 
                   <input
                     id="direccion"
@@ -999,9 +1130,12 @@ function Sucursales() {
                 </div>
 
                 <div className="form-group form-group-full">
-                  <label htmlFor="responsable">
-                    Responsable
-                  </label>
+                  <label htmlFor="responsable">{
+                  texto(
+                    "Responsable",
+                    "Manager",
+                  )
+                }</label>
 
                   <input
                     id="responsable"
@@ -1031,9 +1165,12 @@ function Sucursales() {
                     cerrarModal
                   }
                   disabled={procesando}
-                >
-                  Cancelar
-                </button>
+                >{
+                  texto(
+                    "Cancelar",
+                    "Cancel",
+                  )
+                }</button>
 
                 <button
                   type="submit"
@@ -1046,16 +1183,22 @@ function Sucursales() {
                     <>
                       <Edit3
                         size={16}
-                      />
-                      Guardar cambios
-                    </>
+                      />{
+                  texto(
+                    "Guardar cambios",
+                    "Save changes",
+                  )
+                }</>
                   ) : (
                     <>
                       <Plus
                         size={16}
-                      />
-                      Registrar sucursal
-                    </>
+                      />{
+                  texto(
+                    "Registrar sucursal",
+                    "Register branch",
+                  )
+                }</>
                   )}
                 </button>
               </div>

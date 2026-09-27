@@ -1,11 +1,27 @@
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import {
+  useState,
+} from "react";
+
+import {
+  Outlet,
+} from "react-router-dom";
+
+import {
+  useAppSettings,
+} from "../../context/AppSettingsContext";
 
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 function DashboardLayout() {
-  const [sidebarAbierto, setSidebarAbierto] = useState(false);
+  const [
+    sidebarAbierto,
+    setSidebarAbierto,
+  ] = useState(false);
+
+  const {
+    texto,
+  } = useAppSettings();
 
   const cerrarSidebar = () => {
     setSidebarAbierto(false);
@@ -14,21 +30,34 @@ function DashboardLayout() {
   return (
     <div className="app-layout">
       <Sidebar
-        abierto={sidebarAbierto}
-        onClose={cerrarSidebar}
+        abierto={
+          sidebarAbierto
+        }
+        onClose={
+          cerrarSidebar
+        }
       />
 
       {sidebarAbierto && (
         <button
           className="sidebar-overlay"
-          onClick={cerrarSidebar}
-          aria-label="Cerrar menú"
+          onClick={
+            cerrarSidebar
+          }
+          aria-label={texto(
+            "Cerrar menú",
+            "Close menu",
+          )}
         />
       )}
 
       <div className="app-main">
         <Header
-          onMenuClick={() => setSidebarAbierto(true)}
+          onMenuClick={() =>
+            setSidebarAbierto(
+              true,
+            )
+          }
         />
 
         <main className="app-content">

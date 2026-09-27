@@ -28,6 +28,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   productoSchema,
   type ProductoFormulario,
 } from "../schemas/productoSchema";
@@ -83,6 +87,14 @@ function obtenerMensajeError(
 
 
 function Productos() {
+  const {
+    texto,
+    formatearMoneda,
+    convertirMoneda,
+    convertirAMonedaBase,
+    simboloMoneda,
+  } = useAppSettings();
+
   // ==========================================================
   // TANSTACK QUERY
   // ==========================================================
@@ -408,7 +420,9 @@ function Productos() {
         producto.categoria,
 
       precio:
-        producto.precio,
+        convertirMoneda(
+          producto.precio,
+        ),
 
       descripcion:
         producto.descripcion ??
@@ -449,13 +463,24 @@ function Productos() {
         setErrorAPI("");
         setMensaje("");
 
+        const datosBase:
+          ProductoFormulario = {
+            ...datos,
+
+            precio:
+              convertirAMonedaBase(
+                datos.precio,
+              ),
+          };
+
         if (productoEditando) {
           await actualizarProductoMutation
             .mutateAsync({
               productoId:
                 productoEditando.id,
 
-              datos,
+              datos:
+                datosBase,
 
               activo:
                 productoEditando
@@ -473,7 +498,7 @@ function Productos() {
         } else {
           await crearProductoMutation
             .mutateAsync(
-              datos,
+              datosBase,
             );
 
           setMensaje(
@@ -835,16 +860,7 @@ function Productos() {
   const formatoPrecio = (
     precio: number,
   ) =>
-    new Intl.NumberFormat(
-      "es-PE",
-      {
-        style:
-          "currency",
-
-        currency:
-          "PEN",
-      },
-    ).format(
+    formatearMoneda(
       precio,
     );
 
@@ -857,7 +873,10 @@ function Productos() {
     <div className="products-page">
       <PageHeader
         etiqueta="GESTIÓN EMPRESARIAL"
-        titulo="Productos"
+        titulo={texto(
+          "Productos",
+          "Products",
+        )}
         descripcion="Administra el catálogo de productos y sus categorías."
         acciones={
           <div className="products-header-actions">
@@ -889,9 +908,7 @@ function Productos() {
             >
               <Plus
                 size={17}
-              />
-              Nuevo producto
-            </button>
+              />{texto('Nuevo producto', 'New product')}</button>
           </div>
         }
       />
@@ -900,9 +917,7 @@ function Productos() {
       {(errorAPI ||
         mensajeErrorConsulta) && (
         <div className="products-message products-message-error">
-          <strong>
-            No se pudo completar la operación
-          </strong>
+          <strong>{texto('No se pudo completar la operación', 'The operation could not be completed')}</strong>
 
           <p>
             {errorAPI ||
@@ -914,9 +929,7 @@ function Productos() {
 
       {mensaje && (
         <div className="products-message products-message-success">
-          <strong>
-            Operación completada
-          </strong>
+          <strong>{texto('Operación completada', 'Operation completed')}</strong>
 
           <p>
             {mensaje}
@@ -1014,7 +1027,7 @@ function Productos() {
 
             <input
               type="text"
-              placeholder="Buscar por producto, SKU o categoría..."
+              placeholder={texto('Buscar por producto, SKU o categoría...', 'Search by product, SKU or category...')}
               value={
                 busqueda
               }
@@ -1043,9 +1056,7 @@ function Productos() {
               )
             }
           >
-            <option value="Todos">
-              Todos los estados
-            </option>
+            <option value="Todos">{texto('Todos los estados', 'All statuses')}</option>
 
             <option value="Activo">
               Activos
@@ -1068,9 +1079,7 @@ function Productos() {
               Cargando productos
             </h3>
 
-            <p>
-              Cargando catálogo...
-            </p>
+            <p>{texto('Cargando catálogo...', 'Loading catalog...')}</p>
           </div>
         ) : productos.length ===
           0 ? (
@@ -1081,9 +1090,7 @@ function Productos() {
               />
             </div>
 
-            <h3>
-              No hay productos registrados
-            </h3>
+            <h3>{texto('No hay productos registrados', 'No products registered')}</h3>
 
             <p>
               Registra el primer producto para comenzar a construir el catálogo empresarial.
@@ -1098,9 +1105,7 @@ function Productos() {
             >
               <Plus
                 size={16}
-              />
-              Registrar producto
-            </button>
+              />{texto('Registrar producto', 'Register product')}</button>
           </div>
         ) : productosFiltrados.length ===
           0 ? (
@@ -1111,9 +1116,7 @@ function Productos() {
               />
             </div>
 
-            <h3>
-              No se encontraron productos
-            </h3>
+            <h3>{texto('No se encontraron productos', 'No products found')}</h3>
 
             <p>
               Modifica la búsqueda o el filtro seleccionado.
@@ -1124,24 +1127,16 @@ function Productos() {
             <table className="products-table">
               <thead>
                 <tr>
-                  <th>
-                    Producto
-                  </th>
+                  <th>{texto('Producto', 'Product')}</th>
                   <th>
                     SKU
                   </th>
-                  <th>
-                    Categoría
-                  </th>
+                  <th>{texto('Categoría', 'Category')}</th>
                   <th>
                     Precio
                   </th>
-                  <th>
-                    Estado
-                  </th>
-                  <th>
-                    Acciones
-                  </th>
+                  <th>{texto('Estado', 'Status')}</th>
+                  <th>{texto('Acciones', 'Actions')}</th>
                 </tr>
               </thead>
 
@@ -1396,9 +1391,7 @@ function Productos() {
 
 
                 <div className="form-group">
-                  <label htmlFor="categoria">
-                    Categoría
-                  </label>
+                  <label htmlFor="categoria">{texto('Categoría', 'Category')}</label>
 
                   <select
                     id="categoria"
@@ -1406,9 +1399,7 @@ function Productos() {
                       "categoria",
                     )}
                   >
-                    <option value="">
-                      Seleccionar categoría
-                    </option>
+                    <option value="">{texto('Seleccionar categoría', 'Select category')}</option>
 
                     {categoriasDisponibles.map(
                       (
@@ -1451,7 +1442,7 @@ function Productos() {
 
                   <div className="product-price-input">
                     <span>
-                      S/
+                      {simboloMoneda}
                     </span>
 
                     <input
@@ -1482,9 +1473,7 @@ function Productos() {
 
 
                 <div className="form-group form-group-full">
-                  <label htmlFor="descripcion">
-                    Descripción
-                  </label>
+                  <label htmlFor="descripcion">{texto('Descripción', 'Description')}</label>
 
                   <textarea
                     id="descripcion"
@@ -1516,9 +1505,7 @@ function Productos() {
                   disabled={
                     procesando
                   }
-                >
-                  Cancelar
-                </button>
+                >{texto('Cancelar', 'Cancel')}</button>
 
                 <button
                   type="submit"
@@ -1528,21 +1515,17 @@ function Productos() {
                   }
                 >
                   {procesando
-                    ? "Guardando..."
+                    ? texto('Guardando...', 'Saving...')
                     : productoEditando ? (
                     <>
                       <Edit3
                         size={16}
-                      />
-                      Guardar cambios
-                    </>
+                      />{texto('Guardar cambios', 'Save changes')}</>
                   ) : (
                     <>
                       <Plus
                         size={16}
-                      />
-                      Registrar producto
-                    </>
+                      />{texto('Registrar producto', 'Register product')}</>
                   )}
                 </button>
               </div>
@@ -1648,9 +1631,7 @@ function Productos() {
 
 
                 <div className="form-group">
-                  <label htmlFor="categoriaNombre">
-                    Nombre
-                  </label>
+                  <label htmlFor="categoriaNombre">{texto('Nombre', 'Name')}</label>
 
                   <input
                     id="categoriaNombre"
@@ -1676,9 +1657,7 @@ function Productos() {
 
 
                 <div className="form-group">
-                  <label htmlFor="categoriaDescripcion">
-                    Descripción
-                  </label>
+                  <label htmlFor="categoriaDescripcion">{texto('Descripción', 'Description')}</label>
 
                   <textarea
                     id="categoriaDescripcion"
@@ -1714,9 +1693,7 @@ function Productos() {
                       disabled={
                         procesandoCategoria
                       }
-                    >
-                      Cancelar edición
-                    </button>
+                    >{texto('Cancelar edición', 'Cancel editing')}</button>
                   )}
 
                   <button
@@ -1727,10 +1704,10 @@ function Productos() {
                     }
                   >
                     {procesandoCategoria
-                      ? "Guardando..."
+                      ? texto('Guardando...', 'Saving...')
                       : categoriaEditando
-                        ? "Guardar cambios"
-                        : "Registrar categoría"}
+                        ? texto('Guardar cambios', 'Save changes')
+                        : texto('Registrar categoría', 'Register category')}
                   </button>
                 </div>
               </form>
@@ -1770,21 +1747,15 @@ function Productos() {
                     <table className="category-table">
                       <thead>
                         <tr>
-                          <th>
-                            Categoría
-                          </th>
+                          <th>{texto('Categoría', 'Category')}</th>
 
                           <th>
                             Productos
                           </th>
 
-                          <th>
-                            Estado
-                          </th>
+                          <th>{texto('Estado', 'Status')}</th>
 
-                          <th>
-                            Acciones
-                          </th>
+                          <th>{texto('Acciones', 'Actions')}</th>
                         </tr>
                       </thead>
 

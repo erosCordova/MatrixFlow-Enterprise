@@ -36,6 +36,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   obtenerReporteGeneral,
   type ReporteGeneralAPI,
 } from "../services/api/reporteService";
@@ -43,29 +47,44 @@ import {
 import "../styles/Reportes.css";
 
 
-// ============================================================
-// FORMATO DINERO
-// ============================================================
-
-function formatoDinero(
-  valor: number,
-) {
-  return new Intl.NumberFormat(
-    "es-PE",
-    {
-      style: "currency",
-      currency: "PEN",
-      maximumFractionDigits: 2,
-    },
-  ).format(valor);
-}
-
 
 // ============================================================
 // COMPONENTE
 // ============================================================
 
 function Reportes() {
+  const {
+    configuracion,
+    texto,
+    formatearMoneda,
+    convertirMoneda,
+    locale,
+  } = useAppSettings();
+
+  const formatearEjeDinero = (
+    valor: number,
+  ) => {
+    const convertido =
+      convertirMoneda(
+        Number(valor),
+      );
+
+    return new Intl.NumberFormat(
+      locale,
+      {
+        style: "currency",
+        currency:
+          configuracion.moneda,
+        notation:
+          "compact",
+        maximumFractionDigits:
+          1,
+      },
+    ).format(
+      convertido,
+    );
+  };
+
   const [
     reporte,
     setReporte,
@@ -246,7 +265,7 @@ function Reportes() {
 
         "RESUMEN GENERAL",
 
-        `Ventas totales: ${formatoDinero(
+        `Ventas totales: ${formatearMoneda(
           ventasTotales,
         )}`,
 
@@ -263,13 +282,13 @@ function Reportes() {
         "METAS COMERCIALES",
 
         metaDisponible
-          ? `Meta total: ${formatoDinero(
+          ? `Meta total: ${formatearMoneda(
               montoMeta,
             )}`
           : "No existen metas activas.",
 
         metaDisponible
-          ? `Ventas asociadas: ${formatoDinero(
+          ? `Ventas asociadas: ${formatearMoneda(
               ventasConMeta,
             )}`
           : "",
@@ -288,9 +307,9 @@ function Reportes() {
           (
             item,
           ) =>
-            `${item.sucursal}: ${formatoDinero(
+            `${item.sucursal}: ${formatearMoneda(
               item.ventas,
-            )} | Meta: ${formatoDinero(
+            )} | Meta: ${formatearMoneda(
               item.meta,
             )} | Cumplimiento: ${item.cumplimiento.toFixed(
               1,
@@ -305,7 +324,7 @@ function Reportes() {
           (
             item,
           ) =>
-            `${item.producto}: ${item.unidades} unidades | ${formatoDinero(
+            `${item.producto}: ${item.unidades} unidades | ${formatearMoneda(
               item.ventas,
             )}`,
         ),
@@ -416,7 +435,10 @@ function Reportes() {
 
       <PageHeader
         etiqueta="ANÁLISIS Y CONTROL"
-        titulo="Reportes"
+        titulo={texto(
+          "Reportes",
+          "Reports",
+        )}
         descripcion="Analiza información consolidada de ventas, metas, sucursales, productos, inventario y operaciones matemáticas."
         acciones={
           <>
@@ -443,8 +465,14 @@ function Reportes() {
               </span>
 
               {cargando
-                ? "Actualizando..."
-                : "Actualizar"}
+                ? texto(
+                    "Actualizando...",
+                    "Updating...",
+                  )
+                : texto(
+                    "Actualizar",
+                    "Refresh",
+                  )}
             </button>
 
 
@@ -548,7 +576,7 @@ function Reportes() {
             </span>
 
             <strong>
-              {formatoDinero(
+              {formatearMoneda(
                 ventasTotales,
               )}
             </strong>
@@ -582,9 +610,9 @@ function Reportes() {
 
             <small>
               {metaDisponible
-                ? `${formatoDinero(
+                ? `${formatearMoneda(
                     ventasConMeta,
-                  )} de ${formatoDinero(
+                  )} de ${formatearMoneda(
                     montoMeta,
                   )}`
                 : "No existen metas activas"}
@@ -607,7 +635,7 @@ function Reportes() {
 
             <strong>
               {unidadesVendidas.toLocaleString(
-                "es-PE",
+                locale,
               )}
             </strong>
 
@@ -632,7 +660,7 @@ function Reportes() {
 
             <strong>
               {totalOperaciones.toLocaleString(
-                "es-PE",
+                locale,
               )}
             </strong>
 
@@ -703,13 +731,22 @@ function Reportes() {
                       fontSize:
                         9,
                     }}
+                    tickFormatter={(
+                      valor,
+                    ) =>
+                      formatearEjeDinero(
+                        Number(
+                          valor,
+                        ),
+                      )
+                    }
                   />
 
                   <Tooltip
                     formatter={(
                       valor,
                     ) =>
-                      formatoDinero(
+                      formatearMoneda(
                         Number(
                           valor,
                         ),
@@ -727,7 +764,10 @@ function Reportes() {
                   <Line
                     type="monotone"
                     dataKey="ventas"
-                    name="Ventas"
+                    name={texto(
+                      "Ventas",
+                      "Sales",
+                    )}
                     stroke="#2563eb"
                     strokeWidth={2}
                     dot={{
@@ -738,7 +778,10 @@ function Reportes() {
                   <Line
                     type="monotone"
                     dataKey="meta"
-                    name="Meta"
+                    name={texto(
+                      "Meta",
+                      "Target",
+                    )}
                     stroke="#06b6d4"
                     strokeWidth={2}
                     strokeDasharray="5 5"
@@ -887,13 +930,22 @@ function Reportes() {
                       fontSize:
                         9,
                     }}
+                    tickFormatter={(
+                      valor,
+                    ) =>
+                      formatearEjeDinero(
+                        Number(
+                          valor,
+                        ),
+                      )
+                    }
                   />
 
                   <Tooltip
                     formatter={(
                       valor,
                     ) =>
-                      formatoDinero(
+                      formatearMoneda(
                         Number(
                           valor,
                         ),
@@ -910,7 +962,10 @@ function Reportes() {
 
                   <Bar
                     dataKey="ventas"
-                    name="Ventas"
+                    name={texto(
+                      "Ventas",
+                      "Sales",
+                    )}
                     fill="#2563eb"
                     radius={[
                       4,
@@ -922,7 +977,10 @@ function Reportes() {
 
                   <Bar
                     dataKey="meta"
-                    name="Meta"
+                    name={texto(
+                      "Meta",
+                      "Target",
+                    )}
                     fill="#06b6d4"
                     radius={[
                       4,
@@ -1017,9 +1075,7 @@ function Reportes() {
 
             <div>
               <div>
-                <span>
-                  Total de operaciones
-                </span>
+                <span>{texto('Total de operaciones', 'Total operations')}</span>
 
                 <strong>
                   {
@@ -1075,17 +1131,13 @@ function Reportes() {
 
           <div className="report-products">
             <div className="report-product-header">
-              <span>
-                Producto
-              </span>
+              <span>{texto('Producto', 'Product')}</span>
 
               <span>
                 Unidades
               </span>
 
-              <span>
-                Ventas
-              </span>
+              <span>{texto('Ventas', 'Sales')}</span>
             </div>
 
 
@@ -1114,7 +1166,7 @@ function Reportes() {
                     </span>
 
                     <span>
-                      {formatoDinero(
+                      {formatearMoneda(
                         producto.ventas,
                       )}
                     </span>
@@ -1159,17 +1211,11 @@ function Reportes() {
                   "1.2fr 1fr 1fr 80px",
               }}
             >
-              <span>
-                Sucursal
-              </span>
+              <span>{texto('Sucursal', 'Branch')}</span>
 
-              <span>
-                Ventas
-              </span>
+              <span>{texto('Ventas', 'Sales')}</span>
 
-              <span>
-                Meta
-              </span>
+              <span>{texto('Meta', 'Target')}</span>
 
               <span>
                 %
@@ -1200,13 +1246,13 @@ function Reportes() {
                     </strong>
 
                     <span>
-                      {formatoDinero(
+                      {formatearMoneda(
                         sucursal.ventas,
                       )}
                     </span>
 
                     <span>
-                      {formatoDinero(
+                      {formatearMoneda(
                         sucursal.meta,
                       )}
                     </span>
@@ -1285,9 +1331,7 @@ function Reportes() {
                 fontSize:
                   "9px",
               }}
-            >
-              Unidades disponibles
-            </span>
+            >{texto('Unidades disponibles', 'Available units')}</span>
 
             <strong
               style={{
@@ -1302,7 +1346,7 @@ function Reportes() {
               }}
             >
               {stockTotal.toLocaleString(
-                "es-PE",
+                locale,
               )}
             </strong>
           </div>
@@ -1339,7 +1383,7 @@ function Reportes() {
                   .registros ??
                 0
               ).toLocaleString(
-                "es-PE",
+                locale,
               )}
             </strong>
           </div>
@@ -1355,9 +1399,7 @@ function Reportes() {
                 fontSize:
                   "9px",
               }}
-            >
-              Stock bajo
-            </span>
+            >{texto('Stock bajo', 'Low stock')}</span>
 
             <strong
               style={{
@@ -1390,9 +1432,7 @@ function Reportes() {
                 fontSize:
                   "9px",
               }}
-            >
-              Sin stock
-            </span>
+            >{texto('Sin stock', 'Out of stock')}</span>
 
             <strong
               style={{

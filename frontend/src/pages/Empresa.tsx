@@ -25,6 +25,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   empresaSchema,
   type EmpresaFormulario,
 } from "../schemas/empresaSchema";
@@ -66,6 +70,10 @@ function obtenerMensajeError(
 
 
 function Empresa() {
+  const {
+    texto,
+  } = useAppSettings();
+
   const empresaQuery =
     useEmpresaPrincipal();
 
@@ -254,15 +262,22 @@ function Empresa() {
     return (
       <div className="empresa-page">
         <PageHeader
-          etiqueta="GESTIÓN EMPRESARIAL"
-          titulo="Empresa"
-          descripcion="Cargando información empresarial..."
+          etiqueta={texto(
+            "GESTIÓN EMPRESARIAL",
+            "BUSINESS MANAGEMENT",
+          )}
+          titulo={texto(
+            "Empresa",
+            "Company",
+          )}
+          descripcion={texto(
+            "Cargando información empresarial...",
+            "Loading company information...",
+          )}
         />
 
         <section className="company-form-card">
-          <p>
-            Cargando información...
-          </p>
+          <p>{texto('Cargando información...', 'Loading information...')}</p>
         </section>
       </div>
     );
@@ -272,9 +287,18 @@ function Empresa() {
   return (
     <div className="empresa-page">
       <PageHeader
-        etiqueta="GESTIÓN EMPRESARIAL"
-        titulo="Empresa"
-        descripcion="Administra la información general de la empresa utilizada dentro de MatrixFlow Enterprise."
+        etiqueta={texto(
+          "GESTIÓN EMPRESARIAL",
+          "BUSINESS MANAGEMENT",
+        )}
+        titulo={texto(
+          "Empresa",
+          "Company",
+        )}
+        descripcion={texto(
+          "Administra la información general de la empresa utilizada dentro de MatrixFlow Enterprise.",
+          "Manage the general company information used in MatrixFlow Enterprise.",
+        )}
         acciones={
           empresa && !editando ? (
             <button
@@ -283,7 +307,10 @@ function Empresa() {
               onClick={editarEmpresa}
             >
               <Edit3 size={17} />
-              Editar empresa
+              {texto(
+                "Editar empresa",
+                "Edit company",
+              )}
             </button>
           ) : undefined
         }
@@ -307,7 +334,7 @@ function Empresa() {
         <div className="company-empty-state">
           <div>
             <strong>
-              Operación completada
+              {texto("Operación completada", "Operation completed")}
             </strong>
 
             <p>
@@ -325,7 +352,7 @@ function Empresa() {
 
           <div>
             <strong>
-              Empresa no registrada
+              {texto("Empresa no registrada", "Company not registered")}
             </strong>
 
             <p>
@@ -347,7 +374,7 @@ function Empresa() {
 
             <div className="company-profile-title">
               <span>
-                EMPRESA REGISTRADA
+                {texto("EMPRESA REGISTRADA", "REGISTERED COMPANY")}
               </span>
 
               <h2>
@@ -361,7 +388,7 @@ function Empresa() {
 
             <div className="company-status">
               <CheckCircle2 size={15} />
-              Activa
+              {texto("Activa", "Active")}
             </div>
           </div>
 
@@ -375,7 +402,7 @@ function Empresa() {
             </div>
 
             <div className="company-information-item">
-              <span>Sector</span>
+              <span>{texto("Sector", "Industry")}</span>
 
               <strong>
                 {empresa.sector}
@@ -383,7 +410,7 @@ function Empresa() {
             </div>
 
             <div className="company-information-item">
-              <span>País</span>
+              <span>{texto("País", "Country")}</span>
 
               <strong>
                 {empresa.pais}
@@ -391,7 +418,7 @@ function Empresa() {
             </div>
 
             <div className="company-information-item">
-              <span>Ciudad</span>
+              <span>{texto("Ciudad", "City")}</span>
 
               <strong>
                 {empresa.ciudad}
@@ -405,7 +432,7 @@ function Empresa() {
 
               <div>
                 <span>
-                  Teléfono
+                  {texto("Teléfono", "Phone")}
                 </span>
 
                 <strong>
@@ -419,7 +446,7 @@ function Empresa() {
 
               <div>
                 <span>
-                  Correo electrónico
+                  {texto("Correo electrónico", "Email address")}
                 </span>
 
                 <strong>
@@ -433,7 +460,7 @@ function Empresa() {
 
               <div>
                 <span>
-                  Dirección
+                  {texto("Dirección", "Address")}
                 </span>
 
                 <strong>
@@ -449,13 +476,19 @@ function Empresa() {
           <div className="company-form-heading">
             <div>
               <span className="dashboard-card-label">
-                INFORMACIÓN GENERAL
+                {texto("INFORMACIÓN GENERAL", "GENERAL INFORMATION")}
               </span>
 
               <h2>
                 {empresa
-                  ? "Editar empresa"
-                  : "Registrar empresa"}
+                  ? texto(
+                      "Editar empresa",
+                      "Edit company",
+                    )
+                  : texto(
+                      "Registrar empresa",
+                      "Register company",
+                    )}
               </h2>
 
               <p>
@@ -476,7 +509,7 @@ function Empresa() {
             <div className="company-form-grid">
               <div className="form-group">
                 <label htmlFor="razonSocial">
-                  Razón social
+                  {texto("Razón social", "Legal name")}
                 </label>
 
                 <input
@@ -500,7 +533,7 @@ function Empresa() {
 
               <div className="form-group">
                 <label htmlFor="nombreComercial">
-                  Nombre comercial
+                  {texto("Nombre comercial", "Trade name")}
                 </label>
 
                 <input
@@ -545,16 +578,14 @@ function Empresa() {
 
               <div className="form-group">
                 <label htmlFor="sector">
-                  Sector empresarial
+                  {texto("Sector", "Industry")} empresarial
                 </label>
 
                 <select
                   id="sector"
                   {...register("sector")}
                 >
-                  <option value="">
-                    Seleccionar sector
-                  </option>
+                  <option value="">{texto('Seleccionar sector', 'Select industry')}</option>
 
                   <option value="Comercio">
                     Comercio
@@ -590,7 +621,7 @@ function Empresa() {
 
               <div className="form-group">
                 <label htmlFor="telefono">
-                  Teléfono
+                  {texto("Teléfono", "Phone")}
                 </label>
 
                 <input
@@ -614,7 +645,7 @@ function Empresa() {
 
               <div className="form-group">
                 <label htmlFor="correo">
-                  Correo electrónico
+                  {texto("Correo electrónico", "Email address")}
                 </label>
 
                 <input
@@ -635,7 +666,7 @@ function Empresa() {
 
               <div className="form-group">
                 <label htmlFor="ciudad">
-                  Ciudad
+                  {texto("Ciudad", "City")}
                 </label>
 
                 <input
@@ -659,7 +690,7 @@ function Empresa() {
 
               <div className="form-group">
                 <label htmlFor="pais">
-                  País
+                  {texto("País", "Country")}
                 </label>
 
                 <input
@@ -679,7 +710,7 @@ function Empresa() {
 
               <div className="form-group form-group-full">
                 <label htmlFor="direccion">
-                  Dirección
+                  {texto("Dirección", "Address")}
                 </label>
 
                 <input
@@ -712,7 +743,7 @@ function Empresa() {
                   }
                 >
                   <X size={16} />
-                  Cancelar
+                  {texto("Cancelar", "Cancel")}
                 </button>
               )}
 
@@ -724,10 +755,19 @@ function Empresa() {
                 <Save size={16} />
 
                 {procesando
-                  ? "Guardando..."
+                  ? texto(
+                      "Guardando...",
+                      "Saving...",
+                    )
                   : empresa
-                    ? "Guardar cambios"
-                    : "Registrar empresa"}
+                    ? texto(
+                        "Guardar cambios",
+                        "Save changes",
+                      )
+                    : texto(
+                        "Registrar empresa",
+                        "Register company",
+                      )}
               </button>
             </div>
           </form>

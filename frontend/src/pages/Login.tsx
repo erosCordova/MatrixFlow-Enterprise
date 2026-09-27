@@ -23,12 +23,20 @@ import {
   iniciarSesionAPI,
 } from "../services/api/authService";
 
+import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
 import "../styles/Login.css";
 
 
 function Login() {
   const navigate =
     useNavigate();
+
+  const {
+    texto,
+  } = useAppSettings();
 
   const [
     mostrarPassword,
@@ -98,7 +106,10 @@ function Login() {
           );
         } else {
           setError(
-            "No se pudo iniciar sesión.",
+            texto(
+              "No se pudo iniciar sesión.",
+              "Unable to sign in.",
+            ),
           );
         }
       } finally {
@@ -132,22 +143,31 @@ function Login() {
               size={16}
             />
 
-            Plataforma empresarial
+            {texto(
+              "Plataforma empresarial",
+              "Enterprise platform",
+            )}
           </span>
 
           <h2>
-            Convierte tus datos en
+            {texto(
+              "Convierte tus datos en",
+              "Turn your data into",
+            )}
             <strong>
               {" "}
-              decisiones inteligentes.
+              {texto(
+                "decisiones inteligentes.",
+                "intelligent decisions.",
+              )}
             </strong>
           </h2>
 
           <p>
-            Analiza ventas, inventario e
-            indicadores empresariales
-            mediante herramientas de
-            análisis y álgebra lineal.
+            {texto(
+              "Analiza ventas, inventario e indicadores empresariales mediante herramientas de análisis y álgebra lineal.",
+              "Analyze sales, inventory and business indicators using analysis and linear algebra tools.",
+            )}
           </p>
 
           <div className="login-features">
@@ -160,13 +180,17 @@ function Login() {
 
               <div>
                 <h3>
-                  Análisis empresarial
+                  {texto(
+                    "Análisis empresarial",
+                    "Business analysis",
+                  )}
                 </h3>
 
                 <p>
-                  Visualiza indicadores
-                  de ventas y
-                  rendimiento.
+                  {texto(
+                    "Visualiza indicadores de ventas y rendimiento.",
+                    "View sales and performance indicators.",
+                  )}
                 </p>
               </div>
             </div>
@@ -180,13 +204,17 @@ function Login() {
 
               <div>
                 <h3>
-                  Control de inventario
+                  {texto(
+                    "Control de inventario",
+                    "Inventory control",
+                  )}
                 </h3>
 
                 <p>
-                  Gestiona productos y
-                  existencias por
-                  sucursal.
+                  {texto(
+                    "Gestiona productos y existencias por sucursal.",
+                    "Manage products and stock by branch.",
+                  )}
                 </p>
               </div>
             </div>
@@ -200,13 +228,17 @@ function Login() {
 
               <div>
                 <h3>
-                  Álgebra lineal
+                  {texto(
+                    "Álgebra lineal",
+                    "Linear algebra",
+                  )}
                 </h3>
 
                 <p>
-                  Analiza información
-                  empresarial mediante
-                  vectores y matrices.
+                  {texto(
+                    "Analiza información empresarial mediante vectores y matrices.",
+                    "Analyze business information using vectors and matrices.",
+                  )}
                 </p>
               </div>
             </div>
@@ -214,8 +246,10 @@ function Login() {
         </div>
 
         <p className="login-copyright">
-          MatrixFlow Enterprise · Sistema
-          de análisis empresarial
+          MatrixFlow Enterprise · {texto(
+            "Sistema de análisis empresarial",
+            "Business analysis system",
+          )}
         </p>
       </section>
 
@@ -223,17 +257,24 @@ function Login() {
         <div className="login-card">
           <div className="login-card-header">
             <span>
-              ACCESO SEGURO
+              {texto(
+                "ACCESO SEGURO",
+                "SECURE ACCESS",
+              )}
             </span>
 
             <h2>
-              Bienvenido
+              {texto(
+                "Bienvenido",
+                "Welcome",
+              )}
             </h2>
 
             <p>
-              Ingresa tus credenciales
-              para acceder a MatrixFlow
-              Enterprise.
+              {texto(
+                "Ingresa tus credenciales para acceder a MatrixFlow Enterprise.",
+                "Enter your credentials to access MatrixFlow Enterprise.",
+              )}
             </p>
           </div>
 
@@ -244,7 +285,10 @@ function Login() {
           >
             <div className="form-group">
               <label htmlFor="correo">
-                Correo electrónico
+                {texto(
+                  "Correo electrónico",
+                  "Email address",
+                )}
               </label>
 
               <div className="input-container">
@@ -278,7 +322,10 @@ function Login() {
             <div className="form-group">
               <div className="password-label">
                 <label htmlFor="password">
-                  Contraseña
+                  {texto(
+                    "Contraseña",
+                    "Password",
+                  )}
                 </label>
 
                 <button
@@ -288,8 +335,10 @@ function Login() {
                     cargando
                   }
                 >
-                  ¿Olvidaste tu
-                  contraseña?
+                  {texto(
+                    "¿Olvidaste tu contraseña?",
+                    "Forgot your password?",
+                  )}
                 </button>
               </div>
 
@@ -305,7 +354,10 @@ function Login() {
                       ? "text"
                       : "password"
                   }
-                  placeholder="Ingresa tu contraseña"
+                  placeholder={texto(
+                    "Ingresa tu contraseña",
+                    "Enter your password",
+                  )}
                   value={password}
                   onChange={(
                     event,
@@ -336,8 +388,14 @@ function Login() {
                   }
                   aria-label={
                     mostrarPassword
-                      ? "Ocultar contraseña"
-                      : "Mostrar contraseña"
+                      ? texto(
+                          "Ocultar contraseña",
+                          "Hide password",
+                        )
+                      : texto(
+                          "Mostrar contraseña",
+                          "Show password",
+                        )
                   }
                 >
                   {mostrarPassword ? (
@@ -383,7 +441,10 @@ function Login() {
                 />
 
                 <span>
-                  Recordarme
+                  {texto(
+                    "Recordarme",
+                    "Remember me",
+                  )}
                 </span>
               </label>
             </div>
@@ -396,8 +457,14 @@ function Login() {
               }
             >
               {cargando
-                ? "Ingresando..."
-                : "Iniciar sesión"}
+                ? texto(
+                    "Ingresando...",
+                    "Signing in...",
+                  )
+                : texto(
+                    "Iniciar sesión",
+                    "Sign in",
+                  )}
 
               <ArrowRight
                 size={19}
@@ -411,9 +478,10 @@ function Login() {
             />
 
             <span>
-              Acceso protegido para
-              usuarios autorizados de la
-              organización.
+              {texto(
+                "Acceso protegido para usuarios autorizados de la organización.",
+                "Protected access for authorized organization users.",
+              )}
             </span>
           </div>
         </div>

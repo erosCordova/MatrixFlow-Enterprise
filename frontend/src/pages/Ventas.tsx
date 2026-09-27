@@ -28,6 +28,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   ventaSchema,
   type VentaFormulario,
 } from "../schemas/ventaSchema";
@@ -73,6 +77,16 @@ function obtenerMensajeError(
 
 
 function Ventas() {
+  const {
+    configuracion,
+    texto,
+    formatearMoneda,
+    convertirMoneda,
+    convertirAMonedaBase,
+    simboloMoneda,
+    locale,
+  } = useAppSettings();
+
   const datosVentas =
     useDatosVentas();
 
@@ -252,7 +266,9 @@ function Ventas() {
     if (producto) {
       setValue(
         "precioUnitario",
-        producto.precio,
+        convertirMoneda(
+          producto.precio,
+        ),
         {
           shouldValidate:
             true,
@@ -389,7 +405,9 @@ function Ventas() {
         venta.cantidad,
 
       precioUnitario:
-        venta.precioUnitario,
+        convertirMoneda(
+          venta.precioUnitario,
+        ),
 
       fecha:
         venta.fecha,
@@ -481,7 +499,9 @@ function Ventas() {
                 datos.cantidad,
 
               precioUnitario:
-                datos.precioUnitario,
+                convertirAMonedaBase(
+                  datos.precioUnitario,
+                ),
 
               sucursales,
               productos,
@@ -505,7 +525,9 @@ function Ventas() {
               datos.cantidad,
 
             precioUnitario:
-              datos.precioUnitario,
+              convertirAMonedaBase(
+                datos.precioUnitario,
+              ),
 
             sucursales,
             productos,
@@ -566,17 +588,33 @@ function Ventas() {
   const formatoMoneda = (
     valor: number,
   ) =>
+    formatearMoneda(
+      valor,
+    );
+
+  // Este formato NO convierte.
+  // Se usa solamente para valores que el usuario
+  // ya está escribiendo en la moneda seleccionada.
+  const formatoMonedaVisual = (
+    valor: number,
+  ) =>
     new Intl.NumberFormat(
-      "es-PE",
+      locale,
       {
         style:
           "currency",
 
         currency:
-          "PEN",
+          configuracion.moneda,
+
+        minimumFractionDigits:
+          2,
+
+        maximumFractionDigits:
+          2,
       },
     ).format(
-      valor,
+      Number(valor) || 0,
     );
 
 
@@ -610,7 +648,10 @@ function Ventas() {
     <div className="sales-page">
       <PageHeader
         etiqueta="GESTIÓN EMPRESARIAL"
-        titulo="Ventas"
+        titulo={texto(
+          "Ventas",
+          "Sales",
+        )}
         descripcion="Registra y consulta las ventas realizadas por sucursal y producto."
         acciones={
           <button
@@ -620,9 +661,7 @@ function Ventas() {
               abrirRegistro
             }
           >
-            <Plus size={17} />
-            Nueva venta
-          </button>
+            <Plus size={17} />{texto('Nueva venta', 'New sale')}</button>
         }
       />
 
@@ -762,7 +801,7 @@ function Ventas() {
 
             <input
               type="text"
-              placeholder="Buscar por producto o sucursal..."
+              placeholder={texto('Buscar por producto o sucursal...', 'Search by product or branch...')}
               value={
                 busqueda
               }
@@ -794,9 +833,7 @@ function Ventas() {
               )
             }
           >
-            <option value="Todas">
-              Todas las sucursales
-            </option>
+            <option value="Todas">{texto('Todas las sucursales', 'All branches')}</option>
 
             {sucursalesDisponibles.map(
               (
@@ -828,13 +865,9 @@ function Ventas() {
               />
             </div>
 
-            <h3>
-              Cargando ventas...
-            </h3>
+            <h3>{texto('Cargando ventas...', 'Loading sales...')}</h3>
 
-            <p>
-              Cargando ventas...
-            </p>
+            <p>{texto('Cargando ventas...', 'Loading sales...')}</p>
           </div>
         ) : ventas.length ===
           0 ? (
@@ -845,9 +878,7 @@ function Ventas() {
               />
             </div>
 
-            <h3>
-              No hay ventas registradas
-            </h3>
+            <h3>{texto('No hay ventas registradas', 'No sales recorded')}</h3>
 
             <p>
               Registra la primera venta para comenzar a construir la información comercial.
@@ -862,10 +893,7 @@ function Ventas() {
             >
               <Plus
                 size={16}
-              />
-
-              Registrar venta
-            </button>
+              />{texto('Registrar venta', 'Register sale')}</button>
           </div>
         ) : ventasFiltradas.length ===
           0 ? (
@@ -876,9 +904,7 @@ function Ventas() {
               />
             </div>
 
-            <h3>
-              No se encontraron ventas
-            </h3>
+            <h3>{texto('No se encontraron ventas', 'No sales found')}</h3>
 
             <p>
               Modifica la búsqueda o selecciona otra sucursal.
@@ -889,17 +915,11 @@ function Ventas() {
             <table className="sales-table">
               <thead>
                 <tr>
-                  <th>
-                    Fecha
-                  </th>
+                  <th>{texto('Fecha', 'Date')}</th>
 
-                  <th>
-                    Sucursal
-                  </th>
+                  <th>{texto('Sucursal', 'Branch')}</th>
 
-                  <th>
-                    Producto
-                  </th>
+                  <th>{texto('Producto', 'Product')}</th>
 
                   <th>
                     Cantidad
@@ -913,9 +933,7 @@ function Ventas() {
                     Total
                   </th>
 
-                  <th>
-                    Acciones
-                  </th>
+                  <th>{texto('Acciones', 'Actions')}</th>
                 </tr>
               </thead>
 
@@ -1087,9 +1105,7 @@ function Ventas() {
                     "24px",
                 }}
               >
-                <strong>
-                  Faltan datos empresariales
-                </strong>
+                <strong>{texto('Faltan datos empresariales', 'Business data required')}</strong>
 
                 <p
                   style={{
@@ -1110,9 +1126,7 @@ function Ventas() {
               >
                 <div className="sale-form-grid">
                   <div className="form-group">
-                    <label htmlFor="sucursal">
-                      Sucursal
-                    </label>
+                    <label htmlFor="sucursal">{texto('Sucursal', 'Branch')}</label>
 
                     <select
                       id="sucursal"
@@ -1120,9 +1134,7 @@ function Ventas() {
                         "sucursal",
                       )}
                     >
-                      <option value="">
-                        Seleccionar sucursal
-                      </option>
+                      <option value="">{texto('Seleccionar sucursal', 'Select branch')}</option>
 
                       {sucursalesDisponibles.map(
                         (
@@ -1159,9 +1171,7 @@ function Ventas() {
 
 
                   <div className="form-group">
-                    <label htmlFor="producto">
-                      Producto
-                    </label>
+                    <label htmlFor="producto">{texto('Producto', 'Product')}</label>
 
                     <select
                       id="producto"
@@ -1179,9 +1189,7 @@ function Ventas() {
                         },
                       )}
                     >
-                      <option value="">
-                        Seleccionar producto
-                      </option>
+                      <option value="">{texto('Seleccionar producto', 'Select product')}</option>
 
                       {productosDisponibles.map(
                         (
@@ -1255,7 +1263,7 @@ function Ventas() {
 
                     <div className="sale-price-input">
                       <span>
-                        S/
+                        {simboloMoneda}
                       </span>
 
                       <input
@@ -1287,9 +1295,7 @@ function Ventas() {
 
 
                   <div className="form-group">
-                    <label htmlFor="fecha">
-                      Fecha
-                    </label>
+                    <label htmlFor="fecha">{texto('Fecha', 'Date')}</label>
 
                     <input
                       id="fecha"
@@ -1322,7 +1328,7 @@ function Ventas() {
                     </span>
 
                     <strong>
-                      {formatoMoneda(
+                      {formatoMonedaVisual(
                         Number.isFinite(
                           totalFormulario,
                         )
@@ -1368,9 +1374,7 @@ function Ventas() {
                     disabled={
                       isSubmitting
                     }
-                  >
-                    Cancelar
-                  </button>
+                  >{texto('Cancelar', 'Cancel')}</button>
 
                   <button
                     type="submit"
@@ -1386,8 +1390,8 @@ function Ventas() {
                         />
 
                         {isSubmitting
-                          ? "Guardando..."
-                          : "Guardar cambios"}
+                          ? texto('Guardando...', 'Saving...')
+                          : texto('Guardar cambios', 'Save changes')}
                       </>
                     ) : (
                       <>
@@ -1396,8 +1400,8 @@ function Ventas() {
                         />
 
                         {isSubmitting
-                          ? "Registrando..."
-                          : "Registrar venta"}
+                          ? texto('Registrando...', 'Registering...')
+                          : texto('Registrar venta', 'Register sale')}
                       </>
                     )}
                   </button>

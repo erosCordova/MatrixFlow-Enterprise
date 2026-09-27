@@ -30,20 +30,23 @@ import {
 } from "react-router-dom";
 
 import {
+  useAppSettings,
+} from "../../context/AppSettingsContext";
+
+import {
   cerrarSesion,
   obtenerRol,
   type RolUsuario,
 } from "../../services/sessionService";
-
 
 interface SidebarProps {
   abierto: boolean;
   onClose: () => void;
 }
 
-
 interface EnlaceSidebar {
   nombre: string;
+
   ruta: string;
 
   icono: ComponentType<{
@@ -53,223 +56,12 @@ interface EnlaceSidebar {
   roles: RolUsuario[];
 }
 
-
 interface GrupoSidebar {
   titulo: string;
 
   enlaces:
     EnlaceSidebar[];
 }
-
-
-const grupos:
-  GrupoSidebar[] = [
-    {
-      titulo: "GENERAL",
-
-      enlaces: [
-        {
-          nombre: "Dashboard",
-          ruta: "/dashboard",
-          icono:
-            LayoutDashboard,
-
-          roles: [
-            "administrador",
-            "analista",
-            "consulta",
-          ],
-        },
-      ],
-    },
-
-    {
-      titulo:
-        "GESTIÓN EMPRESARIAL",
-
-      enlaces: [
-        {
-          nombre: "Empresa",
-          ruta: "/empresa",
-          icono: Building2,
-
-          roles: [
-            "administrador",
-          ],
-        },
-
-        {
-          nombre: "Sucursales",
-          ruta: "/sucursales",
-          icono: Store,
-
-          roles: [
-            "administrador",
-          ],
-        },
-
-        {
-          nombre: "Productos",
-          ruta: "/productos",
-          icono: Package,
-
-          roles: [
-            "administrador",
-          ],
-        },
-
-        {
-          nombre: "Ventas",
-          ruta: "/ventas",
-          icono: ShoppingCart,
-
-          roles: [
-            "administrador",
-            "analista",
-          ],
-        },
-
-        {
-          nombre: "Metas",
-          ruta: "/metas",
-          icono: Target,
-
-          roles: [
-            "administrador",
-            "analista",
-          ],
-        },
-
-        {
-          nombre: "Inventario",
-          ruta: "/inventario",
-          icono: Warehouse,
-
-          roles: [
-            "administrador",
-            "analista",
-          ],
-        },
-      ],
-    },
-
-    {
-      titulo:
-        "ANÁLISIS MATEMÁTICO",
-
-      enlaces: [
-        {
-          nombre: "Vectores",
-          ruta: "/vectores",
-          icono: GitBranch,
-
-          roles: [
-            "administrador",
-            "analista",
-          ],
-        },
-
-        {
-          nombre: "Matrices",
-          ruta: "/matrices",
-          icono: Network,
-
-          roles: [
-            "administrador",
-            "analista",
-          ],
-        },
-
-        {
-          nombre: "Operaciones",
-          ruta: "/operaciones",
-          icono: Calculator,
-
-          roles: [
-            "administrador",
-            "analista",
-          ],
-        },
-
-        {
-          nombre:
-            "Combinaciones lineales",
-
-          ruta:
-            "/combinaciones-lineales",
-
-          icono:
-            ChartNoAxesCombined,
-
-          roles: [
-            "administrador",
-            "analista",
-          ],
-        },
-      ],
-    },
-
-    {
-      titulo:
-        "CONTROL Y REPORTES",
-
-      enlaces: [
-        {
-          nombre: "Historial",
-          ruta: "/historial",
-          icono: FileClock,
-
-          roles: [
-            "administrador",
-          ],
-        },
-
-        {
-          nombre: "Reportes",
-          ruta: "/reportes",
-          icono: BarChart3,
-
-          roles: [
-            "administrador",
-            "analista",
-            "consulta",
-          ],
-        },
-      ],
-    },
-
-    {
-      titulo:
-        "ADMINISTRACIÓN",
-
-      enlaces: [
-        {
-          nombre: "Usuarios",
-          ruta: "/usuarios",
-          icono: Users,
-
-          roles: [
-            "administrador",
-          ],
-        },
-
-        {
-          nombre:
-            "Configuración",
-
-          ruta:
-            "/configuracion",
-
-          icono: Settings,
-
-          roles: [
-            "administrador",
-          ],
-        },
-      ],
-    },
-  ];
-
 
 function Sidebar({
   abierto,
@@ -281,31 +73,389 @@ function Sidebar({
   const rol =
     obtenerRol();
 
+  const {
+    texto,
+  } = useAppSettings();
+
+  // ========================================================
+  // GRUPOS DEL MENÚ
+  // ========================================================
+
+  const grupos:
+    GrupoSidebar[] = [
+      {
+        titulo: texto(
+          "GENERAL",
+          "GENERAL",
+        ),
+
+        enlaces: [
+          {
+            nombre:
+              "Dashboard",
+
+            ruta:
+              "/dashboard",
+
+            icono:
+              LayoutDashboard,
+
+            roles: [
+              "administrador",
+              "analista",
+              "consulta",
+            ],
+          },
+        ],
+      },
+
+      {
+        titulo: texto(
+          "GESTIÓN EMPRESARIAL",
+          "BUSINESS MANAGEMENT",
+        ),
+
+        enlaces: [
+          {
+            nombre: texto(
+              "Empresa",
+              "Company",
+            ),
+
+            ruta:
+              "/empresa",
+
+            icono:
+              Building2,
+
+            roles: [
+              "administrador",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Sucursales",
+              "Branches",
+            ),
+
+            ruta:
+              "/sucursales",
+
+            icono:
+              Store,
+
+            roles: [
+              "administrador",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Productos",
+              "Products",
+            ),
+
+            ruta:
+              "/productos",
+
+            icono:
+              Package,
+
+            roles: [
+              "administrador",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Ventas",
+              "Sales",
+            ),
+
+            ruta:
+              "/ventas",
+
+            icono:
+              ShoppingCart,
+
+            roles: [
+              "administrador",
+              "analista",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Metas",
+              "Targets",
+            ),
+
+            ruta:
+              "/metas",
+
+            icono:
+              Target,
+
+            roles: [
+              "administrador",
+              "analista",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Inventario",
+              "Inventory",
+            ),
+
+            ruta:
+              "/inventario",
+
+            icono:
+              Warehouse,
+
+            roles: [
+              "administrador",
+              "analista",
+            ],
+          },
+        ],
+      },
+
+      {
+        titulo: texto(
+          "ANÁLISIS MATEMÁTICO",
+          "MATHEMATICAL ANALYSIS",
+        ),
+
+        enlaces: [
+          {
+            nombre: texto(
+              "Vectores",
+              "Vectors",
+            ),
+
+            ruta:
+              "/vectores",
+
+            icono:
+              GitBranch,
+
+            roles: [
+              "administrador",
+              "analista",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Matrices",
+              "Matrices",
+            ),
+
+            ruta:
+              "/matrices",
+
+            icono:
+              Network,
+
+            roles: [
+              "administrador",
+              "analista",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Operaciones",
+              "Operations",
+            ),
+
+            ruta:
+              "/operaciones",
+
+            icono:
+              Calculator,
+
+            roles: [
+              "administrador",
+              "analista",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Combinaciones lineales",
+              "Linear combinations",
+            ),
+
+            ruta:
+              "/combinaciones-lineales",
+
+            icono:
+              ChartNoAxesCombined,
+
+            roles: [
+              "administrador",
+              "analista",
+            ],
+          },
+        ],
+      },
+
+      {
+        titulo: texto(
+          "CONTROL Y REPORTES",
+          "CONTROL AND REPORTS",
+        ),
+
+        enlaces: [
+          {
+            nombre: texto(
+              "Historial",
+              "History",
+            ),
+
+            ruta:
+              "/historial",
+
+            icono:
+              FileClock,
+
+            roles: [
+              "administrador",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Reportes",
+              "Reports",
+            ),
+
+            ruta:
+              "/reportes",
+
+            icono:
+              BarChart3,
+
+            roles: [
+              "administrador",
+              "analista",
+              "consulta",
+            ],
+          },
+        ],
+      },
+
+      {
+        titulo: texto(
+          "ADMINISTRACIÓN",
+          "ADMINISTRATION",
+        ),
+
+        enlaces: [
+          {
+            nombre: texto(
+              "Usuarios",
+              "Users",
+            ),
+
+            ruta:
+              "/usuarios",
+
+            icono:
+              Users,
+
+            roles: [
+              "administrador",
+            ],
+          },
+
+          {
+            nombre: texto(
+              "Configuración",
+              "Settings",
+            ),
+
+            ruta:
+              "/configuracion",
+
+            icono:
+              Settings,
+
+            roles: [
+              "administrador",
+            ],
+          },
+        ],
+      },
+    ];
+
+  // ========================================================
+  // FILTRAR POR ROL
+  // ========================================================
 
   const gruposPermitidos =
     grupos
-      .map((grupo) => ({
-        ...grupo,
+      .map(
+        (grupo) => ({
+          ...grupo,
 
-        enlaces:
-          grupo.enlaces.filter(
-            (enlace) =>
-              rol !== null &&
-              enlace.roles.includes(
-                rol,
-              ),
-          ),
-      }))
+          enlaces:
+            grupo.enlaces.filter(
+              (enlace) =>
+                rol !== null &&
+                enlace.roles.includes(
+                  rol,
+                ),
+            ),
+        }),
+      )
       .filter(
         (grupo) =>
-          grupo.enlaces.length >
-          0,
+          grupo.enlaces
+            .length > 0,
       );
 
+  // ========================================================
+  // TRADUCIR ROL
+  // ========================================================
 
-  // ==========================================================
+  const nombreRol = (
+    rolActual:
+      RolUsuario,
+  ) => {
+    switch (
+      rolActual
+    ) {
+      case "administrador":
+        return texto(
+          "Administrador",
+          "Administrator",
+        );
+
+      case "analista":
+        return texto(
+          "Analista",
+          "Analyst",
+        );
+
+      case "consulta":
+        return texto(
+          "Consulta",
+          "Viewer",
+        );
+
+      default:
+        return rolActual;
+    }
+  };
+
+  // ========================================================
   // CERRAR SESIÓN
-  // ==========================================================
+  // ========================================================
 
   const manejarCerrarSesion =
     () => {
@@ -321,7 +471,6 @@ function Sidebar({
       );
     };
 
-
   return (
     <aside
       className={`sidebar ${
@@ -330,13 +479,11 @@ function Sidebar({
           : ""
       }`}
     >
-      {/* ================================================ */}
-      {/* LOGO */}
-      {/* ================================================ */}
-
       <div className="sidebar-brand">
         <div className="sidebar-logo">
-          <Network size={23} />
+          <Network
+            size={23}
+          />
         </div>
 
         <div className="sidebar-brand-text">
@@ -352,31 +499,37 @@ function Sidebar({
         <button
           type="button"
           className="sidebar-close"
-          onClick={onClose}
-          aria-label="Cerrar menú"
+          onClick={
+            onClose
+          }
+          aria-label={texto(
+            "Cerrar menú",
+            "Close menu",
+          )}
         >
           <X size={20} />
         </button>
       </div>
-
-
-      {/* ================================================ */}
-      {/* NAVEGACIÓN */}
-      {/* ================================================ */}
 
       <nav className="sidebar-navigation">
         {gruposPermitidos.map(
           (grupo) => (
             <div
               className="sidebar-group"
-              key={grupo.titulo}
+              key={
+                grupo.titulo
+              }
             >
               <span className="sidebar-title">
-                {grupo.titulo}
+                {
+                  grupo.titulo
+                }
               </span>
 
               {grupo.enlaces.map(
-                (enlace) => {
+                (
+                  enlace,
+                ) => {
                   const Icono =
                     enlace.icono;
 
@@ -424,11 +577,6 @@ function Sidebar({
         )}
       </nav>
 
-
-      {/* ================================================ */}
-      {/* PIE DEL SIDEBAR */}
-      {/* ================================================ */}
-
       <div className="sidebar-footer">
         <div className="sidebar-footer-info">
           <FileText
@@ -442,8 +590,16 @@ function Sidebar({
 
             <span>
               {rol
-                ? `Rol: ${rol}`
-                : "Sistema empresarial"}
+                ? `${texto(
+                    "Rol",
+                    "Role",
+                  )}: ${nombreRol(
+                    rol,
+                  )}`
+                : texto(
+                    "Sistema empresarial",
+                    "Enterprise system",
+                  )}
             </span>
           </div>
         </div>
@@ -454,20 +610,25 @@ function Sidebar({
           onClick={
             manejarCerrarSesion
           }
-          title="Cerrar sesión"
+          title={texto(
+            "Cerrar sesión",
+            "Sign out",
+          )}
         >
           <LogOut
             size={17}
           />
 
           <span>
-            Cerrar sesión
+            {texto(
+              "Cerrar sesión",
+              "Sign out",
+            )}
           </span>
         </button>
       </div>
     </aside>
   );
 }
-
 
 export default Sidebar;

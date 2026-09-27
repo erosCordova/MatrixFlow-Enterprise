@@ -26,6 +26,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   metaSchema,
   type MetaFormulario,
 } from "../schemas/metaSchema";
@@ -110,27 +114,6 @@ function obtenerNombrePeriodo(
 }
 
 
-function formatearMoneda(
-  valor: number,
-): string {
-  return new Intl.NumberFormat(
-    "es-PE",
-    {
-      style:
-        "currency",
-
-      currency:
-        "PEN",
-
-      minimumFractionDigits:
-        2,
-    },
-  ).format(
-    valor,
-  );
-}
-
-
 function obtenerMensajeError(
   error: unknown,
   mensajePredeterminado: string,
@@ -142,6 +125,14 @@ function obtenerMensajeError(
 
 
 function Metas() {
+  const {
+    texto,
+    formatearMoneda,
+    convertirMoneda,
+    convertirAMonedaBase,
+    simboloMoneda,
+  } = useAppSettings();
+
   const datosMetas =
     useDatosMetas();
 
@@ -449,7 +440,9 @@ function Metas() {
         meta.periodo,
 
       montoMeta:
-        meta.montoMeta,
+        convertirMoneda(
+          meta.montoMeta,
+        ),
     });
 
     setModalAbierto(
@@ -537,7 +530,9 @@ function Metas() {
                 datos.periodo,
 
               montoMeta:
-                datos.montoMeta,
+                convertirAMonedaBase(
+                  datos.montoMeta,
+                ),
 
               sucursales,
             });
@@ -559,7 +554,9 @@ function Metas() {
               datos.periodo,
 
             montoMeta:
-              datos.montoMeta,
+              convertirAMonedaBase(
+                datos.montoMeta,
+              ),
 
             sucursales,
           });
@@ -624,7 +621,10 @@ function Metas() {
     <div className="goals-page">
       <PageHeader
         etiqueta="GESTIÓN COMERCIAL"
-        titulo="Metas comerciales"
+        titulo={texto(
+          "Metas comerciales",
+          "Sales targets",
+        )}
         descripcion="Define objetivos de ventas por sucursal y periodo y compara automáticamente las metas con las ventas registradas."
         acciones={
           <button
@@ -638,7 +638,10 @@ function Metas() {
               size={17}
             />
 
-            Nueva meta
+            {texto(
+              "Nueva meta",
+              "New target",
+            )}
           </button>
         }
       />
@@ -695,9 +698,7 @@ function Metas() {
           </div>
 
           <div>
-            <span>
-              Metas activas
-            </span>
+            <span>{texto('Metas activas', 'Active targets')}</span>
 
             <strong>
               {totalMetasActivas}
@@ -714,9 +715,7 @@ function Metas() {
           </div>
 
           <div>
-            <span>
-              Objetivo total
-            </span>
+            <span>{texto('Objetivo total', 'Total target')}</span>
 
             <strong>
               {formatearMoneda(
@@ -735,9 +734,7 @@ function Metas() {
           </div>
 
           <div>
-            <span>
-              Cumplimiento
-            </span>
+            <span>{texto('Cumplimiento', 'Achievement')}</span>
 
             <strong>
               {cumplimientoGeneral.toFixed(
@@ -757,9 +754,7 @@ function Metas() {
           </div>
 
           <div>
-            <span>
-              Metas cumplidas
-            </span>
+            <span>{texto('Metas cumplidas', 'Targets achieved')}</span>
 
             <strong>
               {metasCumplidas}
@@ -780,7 +775,7 @@ function Metas() {
 
             <input
               type="text"
-              placeholder="Buscar sucursal o periodo..."
+              placeholder={texto('Buscar sucursal o periodo...', 'Search branch or period...')}
               value={
                 busqueda
               }
@@ -811,9 +806,7 @@ function Metas() {
               )
             }
           >
-            <option value="Todos">
-              Todos los estados
-            </option>
+            <option value="Todos">{texto('Todos los estados', 'All statuses')}</option>
 
             <option value="Activa">
               Activas
@@ -838,13 +831,9 @@ function Metas() {
               />
             </div>
 
-            <h3>
-              Cargando metas...
-            </h3>
+            <h3>{texto('Cargando metas...', 'Loading targets...')}</h3>
 
-            <p>
-              Cargando metas y ventas...
-            </p>
+            <p>{texto('Cargando metas y ventas...', 'Loading targets and sales...')}</p>
           </div>
         ) : metas.length ===
           0 ? (
@@ -855,9 +844,7 @@ function Metas() {
               />
             </div>
 
-            <h3>
-              No hay metas comerciales
-            </h3>
+            <h3>{texto('No hay metas comerciales', 'No sales targets')}</h3>
 
             <p>
               Registra una meta para comenzar a comparar los objetivos con las ventas reales.
@@ -872,10 +859,7 @@ function Metas() {
             >
               <Target
                 size={16}
-              />
-
-              Registrar meta
-            </button>
+              />{texto('Registrar meta', 'Register target')}</button>
           </div>
         ) : (
           <div className="goals-table-wrapper">
@@ -902,13 +886,9 @@ function Metas() {
                     CUMPLIMIENTO
                   </th>
 
-                  <th>
-                    ESTADO
-                  </th>
+                  <th>{texto('ESTADO', 'STATUS')}</th>
 
-                  <th>
-                    ACCIONES
-                  </th>
+                  <th>{texto('ACCIONES', 'ACTIONS')}</th>
                 </tr>
               </thead>
 
@@ -1094,9 +1074,7 @@ function Metas() {
                   size={27}
                 />
 
-                <strong>
-                  No se encontraron metas
-                </strong>
+                <strong>{texto('No se encontraron metas', 'No targets found')}</strong>
 
                 <p>
                   Cambia la búsqueda o los filtros.
@@ -1166,9 +1144,7 @@ function Metas() {
               <div className="goal-form">
 
                 <div className="form-group">
-                  <label htmlFor="sucursal">
-                    Sucursal
-                  </label>
+                  <label htmlFor="sucursal">{texto('Sucursal', 'Branch')}</label>
 
                   <select
                     id="sucursal"
@@ -1222,9 +1198,7 @@ function Metas() {
 
 
                 <div className="form-group">
-                  <label htmlFor="periodo">
-                    Periodo
-                  </label>
+                  <label htmlFor="periodo">{texto('Periodo', 'Period')}</label>
 
                   <input
                     id="periodo"
@@ -1247,7 +1221,10 @@ function Metas() {
 
                 <div className="form-group goal-form-full">
                   <label htmlFor="montoMeta">
-                    Meta de ventas (S/)
+                    {texto(
+                      "Meta de ventas",
+                      "Sales target",
+                    )} ({simboloMoneda})
                   </label>
 
                   <input
@@ -1324,9 +1301,7 @@ function Metas() {
                   disabled={
                     isSubmitting
                   }
-                >
-                  Cancelar
-                </button>
+                >{texto('Cancelar', 'Cancel')}</button>
 
                 <button
                   type="submit"
@@ -1342,10 +1317,10 @@ function Metas() {
                   />
 
                   {isSubmitting
-                    ? "Guardando..."
+                    ? texto('Guardando...', 'Saving...')
                     : metaEditando
-                      ? "Guardar cambios"
-                      : "Registrar meta"}
+                      ? texto('Guardar cambios', 'Save changes')
+                      : texto('Registrar meta', 'Register target')}
                 </button>
               </div>
             </form>

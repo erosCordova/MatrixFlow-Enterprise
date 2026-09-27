@@ -15,6 +15,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   type TipoOperacionAPI,
 } from "../services/api/operacionService";
 
@@ -184,6 +188,10 @@ function formatearMatriz(
 // ==========================================================
 
 function Operaciones() {
+  const {
+    texto,
+  } = useAppSettings();
+
   // ========================================================
   // DATOS
   // ========================================================
@@ -591,13 +599,18 @@ function Operaciones() {
               size={30}
             />
 
-            <strong>
-              Resultado de la operación
-            </strong>
+            <strong>{
+                  texto(
+                    "Resultado de la operación",
+                    "Operation result",
+                  )
+                }</strong>
 
             <p>
-              Selecciona los datos y presiona
-              "Calcular operación".
+              {texto(
+                'Selecciona los datos y presiona "Calcular operación".',
+                'Select the data and press "Calculate operation".',
+              )}
             </p>
           </div>
         );
@@ -610,9 +623,12 @@ function Operaciones() {
       ) {
         return (
           <div className="operations-scalar-result">
-            <span>
-              Resultado
-            </span>
+            <span>{
+                  texto(
+                    "Resultado",
+                    "Result",
+                  )
+                }</span>
 
             <strong>
               {
@@ -716,9 +732,18 @@ function Operaciones() {
   return (
     <div className="operations-page">
       <PageHeader
-        etiqueta="ANÁLISIS MATEMÁTICO"
-        titulo="Operaciones"
-        descripcion="Ejecuta operaciones con vectores y matrices."
+        etiqueta={texto(
+          "ANÁLISIS MATEMÁTICO",
+          "MATHEMATICAL ANALYSIS",
+        )}
+        titulo={texto(
+          "Operaciones",
+          "Operations",
+        )}
+        descripcion={texto(
+          "Ejecuta operaciones con vectores y matrices.",
+          "Perform operations with vectors and matrices.",
+        )}
       />
 
 
@@ -727,20 +752,29 @@ function Operaciones() {
 
         <aside className="operations-selector">
           <div className="operations-selector-header">
-            <span>
-              OPERACIONES DISPONIBLES
-            </span>
+            <span>{
+                  texto(
+                    "OPERACIONES DISPONIBLES",
+                    "AVAILABLE OPERATIONS",
+                  )
+                }</span>
 
-            <strong>
-              Selecciona una operación
-            </strong>
+            <strong>{
+                  texto(
+                    "Selecciona una operación",
+                    "Select an operation",
+                  )
+                }</strong>
           </div>
 
 
           <div className="operations-category">
-            <span>
-              Vectores
-            </span>
+            <span>{
+                  texto(
+                    "Vectores",
+                    "Vectors",
+                  )
+                }</span>
 
             {operaciones
               .filter(
@@ -791,9 +825,12 @@ function Operaciones() {
 
 
           <div className="operations-category">
-            <span>
-              Matrices
-            </span>
+            <span>{
+                  texto(
+                    "Matrices",
+                    "Matrices",
+                  )
+                }</span>
 
             {operaciones
               .filter(
@@ -887,9 +924,12 @@ function Operaciones() {
             {cargandoDatos ? (
               <div className="operations-inputs">
                 <div className="operation-field">
-                  <small>
-                    Cargando datos...
-                  </small>
+                  <small>{
+                  texto(
+                    "Cargando datos...",
+                    "Loading data...",
+                  )
+                }</small>
                 </div>
               </div>
             ) : esOperacionVector ? (
@@ -897,9 +937,12 @@ function Operaciones() {
 
               <div className="operations-inputs">
                 <div className="operation-field">
-                  <label htmlFor="vector-a">
-                    Vector A
-                  </label>
+                  <label htmlFor="vector-a">{
+                  texto(
+                    "Vector A",
+                    "Vector A",
+                  )
+                }</label>
 
                   <select
                     id="vector-a"
@@ -922,9 +965,12 @@ function Operaciones() {
                       setError("");
                     }}
                   >
-                    <option value="">
-                      Seleccionar vector
-                    </option>
+                    <option value="">{
+                  texto(
+                    "Seleccionar vector",
+                    "Select vector",
+                  )
+                }</option>
 
                     {vectores.map(
                       (vector) => (
@@ -962,7 +1008,10 @@ function Operaciones() {
                     vectores.length ===
                       0 && (
                       <small>
-                        Primero crea al menos un vector en el módulo Vectores.
+                        {texto(
+                          "Primero crea al menos un vector en el módulo Vectores.",
+                          "First create at least one vector in the Vectors module.",
+                        )}
                       </small>
                     )}
                 </div>
@@ -970,9 +1019,12 @@ function Operaciones() {
 
                 {necesitaSegundoVector && (
                   <div className="operation-field">
-                    <label htmlFor="vector-b">
-                      Vector B
-                    </label>
+                    <label htmlFor="vector-b">{
+                  texto(
+                    "Vector B",
+                    "Vector B",
+                  )
+                }</label>
 
                     <select
                       id="vector-b"
@@ -995,9 +1047,12 @@ function Operaciones() {
                         setError("");
                       }}
                     >
-                      <option value="">
-                        Seleccionar vector
-                      </option>
+                      <option value="">{
+                  texto(
+                    "Seleccionar vector",
+                    "Select vector",
+                  )
+                }</option>
 
                       {vectores.map(
                         (vector) => (
@@ -1035,9 +1090,12 @@ function Operaciones() {
 
                 {necesitaEscalarVector && (
                   <div className="operation-field">
-                    <label htmlFor="escalar-vector">
-                      Escalar
-                    </label>
+                    <label htmlFor="escalar-vector">{
+                  texto(
+                    "Escalar",
+                    "Scalar",
+                  )
+                }</label>
 
                     <input
                       id="escalar-vector"
@@ -1064,7 +1122,10 @@ function Operaciones() {
                     />
 
                     <small>
-                      Número que multiplicará cada elemento del vector.
+                      {texto(
+                        "Número que multiplicará cada elemento del vector.",
+                        "Number that will multiply each vector element.",
+                      )}
                     </small>
                   </div>
                 )}
@@ -1074,9 +1135,12 @@ function Operaciones() {
 
               <div className="operations-inputs">
                 <div className="operation-field">
-                  <label htmlFor="matriz-a">
-                    Matriz A
-                  </label>
+                  <label htmlFor="matriz-a">{
+                  texto(
+                    "Matriz A",
+                    "Matrix A",
+                  )
+                }</label>
 
                   <select
                     id="matriz-a"
@@ -1099,9 +1163,12 @@ function Operaciones() {
                       setError("");
                     }}
                   >
-                    <option value="">
-                      Seleccionar matriz
-                    </option>
+                    <option value="">{
+                  texto(
+                    "Seleccionar matriz",
+                    "Select matrix",
+                  )
+                }</option>
 
                     {matrices.map(
                       (matriz) => (
@@ -1140,7 +1207,10 @@ function Operaciones() {
                     matrices.length ===
                       0 && (
                       <small>
-                        Primero crea al menos una matriz en el módulo Matrices.
+                        {texto(
+                          "Primero crea al menos one matriz en el módulo Matrices.",
+                          "First create at least one matrix in the Matrices module.",
+                        ).replace("one matriz", "una matriz")}
                       </small>
                     )}
                 </div>
@@ -1148,9 +1218,12 @@ function Operaciones() {
 
                 {necesitaSegundaMatriz && (
                   <div className="operation-field">
-                    <label htmlFor="matriz-b">
-                      Matriz B
-                    </label>
+                    <label htmlFor="matriz-b">{
+                  texto(
+                    "Matriz B",
+                    "Matrix B",
+                  )
+                }</label>
 
                     <select
                       id="matriz-b"
@@ -1173,9 +1246,12 @@ function Operaciones() {
                         setError("");
                       }}
                     >
-                      <option value="">
-                        Seleccionar matriz
-                      </option>
+                      <option value="">{
+                  texto(
+                    "Seleccionar matriz",
+                    "Select matrix",
+                  )
+                }</option>
 
                       {matrices.map(
                         (matriz) => (
@@ -1217,9 +1293,12 @@ function Operaciones() {
 
                 {necesitaEscalarMatriz && (
                   <div className="operation-field">
-                    <label htmlFor="escalar-matriz">
-                      Escalar
-                    </label>
+                    <label htmlFor="escalar-matriz">{
+                  texto(
+                    "Escalar",
+                    "Scalar",
+                  )
+                }</label>
 
                     <input
                       id="escalar-matriz"
@@ -1246,7 +1325,10 @@ function Operaciones() {
                     />
 
                     <small>
-                      Número que multiplicará cada elemento de la matriz.
+                      {texto(
+                        "Número que multiplicará cada elemento de la matriz.",
+                        "Number that will multiply each matrix element.",
+                      )}
                     </small>
                   </div>
                 )}
@@ -1269,10 +1351,12 @@ function Operaciones() {
               >
                 <RotateCcw
                   size={16}
-                />
-
-                Limpiar
-              </button>
+                />{
+                  texto(
+                    "Limpiar",
+                    "Clear",
+                  )
+                }</button>
 
 
               <button
@@ -1292,7 +1376,7 @@ function Operaciones() {
 
                 {calculando
                   ? "Calculando..."
-                  : "Calcular operación"}
+                  : texto('Calcular operación', 'Calculate operation')}
               </button>
             </div>
           </section>
@@ -1303,13 +1387,19 @@ function Operaciones() {
           <section className="operations-result-panel">
             <div className="operations-result-header">
               <div>
-                <span>
-                  RESULTADO
-                </span>
+                <span>{
+                  texto(
+                    "RESULTADO",
+                    "RESULT",
+                  )
+                }</span>
 
-                <strong>
-                  Resultado matemático
-                </strong>
+                <strong>{
+                  texto(
+                    "Resultado matemático",
+                    "Mathematical result",
+                  )
+                }</strong>
               </div>
 
               {resultado &&
@@ -1328,9 +1418,12 @@ function Operaciones() {
                 />
 
                 <div>
-                  <strong>
-                    Operación no válida
-                  </strong>
+                  <strong>{
+                  texto(
+                    "Operación no válida",
+                    "Invalid operation",
+                  )
+                }</strong>
 
                   <p>
                     {error || errorDatos}

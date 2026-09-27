@@ -14,6 +14,10 @@ import {
 
 import PageHeader from "../components/ui/PageHeader";
 
+import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
 import type {
   VectorVista,
 } from "../services/api/vectorService";
@@ -56,6 +60,10 @@ function formatearVector(
 // ==========================================================
 
 function CombinacionesLineales() {
+  const {
+    texto,
+  } = useAppSettings();
+
   // ========================================================
   // VECTORES
   // ========================================================
@@ -516,19 +524,22 @@ function CombinacionesLineales() {
         </div>
 
         <div>
-          <span>
-            COMBINACIÓN LINEAL
-          </span>
+          <span>{
+                  texto(
+                    "COMBINACIÓN LINEAL",
+                    "LINEAR COMBINATION",
+                  )
+                }</span>
 
           <strong>
             c₁V₁ + c₂V₂ + ... + cₙVₙ
           </strong>
 
           <p>
-            Cada vector se multiplica
-            por un coeficiente y
-            posteriormente se suman
-            los resultados.
+            {texto(
+              "Cada vector se multiplica por un coeficiente y posteriormente se suman los resultados.",
+              "Each vector is multiplied by a coefficient and the results are then added.",
+            )}
           </p>
         </div>
       </section>
@@ -540,18 +551,25 @@ function CombinacionesLineales() {
         <div className="linear-editor">
           <div className="linear-editor-header">
             <div>
-              <span>
-                VECTORES Y COEFICIENTES
-              </span>
+              <span>{
+                  texto(
+                    "VECTORES Y COEFICIENTES",
+                    "VECTORS AND COEFFICIENTS",
+                  )
+                }</span>
 
-              <h2>
-                Construir combinación
-              </h2>
+              <h2>{
+                  texto(
+                    "Construir combinación",
+                    "Build combination",
+                  )
+                }</h2>
 
               <p>
-                Todos los vectores
-                deben tener la misma
-                dimensión.
+                {texto(
+                  "Todos los vectores deben tener la misma dimensión.",
+                  "All vectors must have the same dimension.",
+                )}
               </p>
             </div>
 
@@ -569,10 +587,12 @@ function CombinacionesLineales() {
             >
               <Plus
                 size={15}
-              />
-
-              Agregar vector
-            </button>
+              />{
+                  texto(
+                    "Agregar vector",
+                    "Add vector",
+                  )
+                }</button>
           </div>
 
 
@@ -580,9 +600,12 @@ function CombinacionesLineales() {
 
           {cargando && (
             <div className="linear-info">
-              <p>
-                Cargando vectores...
-              </p>
+              <p>{
+                  texto(
+                    "Cargando vectores...",
+                    "Loading vectors...",
+                  )
+                }</p>
             </div>
           )}
 
@@ -598,12 +621,18 @@ function CombinacionesLineales() {
                 />
 
                 <div>
-                  <strong>
-                    No hay vectores registrados
-                  </strong>
+                  <strong>{
+                  texto(
+                    "No hay vectores registrados",
+                    "No vectors registered",
+                  )
+                }</strong>
 
                   <p>
-                    Primero crea al menos dos vectores en el módulo Vectores.
+                    {texto(
+                      "Primero crea al menos dos vectores en el módulo Vectores.",
+                      "First create at least two vectors in the Vectors module.",
+                    )}
                   </p>
                 </div>
               </div>
@@ -639,9 +668,12 @@ function CombinacionesLineales() {
                       {/* VECTOR */}
 
                       <div className="linear-field linear-name-field">
-                        <label>
-                          Vector
-                        </label>
+                        <label>{
+                  texto(
+                    "Vector",
+                    "Vector",
+                  )
+                }</label>
 
                         <select
                           value={
@@ -663,9 +695,12 @@ function CombinacionesLineales() {
                             )
                           }
                         >
-                          <option value="">
-                            Seleccionar vector
-                          </option>
+                          <option value="">{
+                  texto(
+                    "Seleccionar vector",
+                    "Select vector",
+                  )
+                }</option>
 
                           {vectores.map(
                             (
@@ -696,9 +731,12 @@ function CombinacionesLineales() {
                       {/* COEFICIENTE */}
 
                       <div className="linear-field linear-coefficient-field">
-                        <label>
-                          Coeficiente
-                        </label>
+                        <label>{
+                  texto(
+                    "Coeficiente",
+                    "Coefficient",
+                  )
+                }</label>
 
                         <input
                           type="number"
@@ -728,9 +766,12 @@ function CombinacionesLineales() {
                       {/* VALORES */}
 
                       <div className="linear-field linear-vector-field">
-                        <label>
-                          Valores
-                        </label>
+                        <label>{
+                  texto(
+                    "Valores",
+                    "Values",
+                  )
+                }</label>
 
                         <input
                           type="text"
@@ -741,7 +782,10 @@ function CombinacionesLineales() {
                                 )
                               : ""
                           }
-                          placeholder="Selecciona un vector"
+                          placeholder={texto(
+                "Selecciona un vector",
+                "Select a vector",
+              )}
                           readOnly
                         />
                       </div>
@@ -751,7 +795,10 @@ function CombinacionesLineales() {
                     <button
                       type="button"
                       className="linear-delete"
-                      title="Eliminar vector"
+                      title={texto(
+                "Eliminar vector",
+                "Remove vector",
+              )}
                       disabled={
                         calculando
                       }
@@ -775,9 +822,12 @@ function CombinacionesLineales() {
           {/* EXPRESIÓN */}
 
           <div className="linear-expression">
-            <span>
-              Expresión
-            </span>
+            <span>{
+                  texto(
+                    "Expresión",
+                    "Expression",
+                  )
+                }</span>
 
             <strong>
               {
@@ -802,10 +852,12 @@ function CombinacionesLineales() {
             >
               <RotateCcw
                 size={15}
-              />
-
-              Reiniciar
-            </button>
+              />{
+                  texto(
+                    "Reiniciar",
+                    "Reset",
+                  )
+                }</button>
 
 
             <button
@@ -837,13 +889,19 @@ function CombinacionesLineales() {
         <aside className="linear-result">
           <div className="linear-result-header">
             <div>
-              <span>
-                RESULTADO
-              </span>
+              <span>{
+                  texto(
+                    "RESULTADO",
+                    "RESULT",
+                  )
+                }</span>
 
-              <strong>
-                Vector resultante
-              </strong>
+              <strong>{
+                  texto(
+                    "Vector resultante",
+                    "Resulting vector",
+                  )
+                }</strong>
             </div>
 
 
@@ -862,9 +920,12 @@ function CombinacionesLineales() {
               />
 
               <div>
-                <strong>
-                  No se puede calcular
-                </strong>
+                <strong>{
+                  texto(
+                    "No se puede calcular",
+                    "Unable to calculate",
+                  )
+                }</strong>
 
                 <p>
                   {error || errorCarga}
@@ -899,9 +960,12 @@ function CombinacionesLineales() {
 
               <div className="linear-result-details">
                 <div>
-                  <span>
-                    Dimensión
-                  </span>
+                  <span>{
+                  texto(
+                    "Dimensión",
+                    "Dimension",
+                  )
+                }</span>
 
                   <strong>
                     {
@@ -911,9 +975,12 @@ function CombinacionesLineales() {
                 </div>
 
                 <div>
-                  <span>
-                    Vectores utilizados
-                  </span>
+                  <span>{
+                  texto(
+                    "Vectores utilizados",
+                    "Vectors used",
+                  )
+                }</span>
 
                   <strong>
                     {
@@ -929,15 +996,18 @@ function CombinacionesLineales() {
                 size={31}
               />
 
-              <strong>
-                Sin resultado
-              </strong>
+              <strong>{
+                  texto(
+                    "Sin resultado",
+                    "No result",
+                  )
+                }</strong>
 
               <p>
-                Selecciona los vectores,
-                configura los coeficientes
-                y ejecuta la combinación
-                lineal.
+                {texto(
+                  "Selecciona los vectores, configura los coeficientes y ejecuta la combinación lineal.",
+                  "Select the vectors, configure the coefficients and run the linear combination.",
+                )}
               </p>
             </div>
           )}

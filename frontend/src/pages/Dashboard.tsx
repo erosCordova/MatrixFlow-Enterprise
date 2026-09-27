@@ -9,10 +9,6 @@ import {
 } from "lucide-react";
 
 import {
-  useMemo,
-} from "react";
-
-import {
   useNavigate,
 } from "react-router-dom";
 
@@ -43,75 +39,9 @@ import {
   useReporteGeneral,
 } from "../hooks/useReportes";
 
-
-// ============================================================
-// FUNCIONES AUXILIARES
-// ============================================================
-
-function formatoDinero(
-  valor: number,
-) {
-  return new Intl.NumberFormat(
-    "es-PE",
-    {
-      style: "currency",
-      currency: "PEN",
-      maximumFractionDigits: 2,
-    },
-  ).format(
-    valor,
-  );
-}
-
-
-function formatearFecha(
-  fecha: string,
-) {
-  if (
-    fecha ===
-    "Inventario actual"
-  ) {
-    return fecha;
-  }
-
-  const normalizada =
-    fecha
-      .replace(
-        " ",
-        "T",
-      )
-      .replace(
-        /(\.\d{3})\d+$/,
-        "$1",
-      );
-
-  const valor =
-    new Date(
-      normalizada,
-    );
-
-  if (
-    Number.isNaN(
-      valor.getTime(),
-    )
-  ) {
-    return fecha;
-  }
-
-  return new Intl.DateTimeFormat(
-    "es-PE",
-    {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    },
-  ).format(
-    valor,
-  );
-}
-
+import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
 
 // ============================================================
 // COMPONENTE
@@ -121,9 +51,17 @@ function Dashboard() {
   const navigate =
     useNavigate();
 
+  const {
+    configuracion,
+    texto,
+    formatearMoneda,
+    formatearFecha,
+    convertirMoneda,
+    locale,
+  } = useAppSettings();
+
   const reporteQuery =
     useReporteGeneral();
-
 
   const reporte =
     reporteQuery.data ??
@@ -136,19 +74,99 @@ function Dashboard() {
     reporteQuery.error
       ? reporteQuery.error instanceof Error
         ? reporteQuery.error.message
-        : "No se pudo cargar el Dashboard."
+        : texto(
+            "No se pudo cargar el Dashboard.",
+            "The Dashboard could not be loaded.",
+          )
       : "";
 
+  // ============================================================
+  // FORMATO DE FECHA DEL DASHBOARD
+  // ============================================================
+
+  const formatearFechaDashboard = (
+    fecha: string,
+  ) => {
+    if (
+      fecha ===
+      "Inventario actual"
+    ) {
+      return texto(
+        "Inventario actual",
+        "Current inventory",
+      );
+    }
+
+    const normalizada =
+      fecha
+        .replace(
+          " ",
+          "T",
+        )
+        .replace(
+          /(\.\d{3})\d+$/,
+          "$1",
+        );
+
+    const valor =
+      new Date(
+        normalizada,
+      );
+
+    if (
+      Number.isNaN(
+        valor.getTime(),
+      )
+    ) {
+      return fecha;
+    }
+
+    return (
+      formatearFecha(
+        valor,
+        true,
+      ) || fecha
+    );
+  };
+
+  // ============================================================
+  // FORMATO DEL EJE MONETARIO
+  // ============================================================
+
+  const formatearEjeDinero = (
+    valor: number,
+  ) => {
+    const convertido =
+      convertirMoneda(
+        Number(valor),
+      );
+
+    return new Intl.NumberFormat(
+      locale,
+      {
+        style: "currency",
+        currency:
+          configuracion.moneda,
+        notation: "compact",
+        maximumFractionDigits: 1,
+      },
+    ).format(
+      convertido,
+    );
+  };
+
+  // ============================================================
+  // RECARGAR DASHBOARD
+  // ============================================================
 
   const cargarDashboard =
     async () => {
       await reporteQuery.refetch();
     };
 
-
-  // ==========================================================
+  // ============================================================
   // RESUMEN EJECUTIVO
-  // ==========================================================
+  // ============================================================
 
   const totalVentas =
     reporte?.ventas
@@ -182,7 +200,6 @@ function Dashboard() {
     stockBajo +
     sinStock;
 
-
   const totalMeta =
     reporte?.metas
       .monto_objetivo ?? 0;
@@ -194,7 +211,6 @@ function Dashboard() {
   const cumplimiento =
     reporte?.metas
       .cumplimiento ?? 0;
-
 
   const totalOperaciones =
     reporte?.operaciones
@@ -212,157 +228,199 @@ function Dashboard() {
     reporte?.operaciones
       .errores ?? 0;
 
-
-  // ==========================================================
+  // ============================================================
   // TARJETAS PRINCIPALES
-  // ==========================================================
+  // ============================================================
 
-  const estadisticasDashboard =
-    useMemo<
-      EstadisticaDashboard[]
-    >(
-      () => [
-        {
-          titulo:
+  const estadisticasDashboard:
+    EstadisticaDashboard[] = [
+      {
+        titulo:
+          texto(
             "Ventas acumuladas",
+            "Total sales",
+          ),
 
-          valor:
-            formatoDinero(
-              totalVentas,
-            ),
+        valor:
+          formatearMoneda(
+            totalVentas,
+          ),
 
-          variacion:
-            cantidadVentas > 0
-              ? `${cantidadVentas} ventas`
-              : "Sin ventas",
+        variacion:
+          cantidadVentas > 0
+            ? texto(
+                `${cantidadVentas} ventas`,
+                `${cantidadVentas} sales`,
+              )
+            : texto(
+                "Sin ventas",
+                "No sales",
+              ),
 
-          tendencia:
-            totalVentas > 0
+        tendencia:
+          totalVentas > 0
+            ? "positiva"
+            : "neutral",
+
+        descripcion:
+          texto(
+            `${totalUnidades.toLocaleString(
+              locale,
+            )} unidades vendidas.`,
+            `${totalUnidades.toLocaleString(
+              locale,
+            )} units sold.`,
+          ),
+
+        icono:
+          ShoppingCart,
+      },
+
+      {
+        titulo:
+          texto(
+            "Cumplimiento",
+            "Achievement",
+          ),
+
+        valor:
+          totalMeta > 0
+            ? `${cumplimiento.toFixed(
+                1,
+              )}%`
+            : texto(
+                "Sin meta",
+                "No target",
+              ),
+
+        variacion:
+          totalMeta > 0
+            ? cumplimiento >=
+              100
+              ? texto(
+                  "Meta alcanzada",
+                  "Target reached",
+                )
+              : texto(
+                  "En progreso",
+                  "In progress",
+                )
+            : texto(
+                "Sin meta activa",
+                "No active target",
+              ),
+
+        tendencia:
+          totalMeta > 0
+            ? cumplimiento >=
+              100
+              ? "positiva"
+              : "neutral"
+            : "neutral",
+
+        descripcion:
+          totalMeta > 0
+            ? texto(
+                `${formatearMoneda(
+                  ventasConMeta,
+                )} de ${formatearMoneda(
+                  totalMeta,
+                )}`,
+                `${formatearMoneda(
+                  ventasConMeta,
+                )} of ${formatearMoneda(
+                  totalMeta,
+                )}`,
+              )
+            : texto(
+                "No existen metas activas.",
+                "There are no active targets.",
+              ),
+
+        icono:
+          Activity,
+      },
+
+      {
+        titulo:
+          texto(
+            "Inventario",
+            "Inventory",
+          ),
+
+        valor:
+          stockTotal.toLocaleString(
+            locale,
+          ),
+
+        variacion:
+          alertasInventario > 0
+            ? texto(
+                `${alertasInventario} alertas`,
+                `${alertasInventario} alerts`,
+              )
+            : texto(
+                "Sin alertas",
+                "No alerts",
+              ),
+
+        tendencia:
+          alertasInventario > 0
+            ? "negativa"
+            : stockTotal > 0
               ? "positiva"
               : "neutral",
 
-          descripcion:
-            `${totalUnidades.toLocaleString(
-              "es-PE",
-            )} unidades vendidas.`,
+        descripcion:
+          texto(
+            "Unidades disponibles actualmente.",
+            "Units currently available.",
+          ),
 
-          icono:
-            ShoppingCart,
-        },
+        icono:
+          PackageCheck,
+      },
 
-        {
-          titulo:
-            "Cumplimiento",
+      {
+        titulo:
+          texto(
+            "Operaciones",
+            "Operations",
+          ),
 
-          valor:
-            totalMeta > 0
-              ? `${cumplimiento.toFixed(
-                  1,
-                )}%`
-              : "Sin meta",
+        valor:
+          totalOperaciones
+            .toLocaleString(
+              locale,
+            ),
 
-          variacion:
-            totalMeta > 0
-              ? cumplimiento >=
-                100
-                ? "Meta alcanzada"
-                : "En progreso"
-              : "Sin meta activa",
+        variacion:
+          texto(
+            `${operacionesCompletadas} completadas`,
+            `${operacionesCompletadas} completed`,
+          ),
 
-          tendencia:
-            totalMeta > 0
-              ? cumplimiento >=
-                100
-                ? "positiva"
-                : "neutral"
+        tendencia:
+          operacionesErrores > 0
+            ? "negativa"
+            : totalOperaciones > 0
+              ? "positiva"
               : "neutral",
 
-          descripcion:
-            totalMeta > 0
-              ? `${formatoDinero(
-                  ventasConMeta,
-                )} de ${formatoDinero(
-                  totalMeta,
-                )}`
-              : "No existen metas activas.",
-
-          icono:
-            Activity,
-        },
-
-        {
-          titulo:
-            "Inventario",
-
-          valor:
-            stockTotal.toLocaleString(
-              "es-PE",
-            ),
-
-          variacion:
-            alertasInventario > 0
-              ? `${alertasInventario} alertas`
-              : "Sin alertas",
-
-          tendencia:
-            alertasInventario > 0
-              ? "negativa"
-              : stockTotal > 0
-                ? "positiva"
-                : "neutral",
-
-          descripcion:
-            "Unidades disponibles actualmente.",
-
-          icono:
-            PackageCheck,
-        },
-
-        {
-          titulo:
-            "Operaciones",
-
-          valor:
-            totalOperaciones.toLocaleString(
-              "es-PE",
-            ),
-
-          variacion:
-            `${operacionesCompletadas} completadas`,
-
-          tendencia:
-            operacionesErrores > 0
-              ? "negativa"
-              : totalOperaciones > 0
-                ? "positiva"
-                : "neutral",
-
-          descripcion:
+        descripcion:
+          texto(
             "Procesamiento matemático registrado.",
+            "Recorded mathematical processing.",
+          ),
 
-          icono:
-            Calculator,
-        },
-      ],
-      [
-        totalVentas,
-        cantidadVentas,
-        totalUnidades,
-        totalMeta,
-        cumplimiento,
-        ventasConMeta,
-        stockTotal,
-        alertasInventario,
-        totalOperaciones,
-        operacionesCompletadas,
-        operacionesErrores,
-      ],
-    );
+        icono:
+          Calculator,
+      },
+    ];
 
-
-  // ==========================================================
+  // ============================================================
   // INFORMACIÓN COMPLEMENTARIA
-  // ==========================================================
+  // ============================================================
 
   const ventasMensuales =
     reporte?.ventas_mensuales ??
@@ -376,7 +434,6 @@ function Dashboard() {
     reporte?.actividad_reciente ??
     [];
 
-
   const productosDestacados =
     ventasProductos.slice(
       0,
@@ -389,18 +446,12 @@ function Dashboard() {
       5,
     );
 
-
-  // ==========================================================
+  // ============================================================
   // INTERFAZ
-  // ==========================================================
+  // ============================================================
 
   return (
     <div className="dashboard-page">
-
-      {/* ==================================================== */}
-      {/* ANIMACIÓN */}
-      {/* ==================================================== */}
-
       <style>
         {`
           .dashboard-spinner {
@@ -455,15 +506,16 @@ function Dashboard() {
         `}
       </style>
 
-
-      {/* ==================================================== */}
-      {/* ENCABEZADO */}
-      {/* ==================================================== */}
-
       <PageHeader
-        etiqueta="RESUMEN EJECUTIVO"
+        etiqueta={texto(
+          "RESUMEN EJECUTIVO",
+          "EXECUTIVE SUMMARY",
+        )}
         titulo="Dashboard"
-        descripcion="Resumen general del rendimiento comercial, inventario, metas y procesamiento matemático de MatrixFlow Enterprise."
+        descripcion={texto(
+          "Resumen general del rendimiento comercial, inventario, metas y procesamiento matemático de MatrixFlow Enterprise.",
+          "General overview of commercial performance, inventory, targets and mathematical processing in MatrixFlow Enterprise.",
+        )}
         acciones={
           <>
             <Button
@@ -491,10 +543,15 @@ function Dashboard() {
               </span>
 
               {cargando
-                ? "Actualizando..."
-                : "Actualizar"}
+                ? texto(
+                    "Actualizando...",
+                    "Updating...",
+                  )
+                : texto(
+                    "Actualizar",
+                    "Refresh",
+                  )}
             </Button>
-
 
             <Button
               type="button"
@@ -506,7 +563,10 @@ function Dashboard() {
                 )
               }
             >
-              Ver reportes
+              {texto(
+                "Ver reportes",
+                "View reports",
+              )}
 
               <ArrowRight
                 size={17}
@@ -516,16 +576,14 @@ function Dashboard() {
         }
       />
 
-
-      {/* ==================================================== */}
-      {/* ERROR */}
-      {/* ==================================================== */}
-
       {error && (
         <section className="dashboard-card">
           <div className="report-empty">
             <strong>
-              No se pudo cargar el Dashboard
+              {texto(
+                "No se pudo cargar el Dashboard",
+                "The Dashboard could not be loaded",
+              )}
             </strong>
 
             <p>
@@ -540,22 +598,19 @@ function Dashboard() {
                 void cargarDashboard()
               }
             >
-              Reintentar
+              {texto(
+                "Reintentar",
+                "Retry",
+              )}
             </Button>
           </div>
         </section>
       )}
 
-
-      {/* ==================================================== */}
-      {/* CARGANDO */}
-      {/* ==================================================== */}
-
       {!reporte &&
       cargando ? (
         <section className="dashboard-card">
           <div className="dashboard-loading">
-
             <span className="dashboard-spinner">
               <RefreshCw
                 size={30}
@@ -564,23 +619,23 @@ function Dashboard() {
 
             <div className="dashboard-loading-contenido">
               <strong>
-                Cargando información
+                {texto(
+                  "Cargando información",
+                  "Loading information",
+                )}
               </strong>
 
               <p>
-                Consultando indicadores empresariales...
+                {texto(
+                  "Consultando indicadores empresariales...",
+                  "Loading business indicators...",
+                )}
               </p>
             </div>
-
           </div>
         </section>
       ) : (
         <>
-
-          {/* ================================================= */}
-          {/* INDICADORES EJECUTIVOS */}
-          {/* ================================================= */}
-
           <section className="dashboard-stats">
             {estadisticasDashboard.map(
               (
@@ -598,26 +653,29 @@ function Dashboard() {
             )}
           </section>
 
-
-          {/* ================================================= */}
-          {/* VENTAS + META */}
-          {/* ================================================= */}
-
           <section className="dashboard-grid dashboard-grid-main">
-
             <article className="dashboard-card dashboard-card-large">
               <div className="dashboard-card-header">
                 <div>
                   <span className="dashboard-card-label">
-                    TENDENCIA GENERAL
+                    {texto(
+                      "TENDENCIA GENERAL",
+                      "GENERAL TREND",
+                    )}
                   </span>
 
                   <h2>
-                    Evolución de ventas
+                    {texto(
+                      "Evolución de ventas",
+                      "Sales trend",
+                    )}
                   </h2>
 
                   <p>
-                    Vista rápida del comportamiento comercial reciente.
+                    {texto(
+                      "Vista rápida del comportamiento comercial reciente.",
+                      "Quick overview of recent commercial performance.",
+                    )}
                   </p>
                 </div>
 
@@ -630,14 +688,16 @@ function Dashboard() {
                     )
                   }
                 >
-                  Análisis completo
+                  {texto(
+                    "Análisis completo",
+                    "Full analysis",
+                  )}
 
                   <ArrowRight
                     size={15}
                   />
                 </button>
               </div>
-
 
               <div className="chart-container">
                 {ventasMensuales.length >
@@ -691,9 +751,11 @@ function Dashboard() {
                         tickFormatter={(
                           valor,
                         ) =>
-                          `${Number(
-                            valor,
-                          ) / 1000}k`
+                          formatearEjeDinero(
+                            Number(
+                              valor,
+                            ),
+                          )
                         }
                       />
 
@@ -701,7 +763,7 @@ function Dashboard() {
                         formatter={(
                           valor,
                         ) =>
-                          formatoDinero(
+                          formatearMoneda(
                             Number(
                               valor,
                             ),
@@ -714,7 +776,10 @@ function Dashboard() {
                       <Line
                         type="monotone"
                         dataKey="ventas"
-                        name="Ventas"
+                        name={texto(
+                          "Ventas",
+                          "Sales",
+                        )}
                         stroke="#2563eb"
                         strokeWidth={3}
                         dot={{
@@ -730,7 +795,10 @@ function Dashboard() {
                       <Line
                         type="monotone"
                         dataKey="meta"
-                        name="Meta"
+                        name={texto(
+                          "Meta",
+                          "Target",
+                        )}
                         stroke="#06b6d4"
                         strokeWidth={2}
                         strokeDasharray="6 5"
@@ -742,30 +810,40 @@ function Dashboard() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="report-empty">
-                    Todavía no existen datos comerciales para mostrar.
+                    {texto(
+                      "Todavía no existen datos comerciales para mostrar.",
+                      "There is no commercial data to display yet.",
+                    )}
                   </div>
                 )}
               </div>
             </article>
 
-
             <article className="dashboard-card">
               <div className="dashboard-card-header">
                 <div>
                   <span className="dashboard-card-label">
-                    META ACTUAL
+                    {texto(
+                      "META ACTUAL",
+                      "CURRENT TARGET",
+                    )}
                   </span>
 
                   <h2>
-                    Cumplimiento comercial
+                    {texto(
+                      "Cumplimiento comercial",
+                      "Sales target achievement",
+                    )}
                   </h2>
 
                   <p>
-                    Avance de las metas vigentes.
+                    {texto(
+                      "Avance de las metas vigentes.",
+                      "Progress toward current targets.",
+                    )}
                   </p>
                 </div>
               </div>
-
 
               <div className="goal-content">
                 <div className="goal-circle">
@@ -779,20 +857,25 @@ function Dashboard() {
                     </strong>
 
                     <span>
-                      cumplimiento
+                      {texto(
+                        "cumplimiento",
+                        "achievement",
+                      )}
                     </span>
                   </div>
                 </div>
 
-
                 <div className="goal-values">
                   <div>
                     <span>
-                      Ventas asociadas
+                      {texto(
+                        "Ventas asociadas",
+                        "Associated sales",
+                      )}
                     </span>
 
                     <strong>
-                      {formatoDinero(
+                      {formatearMoneda(
                         ventasConMeta,
                       )}
                     </strong>
@@ -800,21 +883,30 @@ function Dashboard() {
 
                   <div>
                     <span>
-                      Objetivo
+                      {texto(
+                        "Objetivo",
+                        "Target",
+                      )}
                     </span>
 
                     <strong>
                       {totalMeta > 0
-                        ? formatoDinero(
+                        ? formatearMoneda(
                             totalMeta,
                           )
-                        : "Sin meta activa"}
+                        : texto(
+                            "Sin meta activa",
+                            "No active target",
+                          )}
                     </strong>
                   </div>
 
                   <div>
                     <span>
-                      Estado
+                      {texto(
+                        "Estado",
+                        "Status",
+                      )}
                     </span>
 
                     <strong
@@ -826,11 +918,20 @@ function Dashboard() {
                       }
                     >
                       {totalMeta <= 0
-                        ? "Sin meta"
+                        ? texto(
+                            "Sin meta",
+                            "No target",
+                          )
                         : cumplimiento >=
                             100
-                          ? "Cumplida"
-                          : "En progreso"}
+                          ? texto(
+                              "Cumplida",
+                              "Completed",
+                            )
+                          : texto(
+                              "En progreso",
+                              "In progress",
+                            )}
                     </strong>
                   </div>
                 </div>
@@ -838,26 +939,29 @@ function Dashboard() {
             </article>
           </section>
 
-
-          {/* ================================================= */}
-          {/* INVENTARIO + PROCESAMIENTO */}
-          {/* ================================================= */}
-
           <section className="dashboard-grid dashboard-grid-half">
-
             <article className="dashboard-card">
               <div className="dashboard-card-header">
                 <div>
                   <span className="dashboard-card-label">
-                    INVENTARIO
+                    {texto(
+                      "INVENTARIO",
+                      "INVENTORY",
+                    )}
                   </span>
 
                   <h2>
-                    Estado general
+                    {texto(
+                      "Estado general",
+                      "Overview",
+                    )}
                   </h2>
 
                   <p>
-                    Resumen actual de existencias.
+                    {texto(
+                      "Resumen actual de existencias.",
+                      "Current inventory summary.",
+                    )}
                   </p>
                 </div>
 
@@ -870,7 +974,10 @@ function Dashboard() {
                     )
                   }
                 >
-                  Ver inventario
+                  {texto(
+                    "Ver inventario",
+                    "View inventory",
+                  )}
 
                   <ArrowRight
                     size={15}
@@ -878,35 +985,44 @@ function Dashboard() {
                 </button>
               </div>
 
-
               <div className="goal-values">
                 <div>
                   <span>
-                    Unidades disponibles
+                    {texto(
+                      "Unidades disponibles",
+                      "Available units",
+                    )}
                   </span>
 
                   <strong>
                     {stockTotal.toLocaleString(
-                      "es-PE",
+                      locale,
                     )}
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    Registros
+                    {texto(
+                      "Registros",
+                      "Records",
+                    )}
                   </span>
 
                   <strong>
-                    {registrosInventario.toLocaleString(
-                      "es-PE",
-                    )}
+                    {registrosInventario
+                      .toLocaleString(
+                        locale,
+                      )}
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    Stock bajo
+                    {texto(
+                      "Stock bajo",
+                      "Low stock",
+                    )}
                   </span>
 
                   <strong>
@@ -916,7 +1032,10 @@ function Dashboard() {
 
                 <div>
                   <span>
-                    Sin stock
+                    {texto(
+                      "Sin stock",
+                      "Out of stock",
+                    )}
                   </span>
 
                   <strong>
@@ -926,20 +1045,28 @@ function Dashboard() {
               </div>
             </article>
 
-
             <article className="dashboard-card">
               <div className="dashboard-card-header">
                 <div>
                   <span className="dashboard-card-label">
-                    ÁLGEBRA LINEAL
+                    {texto(
+                      "ÁLGEBRA LINEAL",
+                      "LINEAR ALGEBRA",
+                    )}
                   </span>
 
                   <h2>
-                    Procesamiento matemático
+                    {texto(
+                      "Procesamiento matemático",
+                      "Mathematical processing",
+                    )}
                   </h2>
 
                   <p>
-                    Resumen de operaciones ejecutadas.
+                    {texto(
+                      "Resumen de operaciones ejecutadas.",
+                      "Summary of executed operations.",
+                    )}
                   </p>
                 </div>
 
@@ -952,7 +1079,10 @@ function Dashboard() {
                     )
                   }
                 >
-                  Ver operaciones
+                  {texto(
+                    "Ver operaciones",
+                    "View operations",
+                  )}
 
                   <ArrowRight
                     size={15}
@@ -960,11 +1090,13 @@ function Dashboard() {
                 </button>
               </div>
 
-
               <div className="goal-values">
                 <div>
                   <span>
-                    Total procesadas
+                    {texto(
+                      "Total procesadas",
+                      "Total processed",
+                    )}
                   </span>
 
                   <strong>
@@ -974,57 +1106,75 @@ function Dashboard() {
 
                 <div>
                   <span>
-                    Completadas
+                    {texto(
+                      "Completadas",
+                      "Completed",
+                    )}
                   </span>
 
                   <strong className="positive-value">
-                    {operacionesCompletadas}
+                    {
+                      operacionesCompletadas
+                    }
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    Pendientes
+                    {texto(
+                      "Pendientes",
+                      "Pending",
+                    )}
                   </span>
 
                   <strong>
-                    {operacionesPendientes}
+                    {
+                      operacionesPendientes
+                    }
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    Errores
+                    {texto(
+                      "Errores",
+                      "Errors",
+                    )}
                   </span>
 
                   <strong>
-                    {operacionesErrores}
+                    {
+                      operacionesErrores
+                    }
                   </strong>
                 </div>
               </div>
             </article>
           </section>
 
-
-          {/* ================================================= */}
-          {/* PRODUCTOS + ACTIVIDAD */}
-          {/* ================================================= */}
-
           <section className="dashboard-grid dashboard-grid-half">
-
             <article className="dashboard-card">
               <div className="dashboard-card-header">
                 <div>
                   <span className="dashboard-card-label">
-                    PRODUCTOS
+                    {texto(
+                      "PRODUCTOS",
+                      "PRODUCTS",
+                    )}
                   </span>
 
                   <h2>
-                    Productos destacados
+                    {texto(
+                      "Productos destacados",
+                      "Top products",
+                    )}
                   </h2>
 
                   <p>
-                    Los cinco productos con mayores ventas.
+                    {texto(
+                      "Los cinco productos con mayores ventas.",
+                      "The five products with the highest sales.",
+                    )}
                   </p>
                 </div>
 
@@ -1037,14 +1187,16 @@ function Dashboard() {
                     )
                   }
                 >
-                  Ver análisis
+                  {texto(
+                    "Ver análisis",
+                    "View analysis",
+                  )}
 
                   <ArrowRight
                     size={15}
                   />
                 </button>
               </div>
-
 
               <div className="product-ranking">
                 {productosDestacados.length >
@@ -1072,15 +1224,15 @@ function Dashboard() {
                           </strong>
 
                           <span>
-                            {
-                              producto.unidades
-                            }{" "}
-                            unidades vendidas
+                            {texto(
+                              `${producto.unidades} unidades vendidas`,
+                              `${producto.unidades} units sold`,
+                            )}
                           </span>
                         </div>
 
                         <strong className="ranking-value">
-                          {formatoDinero(
+                          {formatearMoneda(
                             producto.ventas,
                           )}
                         </strong>
@@ -1089,30 +1241,40 @@ function Dashboard() {
                   )
                 ) : (
                   <div className="report-empty">
-                    Todavía no hay ventas de productos.
+                    {texto(
+                      "Todavía no hay ventas de productos.",
+                      "There are no product sales yet.",
+                    )}
                   </div>
                 )}
               </div>
             </article>
 
-
             <article className="dashboard-card">
               <div className="dashboard-card-header">
                 <div>
                   <span className="dashboard-card-label">
-                    ACTIVIDAD
+                    {texto(
+                      "ACTIVIDAD",
+                      "ACTIVITY",
+                    )}
                   </span>
 
                   <h2>
-                    Actividad reciente
+                    {texto(
+                      "Actividad reciente",
+                      "Recent activity",
+                    )}
                   </h2>
 
                   <p>
-                    Últimos movimientos registrados en MatrixFlow.
+                    {texto(
+                      "Últimos movimientos registrados en MatrixFlow.",
+                      "Latest activity recorded in MatrixFlow.",
+                    )}
                   </p>
                 </div>
               </div>
-
 
               <div className="activity-list">
                 {actividadDestacada.length >
@@ -1139,13 +1301,11 @@ function Dashboard() {
                             Activity,
                         };
 
-
                       const Icono =
                         iconos[
                           actividad.tipo
                         ] ??
                         Activity;
-
 
                       return (
                         <div
@@ -1171,7 +1331,7 @@ function Dashboard() {
                               </strong>
 
                               <span>
-                                {formatearFecha(
+                                {formatearFechaDashboard(
                                   actividad.fecha,
                                 )}
                               </span>
@@ -1189,18 +1349,19 @@ function Dashboard() {
                   )
                 ) : (
                   <div className="report-empty">
-                    Todavía no hay actividad registrada.
+                    {texto(
+                      "Todavía no hay actividad registrada.",
+                      "There is no activity recorded yet.",
+                    )}
                   </div>
                 )}
               </div>
             </article>
           </section>
-
         </>
       )}
     </div>
   );
 }
-
 
 export default Dashboard;

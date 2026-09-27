@@ -12,6 +12,10 @@ import {
 
 import "./App.css";
 
+import {
+  useAppSettings,
+} from "./context/AppSettingsContext";
+
 import DashboardLayout from "./components/layout/DashboardLayout";
 
 import RutaProtegida from "./components/RutaProtegida";
@@ -149,6 +153,10 @@ const Configuracion = lazy(
 // ==========================================================
 
 function CargandoPagina() {
+  const {
+    texto,
+  } = useAppSettings();
+
   return (
     <div
       style={{
@@ -196,7 +204,10 @@ function CargandoPagina() {
           fontSize: "13px",
         }}
       >
-        Cargando módulo...
+        {texto(
+          "Cargando módulo...",
+          "Loading module...",
+        )}
       </strong>
 
       <style>

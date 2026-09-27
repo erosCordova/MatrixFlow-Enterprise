@@ -25,6 +25,10 @@ import {
 import PageHeader from "../components/ui/PageHeader";
 
 import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
+import {
   vectorSchema,
   type VectorFormulario,
 } from "../schemas/vectorSchema";
@@ -54,6 +58,10 @@ function obtenerMensajeError(
 
 
 function Vectores() {
+  const {
+    texto,
+  } = useAppSettings();
+
   const vectoresQuery =
     useVectores();
 
@@ -426,9 +434,18 @@ function Vectores() {
   return (
     <div className="vectors-page">
       <PageHeader
-        etiqueta="ANÁLISIS MATEMÁTICO"
-        titulo="Vectores"
-        descripcion="Crea y administra vectores numéricos que posteriormente podrán utilizarse en operaciones matemáticas."
+        etiqueta={texto(
+          "ANÁLISIS MATEMÁTICO",
+          "MATHEMATICAL ANALYSIS",
+        )}
+        titulo={texto(
+          "Vectores",
+          "Vectors",
+        )}
+        descripcion={texto(
+          "Crea y administra vectores numéricos que posteriormente podrán utilizarse en operaciones matemáticas.",
+          "Create and manage numerical vectors for mathematical operations.",
+        )}
         acciones={
           <button
             type="button"
@@ -439,10 +456,12 @@ function Vectores() {
           >
             <Plus
               size={17}
-            />
-
-            Nuevo vector
-          </button>
+            />{
+                  texto(
+                    "Nuevo vector",
+                    "New vector",
+                  )
+                }</button>
         }
       />
 
@@ -498,9 +517,12 @@ function Vectores() {
           </div>
 
           <div>
-            <span>
-              Vectores creados
-            </span>
+            <span>{
+                  texto(
+                    "Vectores creados",
+                    "Vectors created",
+                  )
+                }</span>
 
             <strong>
               {vectores.length}
@@ -517,9 +539,12 @@ function Vectores() {
           </div>
 
           <div>
-            <span>
-              Total de elementos
-            </span>
+            <span>{
+                  texto(
+                    "Total de elementos",
+                    "Total elements",
+                  )
+                }</span>
 
             <strong>
               {totalElementos}
@@ -536,9 +561,12 @@ function Vectores() {
           </div>
 
           <div>
-            <span>
-              Dimensión promedio
-            </span>
+            <span>{
+                  texto(
+                    "Dimensión promedio",
+                    "Average dimension",
+                  )
+                }</span>
 
             <strong>
               {dimensionPromedio.toFixed(
@@ -557,9 +585,12 @@ function Vectores() {
           </div>
 
           <div>
-            <span>
-              Mayor dimensión
-            </span>
+            <span>{
+                  texto(
+                    "Mayor dimensión",
+                    "Largest dimension",
+                  )
+                }</span>
 
             <strong>
               {mayorDimension}
@@ -580,7 +611,10 @@ function Vectores() {
 
             <input
               type="text"
-              placeholder="Buscar vector..."
+              placeholder={texto(
+                "Buscar vector...",
+                "Search vectors...",
+              )}
               value={
                 busqueda
               }
@@ -613,13 +647,19 @@ function Vectores() {
               />
             </div>
 
-            <h3>
-              Cargando vectores...
-            </h3>
+            <h3>{
+                  texto(
+                    "Cargando vectores...",
+                    "Loading vectors...",
+                  )
+                }</h3>
 
-            <p>
-              Consultando los vectores almacenados.
-            </p>
+            <p>{
+                  texto(
+                    "Consultando los vectores almacenados.",
+                    "Loading stored vectors.",
+                  )
+                }</p>
           </div>
         ) : vectores.length ===
           0 ? (
@@ -630,9 +670,12 @@ function Vectores() {
               />
             </div>
 
-            <h3>
-              No hay vectores creados
-            </h3>
+            <h3>{
+                  texto(
+                    "No hay vectores creados",
+                    "No vectors created",
+                  )
+                }</h3>
 
             <p>
               Crea un vector ingresando sus valores numéricos separados por comas.
@@ -647,10 +690,12 @@ function Vectores() {
             >
               <Plus
                 size={16}
-              />
-
-              Crear vector
-            </button>
+              />{
+                  texto(
+                    "Crear vector",
+                    "Create vector",
+                  )
+                }</button>
           </div>
         ) : vectoresFiltrados.length ===
           0 ? (
@@ -661,9 +706,12 @@ function Vectores() {
               />
             </div>
 
-            <h3>
-              No se encontraron vectores
-            </h3>
+            <h3>{
+                  texto(
+                    "No se encontraron vectores",
+                    "No vectors found",
+                  )
+                }</h3>
 
             <p>
               Modifica el término utilizado en la búsqueda.
@@ -707,7 +755,10 @@ function Vectores() {
                     <div className="vector-card-actions">
                       <button
                         type="button"
-                        title="Editar vector"
+                        title={texto(
+                "Editar vector",
+                "Edit vector",
+              )}
                         onClick={() =>
                           abrirEdicion(
                             vector,
@@ -722,7 +773,10 @@ function Vectores() {
                       <button
                         type="button"
                         className="vector-delete"
-                        title="Eliminar vector"
+                        title={texto(
+                "Eliminar vector",
+                "Delete vector",
+              )}
                         onClick={() =>
                           void eliminarVector(
                             vector.id,
@@ -803,18 +857,30 @@ function Vectores() {
           <div className="vector-modal">
             <div className="vector-modal-header">
               <div>
-                <span className="dashboard-card-label">
-                  EDITOR DE VECTORES
-                </span>
+                <span className="dashboard-card-label">{
+                  texto(
+                    "EDITOR DE VECTORES",
+                    "VECTOR EDITOR",
+                  )
+                }</span>
 
                 <h2>
                   {vectorEditando
-                    ? "Editar vector"
-                    : "Nuevo vector"}
+                    ? texto(
+                        "Editar vector",
+                        "Edit vector",
+                      )
+                    : texto(
+                        "Nuevo vector",
+                        "New vector",
+                      )}
                 </h2>
 
                 <p>
-                  Introduce los elementos numéricos del vector.
+                  {texto(
+                    "Introduce los elementos numéricos del vector.",
+                    "Enter the numerical elements of the vector.",
+                  )}
                 </p>
               </div>
 
@@ -823,7 +889,10 @@ function Vectores() {
                 onClick={
                   cerrarModal
                 }
-                aria-label="Cerrar"
+                aria-label={texto(
+                "Cerrar",
+                "Close",
+              )}
               >
                 <X
                   size={19}
@@ -842,9 +911,12 @@ function Vectores() {
               <div className="vector-form">
 
                 <div className="form-group">
-                  <label htmlFor="nombre">
-                    Nombre del vector
-                  </label>
+                  <label htmlFor="nombre">{
+                  texto(
+                    "Nombre del vector",
+                    "Vector name",
+                  )
+                }</label>
 
                   <input
                     id="nombre"
@@ -868,9 +940,12 @@ function Vectores() {
 
 
                 <div className="form-group">
-                  <label htmlFor="descripcion">
-                    Descripción
-                  </label>
+                  <label htmlFor="descripcion">{
+                  texto(
+                    "Descripción",
+                    "Description",
+                  )
+                }</label>
 
                   <input
                     id="descripcion"
@@ -894,9 +969,12 @@ function Vectores() {
 
 
                 <div className="form-group">
-                  <label htmlFor="valores">
-                    Valores
-                  </label>
+                  <label htmlFor="valores">{
+                  texto(
+                    "Valores",
+                    "Values",
+                  )
+                }</label>
 
                   <input
                     id="valores"
@@ -908,7 +986,10 @@ function Vectores() {
                   />
 
                   <small className="vector-help">
-                    Separa cada valor utilizando una coma. Se permiten números enteros, decimales y negativos.
+                    {texto(
+                      "Separa cada valor utilizando una coma. Se permiten números enteros, decimales y negativos.",
+                      "Separate each value with a comma. Integers, decimals and negative numbers are allowed.",
+                    )}
                   </small>
 
                   {errors.valores && (
@@ -925,9 +1006,12 @@ function Vectores() {
 
                 <div className="vector-preview">
                   <div className="vector-preview-header">
-                    <span>
-                      Vista previa
-                    </span>
+                    <span>{
+                  texto(
+                    "Vista previa",
+                    "Preview",
+                  )
+                }</span>
 
                     <strong>
                       Dimensión:{" "}
@@ -969,7 +1053,10 @@ function Vectores() {
                     </div>
                   ) : (
                     <p>
-                      Ingresa valores para visualizar el vector.
+                      {texto(
+                        "Ingresa valores para visualizar el vector.",
+                        "Enter values to preview the vector.",
+                      )}
                     </p>
                   )}
                 </div>
@@ -1006,9 +1093,12 @@ function Vectores() {
                   disabled={
                     isSubmitting
                   }
-                >
-                  Cancelar
-                </button>
+                >{
+                  texto(
+                    "Cancelar",
+                    "Cancel",
+                  )
+                }</button>
 
                 <button
                   type="submit"
@@ -1024,8 +1114,8 @@ function Vectores() {
                       />
 
                       {isSubmitting
-                        ? "Guardando..."
-                        : "Guardar cambios"}
+                        ? texto('Guardando...', 'Saving...')
+                        : texto('Guardar cambios', 'Save changes')}
                     </>
                   ) : (
                     <>
@@ -1034,8 +1124,8 @@ function Vectores() {
                       />
 
                       {isSubmitting
-                        ? "Creando..."
-                        : "Crear vector"}
+                        ? texto('Creando...', 'Creating...')
+                        : texto('Crear vector', 'Create vector')}
                     </>
                   )}
                 </button>

@@ -18,6 +18,10 @@ import {
 
 import PageHeader from "../components/ui/PageHeader";
 
+import {
+  useAppSettings,
+} from "../context/AppSettingsContext";
+
 import type {
   OperacionAPI,
 } from "../services/api/operacionService";
@@ -249,6 +253,10 @@ function convertirOperacion(
 // ==========================================================
 
 function Historial() {
+  const {
+    texto,
+  } = useAppSettings();
+
   const operacionesQuery =
     useOperaciones();
 
@@ -447,9 +455,18 @@ function Historial() {
   return (
     <div className="history-page">
       <PageHeader
-        etiqueta="CONTROL Y TRAZABILIDAD"
-        titulo="Historial"
-        descripcion="Consulta las operaciones realizadas, sus entradas, resultados, fecha y estado."
+        etiqueta={texto(
+          "CONTROL Y TRAZABILIDAD",
+          "CONTROL AND TRACEABILITY",
+        )}
+        titulo={texto(
+          "Historial",
+          "History",
+        )}
+        descripcion={texto(
+          "Consulta las operaciones realizadas, sus entradas, resultados, fecha y estado.",
+          "Review performed operations, their inputs, results, date and status.",
+        )}
       />
 
 
@@ -464,9 +481,12 @@ function Historial() {
           </div>
 
           <div>
-            <span>
-              Total de operaciones
-            </span>
+            <span>{
+                  texto(
+                    "Total de operaciones",
+                    "Total operations",
+                  )
+                }</span>
 
             <strong>
               {historial.length}
@@ -483,9 +503,12 @@ function Historial() {
           </div>
 
           <div>
-            <span>
-              Completadas
-            </span>
+            <span>{
+                  texto(
+                    "Completadas",
+                    "Completed",
+                  )
+                }</span>
 
             <strong>
               {completadas}
@@ -502,9 +525,12 @@ function Historial() {
           </div>
 
           <div>
-            <span>
-              Con error
-            </span>
+            <span>{
+                  texto(
+                    "Con error",
+                    "With errors",
+                  )
+                }</span>
 
             <strong>
               {errores}
@@ -521,9 +547,12 @@ function Historial() {
           </div>
 
           <div>
-            <span>
-              Pendientes
-            </span>
+            <span>{
+                  texto(
+                    "Pendientes",
+                    "Pending",
+                  )
+                }</span>
 
             <strong>
               {pendientes}
@@ -541,9 +570,12 @@ function Historial() {
             size={28}
           />
 
-          <strong>
-            No se pudo cargar el historial
-          </strong>
+          <strong>{
+                  texto(
+                    "No se pudo cargar el historial",
+                    "History could not be loaded",
+                  )
+                }</strong>
 
           <p>
             {errorCarga}
@@ -563,7 +595,10 @@ function Historial() {
 
             <input
               type="text"
-              placeholder="Buscar operación, categoría o usuario..."
+              placeholder={texto(
+                "Buscar operación, categoría o usuario...",
+                "Search operation, category or user...",
+              )}
               value={busqueda}
               onChange={(evento) =>
                 setBusqueda(
@@ -589,21 +624,30 @@ function Historial() {
                 )
               }
             >
-              <option value="Todos">
-                Todos los estados
-              </option>
+              <option value="Todos">{
+                  texto(
+                    "Todos los estados",
+                    "All statuses",
+                  )
+                }</option>
 
-              <option value="Completada">
-                Completada
-              </option>
+              <option value="Completada">{
+                  texto(
+                    "Completada",
+                    "Completed",
+                  )
+                }</option>
 
               <option value="Error">
                 Error
               </option>
 
-              <option value="Pendiente">
-                Pendiente
-              </option>
+              <option value="Pendiente">{
+                  texto(
+                    "Pendiente",
+                    "Pending",
+                  )
+                }</option>
             </select>
           </div>
         </div>
@@ -613,29 +657,47 @@ function Historial() {
           <table className="history-table">
             <thead>
               <tr>
-                <th>
-                  OPERACIÓN
-                </th>
+                <th>{
+                  texto(
+                    "OPERACIÓN",
+                    "OPERATION",
+                  )
+                }</th>
 
-                <th>
-                  CATEGORÍA
-                </th>
+                <th>{
+                  texto(
+                    "CATEGORÍA",
+                    "CATEGORY",
+                  )
+                }</th>
 
-                <th>
-                  USUARIO
-                </th>
+                <th>{
+                  texto(
+                    "USUARIO",
+                    "USER",
+                  )
+                }</th>
 
-                <th>
-                  FECHA
-                </th>
+                <th>{
+                  texto(
+                    "FECHA",
+                    "DATE",
+                  )
+                }</th>
 
-                <th>
-                  ESTADO
-                </th>
+                <th>{
+                  texto(
+                    "ESTADO",
+                    "STATUS",
+                  )
+                }</th>
 
-                <th>
-                  DETALLE
-                </th>
+                <th>{
+                  texto(
+                    "DETALLE",
+                    "DETAIL",
+                  )
+                }</th>
               </tr>
             </thead>
 
@@ -707,7 +769,10 @@ function Historial() {
                       <button
                         type="button"
                         className="history-view"
-                        title="Ver detalle"
+                        title={texto(
+                "Ver detalle",
+                "View details",
+              )}
                         onClick={() =>
                           setRegistroSeleccionado(
                             registro,
@@ -716,10 +781,12 @@ function Historial() {
                       >
                         <Eye
                           size={15}
-                        />
-
-                        Ver
-                      </button>
+                        />{
+                  texto(
+                    "Ver",
+                    "View",
+                  )
+                }</button>
                     </td>
                   </tr>
                 ),
@@ -734,13 +801,19 @@ function Historial() {
                 size={28}
               />
 
-              <strong>
-                Cargando historial
-              </strong>
+              <strong>{
+                  texto(
+                    "Cargando historial",
+                    "Loading history",
+                  )
+                }</strong>
 
-              <p>
-                Cargando operaciones...
-              </p>
+              <p>{
+                  texto(
+                    "Cargando operaciones...",
+                    "Loading operations...",
+                  )
+                }</p>
             </div>
           )}
 
@@ -754,12 +827,18 @@ function Historial() {
                   size={28}
                 />
 
-                <strong>
-                  No hay operaciones registradas
-                </strong>
+                <strong>{
+                  texto(
+                    "No hay operaciones registradas",
+                    "No operations recorded",
+                  )
+                }</strong>
 
                 <p>
-                  Realiza una operación matemática para que aparezca en el historial.
+                  {texto(
+                    "Realiza una operación matemática para que aparezca en el historial.",
+                    "Perform a mathematical operation for it to appear in the history.",
+                  )}
                 </p>
               </div>
             )}
@@ -801,9 +880,12 @@ function Historial() {
           <div className="history-modal">
             <div className="history-modal-header">
               <div>
-                <span>
-                  DETALLE DE OPERACIÓN
-                </span>
+                <span>{
+                  texto(
+                    "DETALLE DE OPERACIÓN",
+                    "OPERATION DETAILS",
+                  )
+                }</span>
 
                 <h2>
                   {
@@ -815,7 +897,10 @@ function Historial() {
 
               <button
                 type="button"
-                aria-label="Cerrar"
+                aria-label={texto(
+                "Cerrar",
+                "Close",
+              )}
                 onClick={() =>
                   setRegistroSeleccionado(
                     null,
@@ -845,9 +930,12 @@ function Historial() {
 
 
                 <div>
-                  <span>
-                    Categoría
-                  </span>
+                  <span>{
+                  texto(
+                    "Categoría",
+                    "Category",
+                  )
+                }</span>
 
                   <strong>
                     {
@@ -858,9 +946,12 @@ function Historial() {
 
 
                 <div>
-                  <span>
-                    Tipo
-                  </span>
+                  <span>{
+                  texto(
+                    "Tipo",
+                    "Type",
+                  )
+                }</span>
 
                   <strong>
                     {
@@ -871,9 +962,12 @@ function Historial() {
 
 
                 <div>
-                  <span>
-                    Usuario
-                  </span>
+                  <span>{
+                  texto(
+                    "Usuario",
+                    "User",
+                  )
+                }</span>
 
                   <strong>
                     {
@@ -884,9 +978,12 @@ function Historial() {
 
 
                 <div>
-                  <span>
-                    Fecha
-                  </span>
+                  <span>{
+                  texto(
+                    "Fecha",
+                    "Date",
+                  )
+                }</span>
 
                   <strong>
                     {
@@ -897,9 +994,12 @@ function Historial() {
 
 
                 <div>
-                  <span>
-                    Estado
-                  </span>
+                  <span>{
+                  texto(
+                    "Estado",
+                    "Status",
+                  )
+                }</span>
 
                   <strong
                     className={
@@ -917,9 +1017,12 @@ function Historial() {
 
 
               <div className="history-detail-block">
-                <span>
-                  Datos de entrada
-                </span>
+                <span>{
+                  texto(
+                    "Datos de entrada",
+                    "Input data",
+                  )
+                }</span>
 
                 <code>
                   {
@@ -930,9 +1033,12 @@ function Historial() {
 
 
               <div className="history-detail-block">
-                <span>
-                  Resultado
-                </span>
+                <span>{
+                  texto(
+                    "Resultado",
+                    "Result",
+                  )
+                }</span>
 
                 <code>
                   {
@@ -952,9 +1058,12 @@ function Historial() {
                     null,
                   )
                 }
-              >
-                Cerrar detalle
-              </button>
+              >{
+                  texto(
+                    "Cerrar detalle",
+                    "Close details",
+                  )
+                }</button>
             </div>
           </div>
         </div>
