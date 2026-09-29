@@ -482,3 +482,470 @@
       width: 55px;
     }
   }
+
+/* MATRIXFLOW BUSINESS MATRIX GENERATOR */
+.matrix-business-message {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.matrix-business-message.success {
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.matrix-business-message.error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.matrix-business-generator {
+  margin-bottom: 20px;
+  overflow: hidden;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+}
+
+.matrix-business-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 21px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 70%);
+}
+
+.matrix-business-header-icon {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.matrix-business-header span,
+.matrix-saved-heading > span,
+.matrix-result-top > div > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #2563eb;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.matrix-business-header h2,
+.matrix-saved-heading h2 {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.matrix-business-header p,
+.matrix-saved-heading p {
+  max-width: 760px;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.matrix-generator-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px;
+}
+
+.matrix-generator-field {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+.matrix-step-number {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 11px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.matrix-generator-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.matrix-generator-field select {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 10px;
+}
+
+.matrix-generator-field select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.matrix-generator-field select:disabled {
+  cursor: not-allowed;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.matrix-generator-field small {
+  display: block;
+  margin-top: 7px;
+  color: #94a3b8;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.matrix-structure-explanation {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 18px;
+  margin: 0 20px 18px;
+  padding: 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #eff6ff;
+}
+
+.matrix-structure-explanation > div:not(.matrix-structure-arrow) {
+  text-align: center;
+}
+
+.matrix-axis-badge {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 4px 7px;
+  border-radius: 20px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.matrix-structure-explanation strong {
+  display: block;
+  color: #0f172a;
+  font-size: 11px;
+}
+
+.matrix-structure-explanation p {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 8px;
+}
+
+.matrix-structure-arrow {
+  color: #2563eb;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.matrix-generator-action {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px 20px;
+}
+
+.matrix-generator-action button {
+  min-width: 175px;
+}
+
+.matrix-business-explanation {
+  margin: 0 20px 20px;
+  padding: 14px 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 9px;
+  background: #eff6ff;
+}
+
+.matrix-business-explanation strong {
+  color: #1d4ed8;
+  font-size: 10px;
+}
+
+.matrix-business-explanation p {
+  margin-top: 4px;
+  color: #475569;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.matrix-business-result {
+  margin: 0 20px 20px;
+  padding: 19px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.matrix-result-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.matrix-result-top h3 {
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.matrix-result-top p {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.matrix-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 13px 0;
+}
+
+.matrix-result-meta > span {
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 9px;
+}
+
+.matrix-result-meta strong {
+  color: #334155;
+}
+
+.matrix-result-section {
+  margin-top: 4px;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.matrix-result-section + .matrix-result-section {
+  margin-top: 14px;
+}
+
+.matrix-result-section-title {
+  margin-bottom: 12px;
+}
+
+.matrix-result-section-title strong {
+  display: block;
+  color: #0f172a;
+  font-size: 10px;
+}
+
+.matrix-result-section-title span {
+  display: block;
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 8px;
+}
+
+.matrix-business-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.matrix-business-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.matrix-business-table th,
+.matrix-business-table td {
+  padding: 10px 12px;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 9px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matrix-business-table thead th {
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 800;
+}
+
+.matrix-business-table tbody th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 800;
+  text-align: left;
+}
+
+.matrix-business-table td {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.matrix-business-table tr:last-child th,
+.matrix-business-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.matrix-business-table th:last-child,
+.matrix-business-table td:last-child {
+  border-right: 0;
+}
+
+.matrix-corner-cell {
+  text-align: left !important;
+}
+
+.matrix-math-section {
+  overflow: hidden;
+}
+
+.matrix-business-math {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+.matrix-business-bracket {
+  display: flex;
+  align-items: center;
+  color: #2563eb;
+  font-family: Georgia, serif;
+  font-size: 64px;
+}
+
+.matrix-business-math-values {
+  display: grid;
+  gap: 6px;
+}
+
+.matrix-business-math-row {
+  display: flex;
+  gap: 6px;
+}
+
+.matrix-business-math-row strong {
+  min-width: 46px;
+  padding: 8px;
+  border: 1px solid #dbeafe;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 9px;
+  text-align: center;
+}
+
+.matrix-meaning {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.matrix-meaning > div {
+  padding: 10px;
+  border-radius: 8px;
+  background: #eff6ff;
+  text-align: center;
+}
+
+.matrix-meaning span {
+  display: block;
+  color: #64748b;
+  font-size: 8px;
+}
+
+.matrix-meaning strong {
+  display: block;
+  margin-top: 3px;
+  color: #1d4ed8;
+  font-size: 9px;
+}
+
+.matrix-saved-section {
+  margin-top: 20px;
+}
+
+.matrix-saved-heading {
+  padding: 18px 18px 0;
+}
+
+@media (max-width: 900px) {
+  .matrix-generator-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .matrix-meaning {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .matrix-business-header,
+  .matrix-result-top {
+    flex-direction: column;
+  }
+
+  .matrix-structure-explanation {
+    grid-template-columns: 1fr;
+  }
+
+  .matrix-structure-arrow {
+    transform: rotate(90deg);
+    text-align: center;
+  }
+
+  .matrix-generator-action {
+    display: block;
+  }
+
+  .matrix-generator-action button,
+  .matrix-result-top button {
+    width: 100%;
+  }
+
+  .matrix-business-result {
+    margin-right: 12px;
+    margin-left: 12px;
+  }
+}
