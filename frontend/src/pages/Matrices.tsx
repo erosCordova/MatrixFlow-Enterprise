@@ -13,15 +13,15 @@ import {
 
 import {
   BarChart3,
+  Boxes,
   Brackets,
+  CalendarDays,
   Edit3,
   Grid3X3,
-  Package,
   Plus,
   Save,
   Search,
-  ShoppingCart,
-  Store,
+  Target,
   Trash2,
   X,
 } from "lucide-react";
@@ -37,8 +37,8 @@ import {
   type MatrizFormulario,
 } from "../schemas/matrizSchema";
 
-import {
-  type MatrizVista,
+import type {
+  MatrizVista,
 } from "../services/api/matrizService";
 
 import {
@@ -49,6 +49,10 @@ import {
 } from "../hooks/useMatricesOperaciones";
 
 import {
+  useDatosMetas,
+} from "../hooks/useMetasVectores";
+
+import {
   useDatosInventario,
   useDatosVentas,
 } from "../hooks/useVentasInventario";
@@ -56,40 +60,76 @@ import {
 import "../styles/Matrices.css";
 
 
-type OrigenMatriz =
+type FuenteMatriz =
   | "ventas"
-  | "inventario";
+  | "inventario"
+  | "metas";
 
-type MetricaVentas =
-  | "unidades"
-  | "importe";
 
-type PeriodoMatriz =
+type EstructuraVentas =
+  | "sucursal_producto"
+  | "producto_periodo";
+
+
+type PeriodoVentas =
   | "todo"
-  | "mes_actual"
   | "anio_actual";
+
+
+type MetricaMatriz =
+  | "ventas_unidades"
+  | "ventas_importe"
+  | "ventas_precio_promedio"
+  | "stock_actual"
+  | "stock_minimo"
+  | "stock_diferencia"
+  | "stock_cobertura"
+  | "meta_monto"
+  | "meta_ventas"
+  | "meta_diferencia"
+  | "meta_cumplimiento";
 
 
 interface MatrizGenerada {
   nombre: string;
   descripcion: string;
-  valores: number[][];
-  filas: string[];
-  columnas: string[];
-  origen: OrigenMatriz;
+
+  valores:
+    number[][];
+
+  filas:
+    string[];
+
+  columnas:
+    string[];
+
+  monetario:
+    boolean;
+
+  porcentaje:
+    boolean;
+
+  unidad:
+    string;
+
+  fuente:
+    FuenteMatriz;
 
   metrica:
-    | MetricaVentas
-    | "stock";
+    MetricaMatriz;
 
-  periodo: string;
+  estructura:
+    string;
+
+  periodo:
+    string;
 }
 
 
 function crearMatrizVacia(
   filas: number,
   columnas: number,
-): number[][] {
+) {
   return Array.from(
     {
       length: filas,
@@ -105,57 +145,13 @@ function crearMatrizVacia(
 }
 
 
-function obtenerMensajeError(
+function mensajeError(
   error: unknown,
-  mensajePredeterminado: string,
+  predeterminado: string,
 ) {
   return error instanceof Error
     ? error.message
-    : mensajePredeterminado;
-}
-
-
-function perteneceAlPeriodo(
-  fechaVenta: string,
-  periodo: PeriodoMatriz,
-) {
-  if (
-    periodo ===
-    "todo"
-  ) {
-    return true;
-  }
-
-  if (!fechaVenta) {
-    return false;
-  }
-
-  const hoy =
-    new Date();
-
-  const anio =
-    hoy.getFullYear();
-
-  const mes =
-    String(
-      hoy.getMonth() + 1,
-    ).padStart(
-      2,
-      "0",
-    );
-
-  if (
-    periodo ===
-    "anio_actual"
-  ) {
-    return fechaVenta.startsWith(
-      String(anio),
-    );
-  }
-
-  return fechaVenta.startsWith(
-    `${anio}-${mes}`,
-  );
+    : predeterminado;
 }
 
 
@@ -167,9 +163,9 @@ function Matrices() {
   } = useAppSettings();
 
 
-  // ==========================================================
+  // =========================================================
   // DATOS
-  // ==========================================================
+  // =========================================================
 
   const matricesQuery =
     useMatrices();
@@ -179,6 +175,9 @@ function Matrices() {
 
   const datosInventario =
     useDatosInventario();
+
+  const datosMetas =
+    useDatosMetas();
 
   const crearMatrizMutation =
     useCrearMatriz();
@@ -206,18 +205,19 @@ function Matrices() {
   const inventario =
     datosInventario.registros;
 
+  const metas =
+    datosMetas.metas;
 
-  const cargandoMatrices =
-    matricesQuery.isLoading;
 
-  const cargandoNegocio =
+  const cargandoDatos =
     datosVentas.isLoading ||
-    datosInventario.isLoading;
+    datosInventario.isLoading ||
+    datosMetas.isLoading;
 
 
-  // ==========================================================
+  // =========================================================
   // MENSAJES
-  // ==========================================================
+  // =========================================================
 
   const [
     mensaje,
@@ -225,59 +225,72 @@ function Matrices() {
   ] = useState("");
 
   const [
-    errorOperacion,
-    setErrorAPI,
+    errorLocal,
+    setErrorLocal,
   ] = useState("");
 
 
   const errorCarga =
     matricesQuery.error ??
     datosVentas.error ??
-    datosInventario.error;
+    datosInventario.error ??
+    datosMetas.error;
 
 
-  const errorAPI =
-    errorOperacion ||
+  const errorGeneral =
+    errorLocal ||
     (
       errorCarga
-        ? obtenerMensajeError(
+        ? mensajeError(
             errorCarga,
             texto(
-              "No se pudieron cargar los datos necesarios.",
-              "The required data could not be loaded.",
+              "No se pudieron cargar todos los datos empresariales.",
+              "Not all business data could be loaded.",
             ),
           )
         : ""
     );
 
 
-  // ==========================================================
-  // GENERADOR EMPRESARIAL
-  // ==========================================================
+  // =========================================================
+  // CONFIGURACIÓN
+  // =========================================================
 
   const [
-    origen,
-    setOrigen,
+    fuente,
+    setFuente,
   ] =
-    useState<OrigenMatriz>(
+    useState<FuenteMatriz>(
       "ventas",
     );
 
-  const [
-    metricaVentas,
-    setMetricaVentas,
-  ] =
-    useState<MetricaVentas>(
-      "unidades",
-    );
 
   const [
-    periodo,
-    setPeriodo,
+    metrica,
+    setMetrica,
   ] =
-    useState<PeriodoMatriz>(
+    useState<MetricaMatriz>(
+      "ventas_unidades",
+    );
+
+
+  const [
+    estructuraVentas,
+    setEstructuraVentas,
+  ] =
+    useState<EstructuraVentas>(
+      "sucursal_producto",
+    );
+
+
+  const [
+    periodoVentas,
+    setPeriodoVentas,
+  ] =
+    useState<PeriodoVentas>(
       "todo",
     );
+
 
   const [
     matrizGenerada,
@@ -287,6 +300,10 @@ function Matrices() {
       null,
     );
 
+
+  // =========================================================
+  // ORDEN
+  // =========================================================
 
   const sucursalesOrdenadas =
     useMemo(
@@ -322,234 +339,584 @@ function Matrices() {
     );
 
 
-  const obtenerTextoPeriodo = (
-    valor: PeriodoMatriz,
+  const periodosVentas =
+    useMemo(() => {
+      const periodos =
+        Array.from(
+          new Set(
+            ventas
+              .map(
+                (venta) =>
+                  venta.fecha?.slice(
+                    0,
+                    7,
+                  ),
+              )
+              .filter(Boolean),
+          ),
+        );
+
+      return periodos.sort(
+        (a, b) =>
+          b.localeCompare(
+            a,
+          ),
+      );
+    }, [
+      ventas,
+    ]);
+
+
+  const periodosMetas =
+    useMemo(() => {
+      return Array.from(
+        new Set(
+          metas.map(
+            (meta) =>
+              meta.periodo,
+          ),
+        ),
+      ).sort(
+        (a, b) =>
+          b.localeCompare(
+            a,
+          ),
+      );
+    }, [
+      metas,
+    ]);
+
+
+  // =========================================================
+  // CAMBIO DE FUENTE
+  // =========================================================
+
+  const cambiarFuente = (
+    nuevaFuente:
+      FuenteMatriz,
   ) => {
-    if (
-      valor ===
-      "mes_actual"
-    ) {
-      return texto(
-        "Mes actual",
-        "Current month",
-      );
-    }
-
-    if (
-      valor ===
-      "anio_actual"
-    ) {
-      return texto(
-        "Año actual",
-        "Current year",
-      );
-    }
-
-    return texto(
-      "Todo el historial",
-      "All history",
+    setFuente(
+      nuevaFuente,
     );
+
+    setMatrizGenerada(
+      null,
+    );
+
+    setErrorLocal("");
+    setMensaje("");
+
+
+    if (
+      nuevaFuente ===
+      "ventas"
+    ) {
+      setMetrica(
+        "ventas_unidades",
+      );
+    }
+
+    if (
+      nuevaFuente ===
+      "inventario"
+    ) {
+      setMetrica(
+        "stock_actual",
+      );
+    }
+
+    if (
+      nuevaFuente ===
+      "metas"
+    ) {
+      setMetrica(
+        "meta_monto",
+      );
+    }
   };
 
 
-  const generarMatrizEmpresarial =
+  // =========================================================
+  // TEXTO MÉTRICA
+  // =========================================================
+
+  const textoMetrica =
     () => {
-      setMensaje("");
-      setErrorAPI("");
-      setMatrizGenerada(
-        null,
+      switch (
+        metrica
+      ) {
+        case "ventas_unidades":
+          return texto(
+            "Unidades vendidas",
+            "Units sold",
+          );
+
+        case "ventas_importe":
+          return texto(
+            "Importe de ventas",
+            "Sales amount",
+          );
+
+        case "ventas_precio_promedio":
+          return texto(
+            "Precio medio de venta",
+            "Average selling price",
+          );
+
+        case "stock_actual":
+          return texto(
+            "Stock actual",
+            "Current stock",
+          );
+
+        case "stock_minimo":
+          return texto(
+            "Stock mínimo",
+            "Minimum stock",
+          );
+
+        case "stock_diferencia":
+          return texto(
+            "Actual - mínimo",
+            "Current - minimum",
+          );
+
+        case "stock_cobertura":
+          return texto(
+            "Cobertura de stock",
+            "Stock coverage",
+          );
+
+        case "meta_monto":
+          return texto(
+            "Meta monetaria",
+            "Monetary target",
+          );
+
+        case "meta_ventas":
+          return texto(
+            "Ventas reales",
+            "Actual sales",
+          );
+
+        case "meta_diferencia":
+          return texto(
+            "Ventas - meta",
+            "Sales - target",
+          );
+
+        case "meta_cumplimiento":
+          return texto(
+            "Cumplimiento de meta",
+            "Target achievement",
+          );
+      }
+    };
+
+
+  // =========================================================
+  // FILTRAR VENTAS
+  // =========================================================
+
+  const ventasFiltradas =
+    useMemo(() => {
+      if (
+        periodoVentas ===
+        "todo"
+      ) {
+        return ventas;
+      }
+
+      const anio =
+        String(
+          new Date().getFullYear(),
+        );
+
+      return ventas.filter(
+        (venta) =>
+          venta.fecha.startsWith(
+            anio,
+          ),
+      );
+    }, [
+      ventas,
+      periodoVentas,
+    ]);
+
+
+  // =========================================================
+  // MÉTRICA DE VENTA
+  // =========================================================
+
+  const calcularVenta = (
+    registros:
+      typeof ventas,
+  ) => {
+    const unidades =
+      registros.reduce(
+        (
+          total,
+          venta,
+        ) =>
+          total +
+          venta.cantidad,
+        0,
       );
 
+
+    const importe =
+      registros.reduce(
+        (
+          total,
+          venta,
+        ) =>
+          total +
+          venta.total,
+        0,
+      );
+
+
+    if (
+      metrica ===
+      "ventas_importe"
+    ) {
+      return importe;
+    }
+
+
+    if (
+      metrica ===
+      "ventas_precio_promedio"
+    ) {
+      return unidades > 0
+        ? importe /
+            unidades
+        : 0;
+    }
+
+
+    return unidades;
+  };
+
+
+  // =========================================================
+  // GENERAR VENTAS
+  // =========================================================
+
+  const generarVentas =
+    (): MatrizGenerada | null => {
+
       if (
-        sucursalesOrdenadas.length ===
+        ventasFiltradas.length ===
         0
       ) {
-        setErrorAPI(
+        setErrorLocal(
           texto(
-            "No existen sucursales registradas.",
-            "There are no registered branches.",
+            "No existen ventas para el periodo seleccionado.",
+            "There are no sales for the selected period.",
           ),
         );
 
-        return;
-      }
-
-      if (
-        productosOrdenados.length ===
-        0
-      ) {
-        setErrorAPI(
-          texto(
-            "No existen productos registrados.",
-            "There are no registered products.",
-          ),
-        );
-
-        return;
+        return null;
       }
 
 
-      const nombresSucursales =
-        sucursalesOrdenadas.map(
-          (sucursal) =>
-            sucursal.nombre,
-        );
+      const monetario =
+        metrica ===
+          "ventas_importe" ||
+        metrica ===
+          "ventas_precio_promedio";
 
-      const nombresProductos =
-        productosOrdenados.map(
-          (producto) =>
-            producto.nombre,
-        );
-
-
-      // ======================================================
-      // MATRIZ DE VENTAS
-      // ======================================================
 
       if (
-        origen ===
-        "ventas"
+        estructuraVentas ===
+        "sucursal_producto"
       ) {
-        const ventasFiltradas =
-          ventas.filter(
-            (venta) =>
-              perteneceAlPeriodo(
-                venta.fecha,
-                periodo,
-              ),
+        const filas =
+          sucursalesOrdenadas.map(
+            (sucursal) =>
+              sucursal.nombre,
           );
 
-
-        if (
-          ventasFiltradas.length ===
-          0
-        ) {
-          setErrorAPI(
-            texto(
-              "No existen ventas para el periodo seleccionado.",
-              "There are no sales for the selected period.",
-            ),
+        const columnas =
+          productosOrdenados.map(
+            (producto) =>
+              producto.nombre,
           );
-
-          return;
-        }
 
 
         const valores =
           sucursalesOrdenadas.map(
             (sucursal) =>
               productosOrdenados.map(
-                (producto) =>
-                  ventasFiltradas
-                    .filter(
+                (producto) => {
+
+                  const registros =
+                    ventasFiltradas.filter(
                       (venta) =>
                         venta.sucursalId ===
                           sucursal.id &&
                         venta.productoId ===
                           producto.id,
-                    )
-                    .reduce(
-                      (
-                        total,
-                        venta,
-                      ) =>
-                        total +
-                        (
-                          metricaVentas ===
-                          "importe"
-                            ? venta.total
-                            : venta.cantidad
-                        ),
-                      0,
-                    ),
+                    );
+
+
+                  return calcularVenta(
+                    registros,
+                  );
+                },
               ),
           );
 
 
-        const nombreMetrica =
-          metricaVentas ===
-          "importe"
-            ? texto(
-                "Importe de ventas",
-                "Sales amount",
-              )
-            : texto(
-                "Unidades vendidas",
-                "Units sold",
-              );
-
-
-        const textoPeriodo =
-          obtenerTextoPeriodo(
-            periodo,
-          );
-
-
-        setMatrizGenerada({
+        return {
           nombre:
-            `${nombreMetrica} - ${textoPeriodo}`,
+            `${textoMetrica()} - ${texto(
+              "Sucursal × Producto",
+              "Branch × Product",
+            )}`,
 
           descripcion:
-            texto(
-              `${nombreMetrica} por sucursal y producto. Filas: ${nombresSucursales.join(", ")}. Columnas: ${nombresProductos.join(", ")}. Periodo: ${textoPeriodo}.`,
-              `${nombreMetrica} by branch and product. Rows: ${nombresSucursales.join(", ")}. Columns: ${nombresProductos.join(", ")}. Period: ${textoPeriodo}.`,
-            ),
+            `${texto(
+              "Fuente",
+              "Source",
+            )}: ${texto(
+              "Ventas",
+              "Sales",
+            )}. ${texto(
+              "Filas",
+              "Rows",
+            )}: ${filas.join(
+              ", ",
+            )}. ${texto(
+              "Columnas",
+              "Columns",
+            )}: ${columnas.join(
+              ", ",
+            )}. ${texto(
+              "Métrica",
+              "Metric",
+            )}: ${textoMetrica()}.`,
 
           valores,
+          filas,
+          columnas,
 
-          filas:
-            nombresSucursales,
+          monetario,
+          porcentaje:
+            false,
 
-          columnas:
-            nombresProductos,
+          unidad:
+            monetario
+              ? texto(
+                  "Moneda",
+                  "Currency",
+                )
+              : texto(
+                  "Unidades",
+                  "Units",
+                ),
 
-          origen:
+          fuente:
             "ventas",
 
-          metrica:
-            metricaVentas,
+          metrica,
+
+          estructura:
+            texto(
+              "Sucursal × Producto",
+              "Branch × Product",
+            ),
 
           periodo:
-            textoPeriodo,
-        });
-
-        return;
+            periodoVentas ===
+            "todo"
+              ? texto(
+                  "Todo el historial",
+                  "All history",
+                )
+              : String(
+                  new Date()
+                    .getFullYear(),
+                ),
+        };
       }
 
 
-      // ======================================================
-      // MATRIZ DE INVENTARIO
-      // ======================================================
+      // =====================================================
+      // PRODUCTO × PERIODO
+      // =====================================================
+
+      if (
+        periodosVentas.length ===
+        0
+      ) {
+        setErrorLocal(
+          texto(
+            "No existen periodos de ventas disponibles.",
+            "No sales periods are available.",
+          ),
+        );
+
+        return null;
+      }
+
+
+      const filas =
+        productosOrdenados.map(
+          (producto) =>
+            producto.nombre,
+        );
+
+
+      const columnas =
+        periodosVentas;
+
+
+      const valores =
+        productosOrdenados.map(
+          (producto) =>
+            columnas.map(
+              (periodo) => {
+
+                const registros =
+                  ventas.filter(
+                    (venta) =>
+                      venta.productoId ===
+                        producto.id &&
+                      venta.fecha.startsWith(
+                        periodo,
+                      ),
+                  );
+
+
+                return calcularVenta(
+                  registros,
+                );
+              },
+            ),
+        );
+
+
+      return {
+        nombre:
+          `${textoMetrica()} - ${texto(
+            "Producto × Periodo",
+            "Product × Period",
+          )}`,
+
+        descripcion:
+          `${texto(
+            "Fuente",
+            "Source",
+          )}: ${texto(
+            "Ventas",
+            "Sales",
+          )}. ${texto(
+            "Filas",
+            "Rows",
+          )}: ${filas.join(
+            ", ",
+          )}. ${texto(
+            "Columnas",
+            "Columns",
+          )}: ${columnas.join(
+            ", ",
+          )}.`,
+
+        valores,
+        filas,
+        columnas,
+
+        monetario,
+        porcentaje:
+          false,
+
+        unidad:
+          monetario
+            ? texto(
+                "Moneda",
+                "Currency",
+              )
+            : texto(
+                "Unidades",
+                "Units",
+              ),
+
+        fuente:
+          "ventas",
+
+        metrica,
+
+        estructura:
+          texto(
+            "Producto × Periodo",
+            "Product × Period",
+          ),
+
+        periodo:
+          texto(
+            "Histórico mensual",
+            "Monthly history",
+          ),
+      };
+    };
+
+
+  // =========================================================
+  // INVENTARIO
+  // =========================================================
+
+  const generarInventario =
+    (): MatrizGenerada | null => {
 
       if (
         inventario.length ===
         0
       ) {
-        setErrorAPI(
+        setErrorLocal(
           texto(
-            "No existen registros de inventario para construir la matriz.",
-            "There are no inventory records available to build the matrix.",
+            "No existen registros de inventario.",
+            "There are no inventory records.",
           ),
         );
 
-        return;
+        return null;
       }
+
+
+      const filas =
+        sucursalesOrdenadas.map(
+          (sucursal) =>
+            sucursal.nombre,
+        );
+
+
+      const columnas =
+        productosOrdenados.map(
+          (producto) =>
+            producto.nombre,
+        );
 
 
       const valores =
         sucursalesOrdenadas.map(
           (sucursal) =>
             productosOrdenados.map(
-              (producto) =>
-                inventario
-                  .filter(
+              (producto) => {
+
+                const registros =
+                  inventario.filter(
                     (registro) =>
                       registro.sucursalId ===
                         sucursal.id &&
                       registro.productoId ===
                         producto.id,
-                  )
-                  .reduce(
+                  );
+
+
+                const actual =
+                  registros.reduce(
                     (
                       total,
                       registro,
@@ -557,59 +924,403 @@ function Matrices() {
                       total +
                       registro.stockActual,
                     0,
-                  ),
+                  );
+
+
+                const minimo =
+                  registros.reduce(
+                    (
+                      total,
+                      registro,
+                    ) =>
+                      total +
+                      registro.stockMinimo,
+                    0,
+                  );
+
+
+                if (
+                  metrica ===
+                  "stock_minimo"
+                ) {
+                  return minimo;
+                }
+
+
+                if (
+                  metrica ===
+                  "stock_diferencia"
+                ) {
+                  return (
+                    actual -
+                    minimo
+                  );
+                }
+
+
+                if (
+                  metrica ===
+                  "stock_cobertura"
+                ) {
+                  return minimo > 0
+                    ? (
+                        actual /
+                        minimo
+                      ) * 100
+                    : actual > 0
+                      ? 100
+                      : 0;
+                }
+
+
+                return actual;
+              },
             ),
         );
 
 
-      setMatrizGenerada({
+      return {
         nombre:
-          texto(
-            "Inventario por sucursal y producto",
-            "Inventory by branch and product",
-          ),
+          `${textoMetrica()} - ${texto(
+            "Sucursal × Producto",
+            "Branch × Product",
+          )}`,
 
         descripcion:
-          texto(
-            `Stock actual por sucursal y producto. Filas: ${nombresSucursales.join(", ")}. Columnas: ${nombresProductos.join(", ")}.`,
-            `Current stock by branch and product. Rows: ${nombresSucursales.join(", ")}. Columns: ${nombresProductos.join(", ")}.`,
-          ),
+          `${texto(
+            "Fuente",
+            "Source",
+          )}: ${texto(
+            "Inventario",
+            "Inventory",
+          )}. ${texto(
+            "Filas",
+            "Rows",
+          )}: ${filas.join(
+            ", ",
+          )}. ${texto(
+            "Columnas",
+            "Columns",
+          )}: ${columnas.join(
+            ", ",
+          )}.`,
 
         valores,
+        filas,
+        columnas,
 
-        filas:
-          nombresSucursales,
+        monetario:
+          false,
 
-        columnas:
-          nombresProductos,
+        porcentaje:
+          metrica ===
+          "stock_cobertura",
 
-        origen:
+        unidad:
+          metrica ===
+          "stock_cobertura"
+            ? "%"
+            : texto(
+                "Unidades",
+                "Units",
+              ),
+
+        fuente:
           "inventario",
 
-        metrica:
-          "stock",
+        metrica,
+
+        estructura:
+          texto(
+            "Sucursal × Producto",
+            "Branch × Product",
+          ),
 
         periodo:
           texto(
             "Estado actual",
             "Current status",
           ),
-      });
+      };
     };
 
 
-  const guardarMatrizGenerada =
+  // =========================================================
+  // METAS
+  // =========================================================
+
+  const generarMetas =
+    (): MatrizGenerada | null => {
+
+      if (
+        metas.length ===
+        0
+      ) {
+        setErrorLocal(
+          texto(
+            "No existen metas registradas.",
+            "There are no registered targets.",
+          ),
+        );
+
+        return null;
+      }
+
+
+      const filas =
+        sucursalesOrdenadas.map(
+          (sucursal) =>
+            sucursal.nombre,
+        );
+
+
+      const columnas =
+        periodosMetas;
+
+
+      if (
+        columnas.length ===
+        0
+      ) {
+        setErrorLocal(
+          texto(
+            "No existen periodos de metas disponibles.",
+            "No target periods are available.",
+          ),
+        );
+
+        return null;
+      }
+
+
+      const valores =
+        sucursalesOrdenadas.map(
+          (sucursal) =>
+            columnas.map(
+              (periodo) => {
+
+                const montoMeta =
+                  metas
+                    .filter(
+                      (meta) =>
+                        meta.sucursalId ===
+                          sucursal.id &&
+                        meta.periodo ===
+                          periodo,
+                    )
+                    .reduce(
+                      (
+                        total,
+                        meta,
+                      ) =>
+                        total +
+                        meta.montoMeta,
+                      0,
+                    );
+
+
+                const ventaReal =
+                  ventas
+                    .filter(
+                      (venta) =>
+                        venta.sucursalId ===
+                          sucursal.id &&
+                        venta.fecha.startsWith(
+                          periodo,
+                        ),
+                    )
+                    .reduce(
+                      (
+                        total,
+                        venta,
+                      ) =>
+                        total +
+                        venta.total,
+                      0,
+                    );
+
+
+                if (
+                  metrica ===
+                  "meta_ventas"
+                ) {
+                  return ventaReal;
+                }
+
+
+                if (
+                  metrica ===
+                  "meta_diferencia"
+                ) {
+                  return (
+                    ventaReal -
+                    montoMeta
+                  );
+                }
+
+
+                if (
+                  metrica ===
+                  "meta_cumplimiento"
+                ) {
+                  return montoMeta > 0
+                    ? (
+                        ventaReal /
+                        montoMeta
+                      ) * 100
+                    : 0;
+                }
+
+
+                return montoMeta;
+              },
+            ),
+        );
+
+
+      return {
+        nombre:
+          `${textoMetrica()} - ${texto(
+            "Sucursal × Periodo",
+            "Branch × Period",
+          )}`,
+
+        descripcion:
+          `${texto(
+            "Fuente",
+            "Source",
+          )}: ${texto(
+            "Metas empresariales",
+            "Business targets",
+          )}. ${texto(
+            "Filas",
+            "Rows",
+          )}: ${filas.join(
+            ", ",
+          )}. ${texto(
+            "Columnas",
+            "Columns",
+          )}: ${columnas.join(
+            ", ",
+          )}.`,
+
+        valores,
+        filas,
+        columnas,
+
+        monetario:
+          metrica !==
+          "meta_cumplimiento",
+
+        porcentaje:
+          metrica ===
+          "meta_cumplimiento",
+
+        unidad:
+          metrica ===
+          "meta_cumplimiento"
+            ? "%"
+            : texto(
+                "Moneda",
+                "Currency",
+              ),
+
+        fuente:
+          "metas",
+
+        metrica,
+
+        estructura:
+          texto(
+            "Sucursal × Periodo",
+            "Branch × Period",
+          ),
+
+        periodo:
+          texto(
+            "Periodos registrados",
+            "Registered periods",
+          ),
+      };
+    };
+
+
+  // =========================================================
+  // GENERAR
+  // =========================================================
+
+  const generarMatriz =
+    () => {
+
+      setMensaje("");
+      setErrorLocal("");
+      setMatrizGenerada(
+        null,
+      );
+
+
+      let resultado:
+        MatrizGenerada | null =
+        null;
+
+
+      if (
+        fuente ===
+        "ventas"
+      ) {
+        resultado =
+          generarVentas();
+      }
+
+
+      if (
+        fuente ===
+        "inventario"
+      ) {
+        resultado =
+          generarInventario();
+      }
+
+
+      if (
+        fuente ===
+        "metas"
+      ) {
+        resultado =
+          generarMetas();
+      }
+
+
+      if (
+        resultado
+      ) {
+        setMatrizGenerada(
+          resultado,
+        );
+      }
+    };
+
+
+  // =========================================================
+  // GUARDAR GENERADA
+  // =========================================================
+
+  const guardarGenerada =
     async () => {
+
       if (
         !matrizGenerada
       ) {
         return;
       }
 
+
       setMensaje("");
-      setErrorAPI("");
+      setErrorLocal("");
+
 
       try {
+
         await crearMatrizMutation
           .mutateAsync({
             nombre:
@@ -622,19 +1333,22 @@ function Matrices() {
               matrizGenerada.valores,
           });
 
+
         setMensaje(
           texto(
             "Matriz empresarial guardada correctamente.",
             "Business matrix saved successfully.",
           ),
         );
+
       } catch (error) {
-        setErrorAPI(
-          obtenerMensajeError(
+
+        setErrorLocal(
+          mensajeError(
             error,
             texto(
-              "No se pudo guardar la matriz empresarial.",
-              "The business matrix could not be saved.",
+              "No se pudo guardar la matriz.",
+              "The matrix could not be saved.",
             ),
           ),
         );
@@ -642,17 +1356,37 @@ function Matrices() {
     };
 
 
+  // =========================================================
+  // MOSTRAR VALOR
+  // =========================================================
+
   const mostrarValor = (
     valor: number,
   ) => {
+
     if (
-      matrizGenerada?.metrica ===
-      "importe"
+      matrizGenerada?.monetario
     ) {
       return formatearMoneda(
         valor,
       );
     }
+
+
+    if (
+      matrizGenerada?.porcentaje
+    ) {
+      return `${new Intl.NumberFormat(
+        locale,
+        {
+          maximumFractionDigits:
+            2,
+        },
+      ).format(
+        valor,
+      )}%`;
+    }
+
 
     return new Intl.NumberFormat(
       locale,
@@ -666,14 +1400,16 @@ function Matrices() {
   };
 
 
-  // ==========================================================
-  // MODO MANUAL / AVANZADO
-  // ==========================================================
+  // =========================================================
+  // MODO MANUAL
+  // =========================================================
 
   const [
     modalAbierto,
     setModalAbierto,
-  ] = useState(false);
+  ] =
+    useState(false);
+
 
   const [
     matrizEditando,
@@ -683,18 +1419,24 @@ function Matrices() {
       null,
     );
 
+
   const [
     valoresTemporales,
     setValoresTemporales,
   ] =
     useState<number[][]>(
-      [[0]],
+      crearMatrizVacia(
+        2,
+        2,
+      ),
     );
+
 
   const [
     busqueda,
     setBusqueda,
-  ] = useState("");
+  ] =
+    useState("");
 
 
   const {
@@ -718,279 +1460,201 @@ function Matrices() {
       defaultValues: {
         nombre: "",
         descripcion: "",
-        filas: 1,
-        columnas: 1,
+        filas: 2,
+        columnas: 2,
       },
     });
 
 
-  const filas =
+  const filasManual =
     watch(
       "filas",
     );
 
-  const columnas =
+
+  const columnasManual =
     watch(
       "columnas",
     );
 
 
-  const redimensionarMatriz = (
-    nuevasFilas: number,
-    nuevasColumnas: number,
-  ) => {
-    if (
-      !Number.isInteger(
-        nuevasFilas,
-      ) ||
-      !Number.isInteger(
-        nuevasColumnas,
-      ) ||
-      nuevasFilas < 1 ||
-      nuevasColumnas < 1 ||
-      nuevasFilas > 10 ||
-      nuevasColumnas > 10
-    ) {
-      return;
-    }
-
-    setValoresTemporales(
-      (actual) =>
-        Array.from(
-          {
-            length:
-              nuevasFilas,
-          },
-          (
-            _,
-            fila,
-          ) =>
-            Array.from(
-              {
-                length:
-                  nuevasColumnas,
-              },
-              (
-                _,
-                columna,
-              ) =>
-                actual[fila]?.[
-                  columna
-                ] ?? 0,
-            ),
-        ),
-    );
-  };
-
-
-  const cambiarFilas = (
-    nuevasFilas: number,
-  ) => {
-    setValue(
-      "filas",
-      nuevasFilas,
-      {
-        shouldValidate:
-          true,
-      },
-    );
-
-    redimensionarMatriz(
-      nuevasFilas,
-      Number(
-        columnas,
-      ) || 1,
-    );
-  };
-
-
-  const cambiarColumnas = (
-    nuevasColumnas: number,
-  ) => {
-    setValue(
-      "columnas",
-      nuevasColumnas,
-      {
-        shouldValidate:
-          true,
-      },
-    );
-
-    redimensionarMatriz(
-      Number(
-        filas,
-      ) || 1,
-      nuevasColumnas,
-    );
-  };
-
-
-  const cambiarValor = (
-    fila: number,
-    columna: number,
-    valor: string,
-  ) => {
-    const numero =
-      Number(
-        valor,
-      );
-
-    setValoresTemporales(
-      (actual) =>
-        actual.map(
-          (
-            filaActual,
-            indiceFila,
-          ) =>
-            filaActual.map(
-              (
-                valorActual,
-                indiceColumna,
-              ) =>
-                indiceFila ===
-                  fila &&
-                indiceColumna ===
-                  columna
-                  ? Number.isFinite(
-                      numero,
-                    )
-                    ? numero
-                    : 0
-                  : valorActual,
-            ),
-        ),
-    );
-  };
-
-
-  const abrirRegistro = () => {
-    setMatrizEditando(
-      null,
-    );
-
-    setMensaje("");
-    setErrorAPI("");
-
-    reset({
-      nombre: "",
-      descripcion: "",
-      filas: 2,
-      columnas: 2,
-    });
-
-    setValoresTemporales(
-      crearMatrizVacia(
-        2,
-        2,
-      ),
-    );
-
-    setModalAbierto(
-      true,
-    );
-  };
-
-
-  const abrirEdicion = (
-    matriz: MatrizVista,
-  ) => {
-    setMatrizEditando(
-      matriz,
-    );
-
-    setMensaje("");
-    setErrorAPI("");
-
-    reset({
-      nombre:
-        matriz.nombre,
-
-      descripcion:
-        matriz.descripcion,
-
-      filas:
-        matriz.filas,
-
-      columnas:
-        matriz.columnas,
-    });
-
-    setValoresTemporales(
-      matriz.valores.map(
-        (fila) => [
-          ...fila,
-        ],
-      ),
-    );
-
-    setModalAbierto(
-      true,
-    );
-  };
-
-
-  const cerrarModal = () => {
-    setModalAbierto(
-      false,
-    );
-
-    setMatrizEditando(
-      null,
-    );
-
-    reset({
-      nombre: "",
-      descripcion: "",
-      filas: 1,
-      columnas: 1,
-    });
-
-    setValoresTemporales(
-      [[0]],
-    );
-  };
-
-
-  const guardarMatriz =
-    async (
-      datos:
-        MatrizFormulario,
+  const redimensionar =
+    (
+      filas: number,
+      columnas: number,
     ) => {
-      setMensaje("");
-      setErrorAPI("");
-
-      const valores =
-        valoresTemporales.map(
-          (fila) => [
-            ...fila,
-          ],
-        );
-
 
       if (
-        valores.length !==
-          datos.filas ||
-        valores.some(
-          (fila) =>
-            fila.length !==
-            datos.columnas,
-        )
+        filas < 1 ||
+        columnas < 1 ||
+        filas > 10 ||
+        columnas > 10
       ) {
-        setErrorAPI(
-          texto(
-            "Las dimensiones de la matriz no coinciden con los valores ingresados.",
-            "The matrix dimensions do not match the entered values.",
-          ),
-        );
-
         return;
       }
 
 
+      setValoresTemporales(
+        (actual) =>
+          Array.from(
+            {
+              length: filas,
+            },
+            (
+              _,
+              fila,
+            ) =>
+              Array.from(
+                {
+                  length:
+                    columnas,
+                },
+                (
+                  _,
+                  columna,
+                ) =>
+                  actual[
+                    fila
+                  ]?.[
+                    columna
+                  ] ?? 0,
+              ),
+          ),
+      );
+    };
+
+
+  const cambiarValor =
+    (
+      fila: number,
+      columna: number,
+      valor: string,
+    ) => {
+
+      const numero =
+        Number(
+          valor,
+        );
+
+
+      setValoresTemporales(
+        (actual) =>
+          actual.map(
+            (
+              filaActual,
+              i,
+            ) =>
+              filaActual.map(
+                (
+                  valorActual,
+                  j,
+                ) =>
+                  i === fila &&
+                  j === columna
+                    ? Number.isFinite(
+                        numero,
+                      )
+                      ? numero
+                      : 0
+                    : valorActual,
+              ),
+          ),
+      );
+    };
+
+
+  const abrirManual =
+    () => {
+
+      setMatrizEditando(
+        null,
+      );
+
+      reset({
+        nombre: "",
+        descripcion: "",
+        filas: 2,
+        columnas: 2,
+      });
+
+      setValoresTemporales(
+        crearMatrizVacia(
+          2,
+          2,
+        ),
+      );
+
+      setModalAbierto(
+        true,
+      );
+    };
+
+
+  const abrirEdicion =
+    (
+      matriz:
+        MatrizVista,
+    ) => {
+
+      setMatrizEditando(
+        matriz,
+      );
+
+
+      reset({
+        nombre:
+          matriz.nombre,
+
+        descripcion:
+          matriz.descripcion,
+
+        filas:
+          matriz.filas,
+
+        columnas:
+          matriz.columnas,
+      });
+
+
+      setValoresTemporales(
+        matriz.valores.map(
+          (fila) => [
+            ...fila,
+          ],
+        ),
+      );
+
+
+      setModalAbierto(
+        true,
+      );
+    };
+
+
+  const cerrarModal =
+    () => {
+      setModalAbierto(
+        false,
+      );
+
+      setMatrizEditando(
+        null,
+      );
+    };
+
+
+  const guardarManual =
+    async (
+      datos:
+        MatrizFormulario,
+    ) => {
+
       try {
+
         if (
           matrizEditando
         ) {
+
           await actualizarMatrizMutation
             .mutateAsync({
               matrizId:
@@ -1003,10 +1667,10 @@ function Matrices() {
                 datos.descripcion ??
                 "",
 
-              valores,
+              valores:
+                valoresTemporales,
             });
 
-          cerrarModal();
 
           setMensaje(
             texto(
@@ -1015,33 +1679,37 @@ function Matrices() {
             ),
           );
 
-          return;
+        } else {
+
+          await crearMatrizMutation
+            .mutateAsync({
+              nombre:
+                datos.nombre,
+
+              descripcion:
+                datos.descripcion ??
+                "",
+
+              valores:
+                valoresTemporales,
+            });
+
+
+          setMensaje(
+            texto(
+              "Matriz manual creada correctamente.",
+              "Manual matrix created successfully.",
+            ),
+          );
         }
 
 
-        await crearMatrizMutation
-          .mutateAsync({
-            nombre:
-              datos.nombre,
-
-            descripcion:
-              datos.descripcion ??
-              "",
-
-            valores,
-          });
-
         cerrarModal();
 
-        setMensaje(
-          texto(
-            "Matriz creada correctamente.",
-            "Matrix created successfully.",
-          ),
-        );
       } catch (error) {
-        setErrorAPI(
-          obtenerMensajeError(
+
+        setErrorLocal(
+          mensajeError(
             error,
             texto(
               "No se pudo guardar la matriz.",
@@ -1057,36 +1725,38 @@ function Matrices() {
     async (
       id: number,
     ) => {
-      const confirmar =
-        window.confirm(
-          texto(
-            "¿Seguro que deseas eliminar esta matriz?",
-            "Are you sure you want to delete this matrix?",
-          ),
-        );
 
-      if (!confirmar) {
+      if (
+        !window.confirm(
+          texto(
+            "¿Eliminar esta matriz?",
+            "Delete this matrix?",
+          ),
+        )
+      ) {
         return;
       }
 
-      setMensaje("");
-      setErrorAPI("");
 
       try {
+
         await eliminarMatrizMutation
           .mutateAsync(
             id,
           );
 
+
         setMensaje(
           texto(
-            "Matriz eliminada correctamente.",
-            "Matrix deleted successfully.",
+            "Matriz eliminada.",
+            "Matrix deleted.",
           ),
         );
+
       } catch (error) {
-        setErrorAPI(
-          obtenerMensajeError(
+
+        setErrorLocal(
+          mensajeError(
             error,
             texto(
               "No se pudo eliminar la matriz.",
@@ -1098,16 +1768,18 @@ function Matrices() {
     };
 
 
-  // ==========================================================
-  // MATRICES GUARDADAS
-  // ==========================================================
+  // =========================================================
+  // FILTRO
+  // =========================================================
 
   const matricesFiltradas =
     useMemo(() => {
+
       const consulta =
         busqueda
           .trim()
           .toLowerCase();
+
 
       return matrices.filter(
         (matriz) =>
@@ -1117,56 +1789,48 @@ function Matrices() {
             .includes(
               consulta,
             ) ||
-          matriz.descripcion
+          (
+            matriz.descripcion ??
+            ""
+          )
             .toLowerCase()
             .includes(
               consulta,
             ),
       );
+
     }, [
       matrices,
       busqueda,
     ]);
 
 
-  const mayorCantidadElementos =
-    matrices.length > 0
-      ? Math.max(
-          ...matrices.map(
-            (matriz) =>
-              matriz.filas *
-              matriz.columnas,
-          ),
-        )
-      : 0;
-
-
-  // ==========================================================
-  // INTERFAZ
-  // ==========================================================
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <div className="matrices-page">
 
       <PageHeader
         etiqueta={texto(
-          "ANÁLISIS EMPRESARIAL",
-          "BUSINESS ANALYSIS",
+          "ANÁLISIS MATEMÁTICO",
+          "MATHEMATICAL ANALYSIS",
         )}
         titulo={texto(
           "Matrices empresariales",
           "Business matrices",
         )}
         descripcion={texto(
-          "Compara sucursales y productos mediante matrices construidas automáticamente con ventas e inventario reales.",
-          "Compare branches and products using matrices automatically built from real sales and inventory data.",
+          "Representa ventas, inventario y metas mediante estructuras multidimensionales listas para el análisis matemático.",
+          "Represent sales, inventory and targets using multidimensional structures ready for mathematical analysis.",
         )}
         acciones={
           <button
             type="button"
             className="button-secondary"
             onClick={
-              abrirRegistro
+              abrirManual
             }
           >
             <Brackets
@@ -1174,8 +1838,8 @@ function Matrices() {
             />
 
             {texto(
-              "Modo manual / avanzado",
-              "Manual / advanced mode",
+              "Modo manual",
+              "Manual mode",
             )}
           </button>
         }
@@ -1183,459 +1847,531 @@ function Matrices() {
 
 
       {mensaje && (
-        <div className="matrix-business-message success">
+        <div className="matrix-pro-message matrix-pro-success">
           {mensaje}
         </div>
       )}
 
 
-      {errorAPI && (
-        <div className="matrix-business-message error">
-          {errorAPI}
+      {errorGeneral && (
+        <div className="matrix-pro-message matrix-pro-error">
+          {errorGeneral}
         </div>
       )}
 
 
-      {/* =================================================== */}
-      {/* RESUMEN */}
-      {/* =================================================== */}
+      {/* FUENTE */}
 
-      <section className="matrices-summary">
+      <section className="matrix-pro-card">
 
-        <article>
-          <div className="matrix-summary-icon">
-            <Grid3X3
-              size={20}
-            />
-          </div>
+        <div className="matrix-pro-heading">
 
-          <div>
-            <span>
-              {texto(
-                "Matrices guardadas",
-                "Saved matrices",
-              )}
-            </span>
+          <span>
+            {texto(
+              "PASO 1",
+              "STEP 1",
+            )}
+          </span>
 
-            <strong>
-              {matrices.length}
-            </strong>
-          </div>
-        </article>
+          <h2>
+            {texto(
+              "¿Qué información quieres representar?",
+              "What information do you want to represent?",
+            )}
+          </h2>
+
+        </div>
 
 
-        <article>
-          <div className="matrix-summary-icon matrix-cyan">
-            <Store
-              size={20}
-            />
-          </div>
+        <div className="matrix-pro-sources">
 
-          <div>
-            <span>
-              {texto(
-                "Sucursales",
-                "Branches",
-              )}
-            </span>
-
-            <strong>
-              {sucursales.length}
-            </strong>
-          </div>
-        </article>
-
-
-        <article>
-          <div className="matrix-summary-icon matrix-purple">
-            <Package
-              size={20}
-            />
-          </div>
-
-          <div>
-            <span>
-              {texto(
-                "Productos",
-                "Products",
-              )}
-            </span>
-
-            <strong>
-              {productos.length}
-            </strong>
-          </div>
-        </article>
-
-
-        <article>
-          <div className="matrix-summary-icon matrix-green">
+          <button
+            type="button"
+            className={
+              fuente ===
+              "ventas"
+                ? "matrix-pro-source active"
+                : "matrix-pro-source"
+            }
+            onClick={() =>
+              cambiarFuente(
+                "ventas",
+              )
+            }
+          >
             <BarChart3
-              size={20}
+              size={22}
             />
-          </div>
-
-          <div>
-            <span>
-              {texto(
-                "Mayor tamaño",
-                "Largest size",
-              )}
-            </span>
 
             <strong>
-              {mayorCantidadElementos}
+              {texto(
+                "Ventas",
+                "Sales",
+              )}
             </strong>
-          </div>
-        </article>
+
+            <span>
+              {texto(
+                "Analiza productos, sucursales y periodos.",
+                "Analyze products, branches and periods.",
+              )}
+            </span>
+          </button>
+
+
+          <button
+            type="button"
+            className={
+              fuente ===
+              "inventario"
+                ? "matrix-pro-source active"
+                : "matrix-pro-source"
+            }
+            onClick={() =>
+              cambiarFuente(
+                "inventario",
+              )
+            }
+          >
+            <Boxes
+              size={22}
+            />
+
+            <strong>
+              {texto(
+                "Inventario",
+                "Inventory",
+              )}
+            </strong>
+
+            <span>
+              {texto(
+                "Stock actual, mínimo, diferencia y cobertura.",
+                "Current stock, minimum, difference and coverage.",
+              )}
+            </span>
+          </button>
+
+
+          <button
+            type="button"
+            className={
+              fuente ===
+              "metas"
+                ? "matrix-pro-source active"
+                : "matrix-pro-source"
+            }
+            onClick={() =>
+              cambiarFuente(
+                "metas",
+              )
+            }
+          >
+            <Target
+              size={22}
+            />
+
+            <strong>
+              {texto(
+                "Metas",
+                "Targets",
+              )}
+            </strong>
+
+            <span>
+              {texto(
+                "Compara objetivos y ventas reales por periodo.",
+                "Compare targets and actual sales by period.",
+              )}
+            </span>
+          </button>
+
+        </div>
 
       </section>
 
 
-      {/* =================================================== */}
-      {/* GENERADOR EMPRESARIAL */}
-      {/* =================================================== */}
+      {/* CONFIGURAR */}
 
-      <section className="matrix-business-generator">
+      <section className="matrix-pro-card">
 
-        <div className="matrix-business-header">
+        <div className="matrix-pro-heading">
 
-          <div className="matrix-business-header-icon">
-            <ShoppingCart
-              size={21}
-            />
-          </div>
-
-          <div>
-            <span>
-              {texto(
-                "GENERADOR EMPRESARIAL",
-                "BUSINESS GENERATOR",
-              )}
-            </span>
-
-            <h2>
-              {texto(
-                "Generar matriz desde datos reales",
-                "Generate matrix from real data",
-              )}
-            </h2>
-
-            <p>
-              {texto(
-                "MatrixFlow organizará automáticamente las sucursales en filas y los productos en columnas.",
-                "MatrixFlow will automatically organize branches into rows and products into columns.",
-              )}
-            </p>
-          </div>
-
-        </div>
-
-
-        <div className="matrix-generator-steps">
-
-          <div className="matrix-generator-field">
-
-            <div className="matrix-step-number">
-              1
-            </div>
-
-            <label htmlFor="matrix-origen">
-              {texto(
-                "¿Qué quieres analizar?",
-                "What do you want to analyze?",
-              )}
-            </label>
-
-            <select
-              id="matrix-origen"
-              value={
-                origen
-              }
-              onChange={(
-                evento,
-              ) => {
-                setOrigen(
-                  evento.target
-                    .value as OrigenMatriz,
-                );
-
-                setMatrizGenerada(
-                  null,
-                );
-              }}
-            >
-              <option value="ventas">
-                {texto(
-                  "Ventas",
-                  "Sales",
-                )}
-              </option>
-
-              <option value="inventario">
-                {texto(
-                  "Inventario",
-                  "Inventory",
-                )}
-              </option>
-            </select>
-
-            <small>
-              {origen ===
-              "ventas"
-                ? texto(
-                    "Analiza las ventas registradas en todas las sucursales.",
-                    "Analyzes recorded sales across all branches.",
-                  )
-                : texto(
-                    "Analiza el stock actual de todas las sucursales.",
-                    "Analyzes current stock across all branches.",
-                  )}
-            </small>
-
-          </div>
-
-
-          <div className="matrix-generator-field">
-
-            <div className="matrix-step-number">
-              2
-            </div>
-
-            <label htmlFor="matrix-metrica">
-              {texto(
-                "¿Qué valor necesitas?",
-                "Which value do you need?",
-              )}
-            </label>
-
-            {origen ===
-            "ventas" ? (
-              <select
-                id="matrix-metrica"
-                value={
-                  metricaVentas
-                }
-                onChange={(
-                  evento,
-                ) => {
-                  setMetricaVentas(
-                    evento.target
-                      .value as MetricaVentas,
-                  );
-
-                  setMatrizGenerada(
-                    null,
-                  );
-                }}
-              >
-                <option value="unidades">
-                  {texto(
-                    "Unidades vendidas",
-                    "Units sold",
-                  )}
-                </option>
-
-                <option value="importe">
-                  {texto(
-                    "Importe de ventas",
-                    "Sales amount",
-                  )}
-                </option>
-              </select>
-            ) : (
-              <select
-                id="matrix-metrica"
-                value="stock"
-                disabled
-              >
-                <option value="stock">
-                  {texto(
-                    "Stock actual",
-                    "Current stock",
-                  )}
-                </option>
-              </select>
+          <span>
+            {texto(
+              "PASO 2",
+              "STEP 2",
             )}
+          </span>
 
-            <small>
-              {texto(
-                "Cada celda tendrá el valor correspondiente a una sucursal y un producto.",
-                "Each cell will contain the value for one branch and one product.",
-              )}
-            </small>
-
-          </div>
-
-
-          <div className="matrix-generator-field">
-
-            <div className="matrix-step-number">
-              3
-            </div>
-
-            <label htmlFor="matrix-periodo">
-              {texto(
-                "Periodo",
-                "Period",
-              )}
-            </label>
-
-            {origen ===
-            "ventas" ? (
-              <select
-                id="matrix-periodo"
-                value={
-                  periodo
-                }
-                onChange={(
-                  evento,
-                ) => {
-                  setPeriodo(
-                    evento.target
-                      .value as PeriodoMatriz,
-                  );
-
-                  setMatrizGenerada(
-                    null,
-                  );
-                }}
-              >
-                <option value="todo">
-                  {texto(
-                    "Todo el historial",
-                    "All history",
-                  )}
-                </option>
-
-                <option value="mes_actual">
-                  {texto(
-                    "Mes actual",
-                    "Current month",
-                  )}
-                </option>
-
-                <option value="anio_actual">
-                  {texto(
-                    "Año actual",
-                    "Current year",
-                  )}
-                </option>
-              </select>
-            ) : (
-              <select
-                id="matrix-periodo"
-                value="actual"
-                disabled
-              >
-                <option value="actual">
-                  {texto(
-                    "Estado actual",
-                    "Current status",
-                  )}
-                </option>
-              </select>
+          <h2>
+            {texto(
+              "Configura la matriz",
+              "Configure the matrix",
             )}
+          </h2>
 
-            <small>
-              {origen ===
-              "ventas"
-                ? texto(
-                    "Determina qué registros de ventas serán utilizados.",
-                    "Determines which sales records will be used.",
-                  )
-                : texto(
-                    "El inventario utiliza el estado registrado actualmente.",
-                    "Inventory uses the currently recorded status.",
+        </div>
+
+
+        <div className="matrix-pro-config">
+
+          {fuente ===
+            "ventas" && (
+            <>
+
+              <div className="matrix-pro-field">
+
+                <label>
+                  {texto(
+                    "Métrica",
+                    "Metric",
                   )}
-            </small>
+                </label>
 
-          </div>
+                <select
+                  value={
+                    metrica
+                  }
+                  onChange={(
+                    e,
+                  ) => {
+                    setMetrica(
+                      e.target
+                        .value as
+                        MetricaMatriz,
+                    );
+
+                    setMatrizGenerada(
+                      null,
+                    );
+                  }}
+                >
+                  <option value="ventas_unidades">
+                    {texto(
+                      "Unidades vendidas",
+                      "Units sold",
+                    )}
+                  </option>
+
+                  <option value="ventas_importe">
+                    {texto(
+                      "Importe de ventas",
+                      "Sales amount",
+                    )}
+                  </option>
+
+                  <option value="ventas_precio_promedio">
+                    {texto(
+                      "Precio medio de venta",
+                      "Average selling price",
+                    )}
+                  </option>
+                </select>
+
+              </div>
+
+
+              <div className="matrix-pro-field">
+
+                <label>
+                  {texto(
+                    "Estructura",
+                    "Structure",
+                  )}
+                </label>
+
+                <select
+                  value={
+                    estructuraVentas
+                  }
+                  onChange={(
+                    e,
+                  ) => {
+                    setEstructuraVentas(
+                      e.target
+                        .value as
+                        EstructuraVentas,
+                    );
+
+                    setMatrizGenerada(
+                      null,
+                    );
+                  }}
+                >
+                  <option value="sucursal_producto">
+                    {texto(
+                      "Sucursal × Producto",
+                      "Branch × Product",
+                    )}
+                  </option>
+
+                  <option value="producto_periodo">
+                    {texto(
+                      "Producto × Periodo",
+                      "Product × Period",
+                    )}
+                  </option>
+                </select>
+
+              </div>
+
+
+              {estructuraVentas ===
+                "sucursal_producto" && (
+                <div className="matrix-pro-field">
+
+                  <label>
+                    {texto(
+                      "Periodo",
+                      "Period",
+                    )}
+                  </label>
+
+                  <select
+                    value={
+                      periodoVentas
+                    }
+                    onChange={(
+                      e,
+                    ) => {
+                      setPeriodoVentas(
+                        e.target
+                          .value as
+                          PeriodoVentas,
+                      );
+
+                      setMatrizGenerada(
+                        null,
+                      );
+                    }}
+                  >
+                    <option value="todo">
+                      {texto(
+                        "Todo el historial",
+                        "All history",
+                      )}
+                    </option>
+
+                    <option value="anio_actual">
+                      {texto(
+                        "Año actual",
+                        "Current year",
+                      )}
+                    </option>
+                  </select>
+
+                </div>
+              )}
+
+            </>
+          )}
+
+
+          {fuente ===
+            "inventario" && (
+            <>
+
+              <div className="matrix-pro-field">
+
+                <label>
+                  {texto(
+                    "Métrica",
+                    "Metric",
+                  )}
+                </label>
+
+                <select
+                  value={
+                    metrica
+                  }
+                  onChange={(
+                    e,
+                  ) => {
+                    setMetrica(
+                      e.target
+                        .value as
+                        MetricaMatriz,
+                    );
+
+                    setMatrizGenerada(
+                      null,
+                    );
+                  }}
+                >
+                  <option value="stock_actual">
+                    {texto(
+                      "Stock actual",
+                      "Current stock",
+                    )}
+                  </option>
+
+                  <option value="stock_minimo">
+                    {texto(
+                      "Stock mínimo",
+                      "Minimum stock",
+                    )}
+                  </option>
+
+                  <option value="stock_diferencia">
+                    {texto(
+                      "Actual - mínimo",
+                      "Current - minimum",
+                    )}
+                  </option>
+
+                  <option value="stock_cobertura">
+                    {texto(
+                      "Cobertura (%)",
+                      "Coverage (%)",
+                    )}
+                  </option>
+                </select>
+
+              </div>
+
+
+              <div className="matrix-pro-info">
+
+                <Grid3X3
+                  size={20}
+                />
+
+                <div>
+                  <strong>
+                    {texto(
+                      "Sucursal × Producto",
+                      "Branch × Product",
+                    )}
+                  </strong>
+
+                  <p>
+                    {texto(
+                      "Las filas serán sucursales y las columnas productos.",
+                      "Rows will be branches and columns products.",
+                    )}
+                  </p>
+                </div>
+
+              </div>
+
+            </>
+          )}
+
+
+          {fuente ===
+            "metas" && (
+            <>
+
+              <div className="matrix-pro-field">
+
+                <label>
+                  {texto(
+                    "Métrica",
+                    "Metric",
+                  )}
+                </label>
+
+                <select
+                  value={
+                    metrica
+                  }
+                  onChange={(
+                    e,
+                  ) => {
+                    setMetrica(
+                      e.target
+                        .value as
+                        MetricaMatriz,
+                    );
+
+                    setMatrizGenerada(
+                      null,
+                    );
+                  }}
+                >
+                  <option value="meta_monto">
+                    {texto(
+                      "Meta monetaria",
+                      "Monetary target",
+                    )}
+                  </option>
+
+                  <option value="meta_ventas">
+                    {texto(
+                      "Ventas reales",
+                      "Actual sales",
+                    )}
+                  </option>
+
+                  <option value="meta_diferencia">
+                    {texto(
+                      "Ventas - meta",
+                      "Sales - target",
+                    )}
+                  </option>
+
+                  <option value="meta_cumplimiento">
+                    {texto(
+                      "Cumplimiento (%)",
+                      "Achievement (%)",
+                    )}
+                  </option>
+                </select>
+
+              </div>
+
+
+              <div className="matrix-pro-info">
+
+                <CalendarDays
+                  size={20}
+                />
+
+                <div>
+                  <strong>
+                    {texto(
+                      "Sucursal × Periodo",
+                      "Branch × Period",
+                    )}
+                  </strong>
+
+                  <p>
+                    {texto(
+                      "Las filas serán sucursales y las columnas los meses registrados.",
+                      "Rows will be branches and columns the registered months.",
+                    )}
+                  </p>
+                </div>
+
+              </div>
+
+            </>
+          )}
 
         </div>
 
 
-        <div className="matrix-structure-explanation">
-
-          <div>
-            <span className="matrix-axis-badge">
-              {texto(
-                "FILAS",
-                "ROWS",
-              )}
-            </span>
-
-            <strong>
-              {texto(
-                "Sucursales",
-                "Branches",
-              )}
-            </strong>
-
-            <p>
-              {texto(
-                "Cada fila representa una sucursal de la empresa.",
-                "Each row represents one company branch.",
-              )}
-            </p>
-          </div>
-
-
-          <div className="matrix-structure-arrow">
-            ×
-          </div>
-
-
-          <div>
-            <span className="matrix-axis-badge">
-              {texto(
-                "COLUMNAS",
-                "COLUMNS",
-              )}
-            </span>
-
-            <strong>
-              {texto(
-                "Productos",
-                "Products",
-              )}
-            </strong>
-
-            <p>
-              {texto(
-                "Cada columna representa un producto registrado.",
-                "Each column represents one registered product.",
-              )}
-            </p>
-          </div>
-
-        </div>
-
-
-        <div className="matrix-generator-action">
+        <div className="matrix-pro-generate">
 
           <button
             type="button"
             className="button-primary"
-            disabled={
-              cargandoNegocio ||
-              sucursales.length ===
-                0 ||
-              productos.length ===
-                0
-            }
             onClick={
-              generarMatrizEmpresarial
+              generarMatriz
+            }
+            disabled={
+              cargandoDatos
             }
           >
             <Grid3X3
               size={17}
             />
 
-            {cargandoNegocio
+            {cargandoDatos
               ? texto(
-                  "Cargando datos...",
-                  "Loading data...",
+                  "Cargando...",
+                  "Loading...",
                 )
               : texto(
                   "Generar matriz",
@@ -1645,219 +2381,213 @@ function Matrices() {
 
         </div>
 
+      </section>
 
-        {!matrizGenerada && (
-          <div className="matrix-business-explanation">
 
-            <strong>
+      {/* RESULTADO */}
+
+      {matrizGenerada && (
+        <section className="matrix-pro-result">
+
+          <div className="matrix-pro-result-head">
+
+            <div>
+
+              <span>
+                {texto(
+                  "MATRIZ GENERADA",
+                  "GENERATED MATRIX",
+                )}
+              </span>
+
+              <h2>
+                {
+                  matrizGenerada.nombre
+                }
+              </h2>
+
+              <p>
+                {
+                  matrizGenerada.estructura
+                }
+              </p>
+
+            </div>
+
+
+            <button
+              type="button"
+              className="button-primary"
+              onClick={() =>
+                void guardarGenerada()
+              }
+              disabled={
+                crearMatrizMutation
+                  .isPending
+              }
+            >
+              <Save
+                size={16}
+              />
+
+              {crearMatrizMutation
+                .isPending
+                ? texto(
+                    "Guardando...",
+                    "Saving...",
+                  )
+                : texto(
+                    "Guardar matriz",
+                    "Save matrix",
+                  )}
+            </button>
+
+          </div>
+
+
+          <div className="matrix-pro-meta">
+
+            <span>
+              <strong>
+                {texto(
+                  "Filas",
+                  "Rows",
+                )}
+              </strong>
+              {
+                matrizGenerada.filas
+                  .length
+              }
+            </span>
+
+            <span>
+              <strong>
+                {texto(
+                  "Columnas",
+                  "Columns",
+                )}
+              </strong>
+              {
+                matrizGenerada.columnas
+                  .length
+              }
+            </span>
+
+            <span>
+              <strong>
+                {texto(
+                  "Dimensión",
+                  "Dimension",
+                )}
+              </strong>
+              {
+                matrizGenerada.filas
+                  .length
+              }
+              ×
+              {
+                matrizGenerada.columnas
+                  .length
+              }
+            </span>
+
+            <span>
+              <strong>
+                {texto(
+                  "Periodo",
+                  "Period",
+                )}
+              </strong>
+              {
+                matrizGenerada.periodo
+              }
+            </span>
+
+          </div>
+
+
+          <div className="matrix-pro-section">
+
+            <h3>
               {texto(
-                "¿Qué hará MatrixFlow?",
-                "What will MatrixFlow do?",
+                "Interpretación empresarial",
+                "Business interpretation",
               )}
-            </strong>
+            </h3>
 
             <p>
               {texto(
-                "Tomará los datos registrados y construirá automáticamente una tabla donde podrás comparar todos los productos entre todas las sucursales.",
-                "It will take the stored data and automatically build a table where you can compare all products across all branches.",
+                "Cada celda corresponde a la intersección entre su fila y su columna.",
+                "Each cell corresponds to the intersection between its row and column.",
               )}
             </p>
 
-          </div>
-        )}
 
+            <div className="matrix-pro-table-wrap">
 
-        {matrizGenerada && (
-          <div className="matrix-business-result">
+              <table className="matrix-pro-table">
 
-            <div className="matrix-result-top">
+                <thead>
 
-              <div>
-                <span>
-                  {texto(
-                    "RESULTADO GENERADO",
-                    "GENERATED RESULT",
-                  )}
-                </span>
+                  <tr>
 
-                <h3>
-                  {
-                    matrizGenerada.nombre
-                  }
-                </h3>
+                    <th>
+                      {matrizGenerada
+                        .estructura}
+                    </th>
 
-                <p>
-                  {texto(
-                    `La matriz contiene ${matrizGenerada.filas.length} sucursales y ${matrizGenerada.columnas.length} productos.`,
-                    `The matrix contains ${matrizGenerada.filas.length} branches and ${matrizGenerada.columnas.length} products.`,
-                  )}
-                </p>
-              </div>
-
-
-              <button
-                type="button"
-                className="button-primary"
-                disabled={
-                  crearMatrizMutation.isPending
-                }
-                onClick={() =>
-                  void guardarMatrizGenerada()
-                }
-              >
-                <Save
-                  size={16}
-                />
-
-                {crearMatrizMutation.isPending
-                  ? texto(
-                      "Guardando...",
-                      "Saving...",
-                    )
-                  : texto(
-                      "Guardar matriz",
-                      "Save matrix",
-                    )}
-              </button>
-
-            </div>
-
-
-            <div className="matrix-result-meta">
-
-              <span>
-                <strong>
-                  {texto(
-                    "Filas:",
-                    "Rows:",
-                  )}
-                </strong>{" "}
-                {
-                  matrizGenerada.filas.length
-                }
-              </span>
-
-              <span>
-                <strong>
-                  {texto(
-                    "Columnas:",
-                    "Columns:",
-                  )}
-                </strong>{" "}
-                {
-                  matrizGenerada.columnas.length
-                }
-              </span>
-
-              <span>
-                <strong>
-                  {texto(
-                    "Dimensión:",
-                    "Dimension:",
-                  )}
-                </strong>{" "}
-                {
-                  matrizGenerada.filas.length
-                }
-                {" × "}
-                {
-                  matrizGenerada.columnas.length
-                }
-              </span>
-
-              <span>
-                <strong>
-                  {texto(
-                    "Periodo:",
-                    "Period:",
-                  )}
-                </strong>{" "}
-                {
-                  matrizGenerada.periodo
-                }
-              </span>
-
-            </div>
-
-
-            {/* TABLA EMPRESARIAL */}
-
-            <div className="matrix-result-section">
-
-              <div className="matrix-result-section-title">
-                <strong>
-                  {texto(
-                    "Datos empresariales",
-                    "Business data",
-                  )}
-                </strong>
-
-                <span>
-                  {texto(
-                    "Una forma clara de interpretar la matriz.",
-                    "A clear way to interpret the matrix.",
-                  )}
-                </span>
-              </div>
-
-
-              <div className="matrix-business-table-wrapper">
-
-                <table className="matrix-business-table">
-
-                  <thead>
-                    <tr>
-
-                      <th className="matrix-corner-cell">
-                        {texto(
-                          "Sucursal / Producto",
-                          "Branch / Product",
-                        )}
-                      </th>
-
-                      {matrizGenerada.columnas.map(
-                        (
-                          producto,
-                          indice,
-                        ) => (
-                          <th
-                            key={`producto-${indice}`}
-                          >
-                            {
-                              producto
-                            }
-                          </th>
-                        ),
-                      )}
-
-                    </tr>
-                  </thead>
-
-
-                  <tbody>
-
-                    {matrizGenerada.filas.map(
+                    {matrizGenerada.columnas.map(
                       (
-                        sucursal,
-                        indiceFila,
+                        columna,
                       ) => (
-                        <tr
-                          key={`sucursal-${indiceFila}`}
+                        <th
+                          key={
+                            columna
+                          }
                         >
+                          {
+                            columna
+                          }
+                        </th>
+                      ),
+                    )}
 
-                          <th>
-                            {
-                              sucursal
-                            }
-                          </th>
+                  </tr>
 
-                          {matrizGenerada.valores[
+                </thead>
+
+
+                <tbody>
+
+                  {matrizGenerada.filas.map(
+                    (
+                      fila,
+                      indiceFila,
+                    ) => (
+
+                      <tr
+                        key={
+                          fila
+                        }
+                      >
+
+                        <th>
+                          {
+                            fila
+                          }
+                        </th>
+
+
+                        {matrizGenerada
+                          .valores[
                             indiceFila
-                          ].map(
+                          ]
+                          .map(
                             (
                               valor,
                               indiceColumna,
                             ) => (
+
                               <td
                                 key={`${indiceFila}-${indiceColumna}`}
                               >
@@ -1865,177 +2595,112 @@ function Matrices() {
                                   valor,
                                 )}
                               </td>
+
                             ),
                           )}
 
-                        </tr>
-                      ),
-                    )}
+                      </tr>
 
-                  </tbody>
-
-                </table>
-
-              </div>
-
-            </div>
-
-
-            {/* REPRESENTACIÓN MATEMÁTICA */}
-
-            <div className="matrix-result-section matrix-math-section">
-
-              <div className="matrix-result-section-title">
-
-                <strong>
-                  {texto(
-                    "Representación matemática",
-                    "Mathematical representation",
-                  )}
-                </strong>
-
-                <span>
-                  {texto(
-                    "Esta es la matriz utilizada posteriormente por el módulo de álgebra lineal.",
-                    "This is the matrix later used by the linear algebra module.",
-                  )}
-                </span>
-
-              </div>
-
-
-              <div className="matrix-business-math">
-
-                <span className="matrix-business-bracket">
-                  [
-                </span>
-
-                <div className="matrix-business-math-values">
-
-                  {matrizGenerada.valores.map(
-                    (
-                      fila,
-                      indiceFila,
-                    ) => (
-                      <div
-                        className="matrix-business-math-row"
-                        key={`math-${indiceFila}`}
-                      >
-
-                        {fila.map(
-                          (
-                            valor,
-                            indiceColumna,
-                          ) => (
-                            <strong
-                              key={`math-${indiceFila}-${indiceColumna}`}
-                            >
-                              {Number(
-                                valor.toFixed(
-                                  2,
-                                ),
-                              )}
-                            </strong>
-                          ),
-                        )}
-
-                      </div>
                     ),
                   )}
 
-                </div>
+                </tbody>
 
-                <span className="matrix-business-bracket">
-                  ]
-                </span>
-
-              </div>
-
-
-              <div className="matrix-meaning">
-
-                <div>
-                  <span>
-                    {texto(
-                      "Filas",
-                      "Rows",
-                    )}
-                  </span>
-
-                  <strong>
-                    {texto(
-                      "Sucursales",
-                      "Branches",
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    {texto(
-                      "Columnas",
-                      "Columns",
-                    )}
-                  </span>
-
-                  <strong>
-                    {texto(
-                      "Productos",
-                      "Products",
-                    )}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    {texto(
-                      "Celdas",
-                      "Cells",
-                    )}
-                  </span>
-
-                  <strong>
-                    {matrizGenerada.metrica ===
-                    "importe"
-                      ? texto(
-                          "Importe vendido",
-                          "Sales amount",
-                        )
-                      : matrizGenerada.metrica ===
-                        "stock"
-                        ? texto(
-                            "Stock actual",
-                            "Current stock",
-                          )
-                        : texto(
-                            "Unidades vendidas",
-                            "Units sold",
-                          )}
-                  </strong>
-                </div>
-
-              </div>
+              </table>
 
             </div>
 
           </div>
-        )}
-
-      </section>
 
 
-      {/* =================================================== */}
-      {/* MATRICES GUARDADAS */}
-      {/* =================================================== */}
+          <div className="matrix-pro-section">
 
-      <section className="matrices-card matrix-saved-section">
+            <h3>
+              {texto(
+                "Representación matemática",
+                "Mathematical representation",
+              )}
+            </h3>
 
-        <div className="matrix-saved-heading">
+            <p>
+              {texto(
+                "Esta matriz puede utilizarse después en suma, resta, multiplicación, escalares o transposición.",
+                "This matrix can later be used in addition, subtraction, multiplication, scalar operations or transposition.",
+              )}
+            </p>
+
+
+            <div className="matrix-pro-expression">
+
+              <span>
+                [
+              </span>
+
+
+              <div>
+
+                {matrizGenerada.valores.map(
+                  (
+                    fila,
+                    indiceFila,
+                  ) => (
+
+                    <div
+                      className="matrix-pro-expression-row"
+                      key={
+                        indiceFila
+                      }
+                    >
+
+                      {fila.map(
+                        (
+                          valor,
+                          indiceColumna,
+                        ) => (
+
+                          <strong
+                            key={`${indiceFila}-${indiceColumna}`}
+                          >
+                            {Number(
+                              valor.toFixed(
+                                2,
+                              ),
+                            )}
+                          </strong>
+
+                        ),
+                      )}
+
+                    </div>
+
+                  ),
+                )}
+
+              </div>
+
+
+              <span>
+                ]
+              </span>
+
+            </div>
+
+          </div>
+
+        </section>
+      )}
+
+
+      {/* GUARDADAS */}
+
+      <section className="matrices-card matrix-pro-saved">
+
+        <div className="matrix-pro-heading">
 
           <span>
             {texto(
-              "HISTORIAL DE MATRICES",
-              "MATRIX HISTORY",
+              "BIBLIOTECA",
+              "LIBRARY",
             )}
           </span>
 
@@ -2045,13 +2710,6 @@ function Matrices() {
               "Saved matrices",
             )}
           </h2>
-
-          <p>
-            {texto(
-              "Estas matrices pueden utilizarse posteriormente en Operaciones para comparar, sumar, restar y transformar información empresarial.",
-              "These matrices can later be used in Operations to compare, add, subtract and transform business information.",
-            )}
-          </p>
 
         </div>
 
@@ -2065,117 +2723,42 @@ function Matrices() {
             />
 
             <input
-              type="text"
+              value={
+                busqueda
+              }
               placeholder={texto(
                 "Buscar matriz...",
                 "Search matrices...",
               )}
-              value={
-                busqueda
-              }
               onChange={(
-                evento,
+                e,
               ) =>
                 setBusqueda(
-                  evento.target
-                    .value,
+                  e.target.value,
                 )
               }
             />
 
           </div>
 
-
-          <span className="matrices-count">
-            {
-              matricesFiltradas.length
-            }{" "}
-            {texto(
-              "resultado(s)",
-              "result(s)",
-            )}
-          </span>
-
         </div>
 
 
-        {cargandoMatrices ? (
+        {matricesFiltradas.length ===
+        0 ? (
 
           <div className="matrices-empty">
 
-            <div>
-              <Grid3X3
-                size={29}
-              />
-            </div>
+            <Grid3X3
+              size={28}
+            />
 
             <h3>
               {texto(
-                "Cargando matrices...",
-                "Loading matrices...",
+                "No hay matrices para mostrar",
+                "No matrices to display",
               )}
             </h3>
-
-            <p>
-              {texto(
-                "Consultando las matrices almacenadas.",
-                "Loading stored matrices.",
-              )}
-            </p>
-
-          </div>
-
-        ) : matrices.length ===
-          0 ? (
-
-          <div className="matrices-empty">
-
-            <div>
-              <Grid3X3
-                size={29}
-              />
-            </div>
-
-            <h3>
-              {texto(
-                "Aún no hay matrices guardadas",
-                "There are no saved matrices yet",
-              )}
-            </h3>
-
-            <p>
-              {texto(
-                "Utiliza el generador empresarial para crear una matriz a partir de ventas o inventario.",
-                "Use the business generator to create a matrix from sales or inventory.",
-              )}
-            </p>
-
-          </div>
-
-        ) : matricesFiltradas.length ===
-          0 ? (
-
-          <div className="matrices-empty">
-
-            <div>
-              <Search
-                size={29}
-              />
-            </div>
-
-            <h3>
-              {texto(
-                "No se encontraron matrices",
-                "No matrices found",
-              )}
-            </h3>
-
-            <p>
-              {texto(
-                "Modifica el término utilizado en la búsqueda.",
-                "Change the search term.",
-              )}
-            </p>
 
           </div>
 
@@ -2184,7 +2767,9 @@ function Matrices() {
           <div className="matrices-grid">
 
             {matricesFiltradas.map(
-              (matriz) => (
+              (
+                matriz,
+              ) => (
 
                 <article
                   className="matrix-card"
@@ -2204,6 +2789,7 @@ function Matrices() {
                       </div>
 
                       <div>
+
                         <strong>
                           {
                             matriz.nombre
@@ -2211,10 +2797,15 @@ function Matrices() {
                         </strong>
 
                         <span>
-                          {matriz.filas}
-                          {" × "}
-                          {matriz.columnas}
+                          {
+                            matriz.filas
+                          }
+                          ×
+                          {
+                            matriz.columnas
+                          }
                         </span>
+
                       </div>
 
                     </div>
@@ -2224,10 +2815,6 @@ function Matrices() {
 
                       <button
                         type="button"
-                        title={texto(
-                          "Editar matriz",
-                          "Edit matrix",
-                        )}
                         onClick={() =>
                           abrirEdicion(
                             matriz,
@@ -2243,10 +2830,6 @@ function Matrices() {
                       <button
                         type="button"
                         className="matrix-delete"
-                        title={texto(
-                          "Eliminar matriz",
-                          "Delete matrix",
-                        )}
                         onClick={() =>
                           void eliminarMatriz(
                             matriz.id,
@@ -2263,70 +2846,13 @@ function Matrices() {
                   </div>
 
 
-                  <div className="matrix-display">
-
-                    <span className="matrix-bracket">
-                      [
-                    </span>
-
-                    <div className="matrix-values">
-
-                      {matriz.valores.map(
-                        (
-                          fila,
-                          indiceFila,
-                        ) => (
-
-                          <div
-                            className="matrix-row"
-                            key={`${matriz.id}-fila-${indiceFila}`}
-                          >
-
-                            {fila.map(
-                              (
-                                valor,
-                                indiceColumna,
-                              ) => (
-
-                                <strong
-                                  key={`${matriz.id}-${indiceFila}-${indiceColumna}`}
-                                >
-                                  {
-                                    valor
-                                  }
-                                </strong>
-
-                              ),
-                            )}
-
-                          </div>
-
-                        ),
-                      )}
-
-                    </div>
-
-                    <span className="matrix-bracket">
-                      ]
-                    </span>
-
-                  </div>
-
-
                   <div className="matrix-card-info">
 
                     <p>
-                      {matriz.descripcion ||
-                        texto(
-                          "Sin descripción",
-                          "No description",
-                        )}
+                      {
+                        matriz.descripcion
+                      }
                     </p>
-
-                    <span>
-                      ID:{" "}
-                      {matriz.id}
-                    </span>
 
                   </div>
 
@@ -2342,25 +2868,10 @@ function Matrices() {
       </section>
 
 
-      {/* =================================================== */}
-      {/* MODO MANUAL */}
-      {/* =================================================== */}
+      {/* MANUAL */}
 
       {modalAbierto && (
-
-        <div
-          className="matrix-modal-overlay"
-          onMouseDown={(
-            evento,
-          ) => {
-            if (
-              evento.target ===
-              evento.currentTarget
-            ) {
-              cerrarModal();
-            }
-          }}
-        >
+        <div className="matrix-modal-overlay">
 
           <div className="matrix-modal">
 
@@ -2387,13 +2898,6 @@ function Matrices() {
                       )}
                 </h2>
 
-                <p>
-                  {texto(
-                    "Utiliza este modo únicamente cuando necesites definir manualmente las dimensiones y valores.",
-                    "Use this mode only when you need to manually define dimensions and values.",
-                  )}
-                </p>
-
               </div>
 
 
@@ -2402,10 +2906,6 @@ function Matrices() {
                 onClick={
                   cerrarModal
                 }
-                aria-label={texto(
-                  "Cerrar",
-                  "Close",
-                )}
               >
                 <X
                   size={19}
@@ -2418,90 +2918,63 @@ function Matrices() {
             <form
               onSubmit={
                 handleSubmit(
-                  guardarMatriz,
+                  guardarManual,
                 )
               }
             >
 
               <div className="matrix-form">
 
+                <div className="form-group">
 
-                <div className="matrix-form-main">
-
-                  <div className="form-group">
-
-                    <label htmlFor="nombre">
-                      {texto(
-                        "Nombre de la matriz",
-                        "Matrix name",
-                      )}
-                    </label>
-
-                    <input
-                      id="nombre"
-                      type="text"
-                      placeholder={texto(
-                        "Ej. Análisis especial",
-                        "E.g. Special analysis",
-                      )}
-                      {...register(
-                        "nombre",
-                      )}
-                    />
-
-                    {errors.nombre && (
-                      <span className="form-error">
-                        {
-                          errors.nombre
-                            .message
-                        }
-                      </span>
+                  <label>
+                    {texto(
+                      "Nombre",
+                      "Name",
                     )}
+                  </label>
 
-                  </div>
-
-
-                  <div className="form-group">
-
-                    <label htmlFor="descripcion">
-                      {texto(
-                        "Descripción",
-                        "Description",
-                      )}
-                    </label>
-
-                    <input
-                      id="descripcion"
-                      type="text"
-                      placeholder={texto(
-                        "Describe qué representa esta matriz",
-                        "Describe what this matrix represents",
-                      )}
-                      {...register(
-                        "descripcion",
-                      )}
-                    />
-
-                    {errors.descripcion && (
-                      <span className="form-error">
-                        {
-                          errors
-                            .descripcion
-                            .message
-                        }
-                      </span>
+                  <input
+                    {...register(
+                      "nombre",
                     )}
+                  />
 
-                  </div>
+                  {errors.nombre && (
+                    <span className="form-error">
+                      {
+                        errors.nombre
+                          .message
+                      }
+                    </span>
+                  )}
 
                 </div>
 
 
-                <div className="matrix-dimensions">
+                <div className="form-group">
+
+                  <label>
+                    {texto(
+                      "Descripción",
+                      "Description",
+                    )}
+                  </label>
+
+                  <input
+                    {...register(
+                      "descripcion",
+                    )}
+                  />
+
+                </div>
+
+
+                <div className="matrix-pro-manual-dimensions">
 
                   <div className="form-group">
 
-                    <label htmlFor="filas">
+                    <label>
                       {texto(
                         "Filas",
                         "Rows",
@@ -2509,45 +2982,43 @@ function Matrices() {
                     </label>
 
                     <input
-                      id="filas"
                       type="number"
                       min="1"
                       max="10"
                       value={
-                        Number.isFinite(
-                          filas,
-                        )
-                          ? filas
-                          : ""
+                        filasManual
                       }
                       onChange={(
-                        evento,
-                      ) =>
-                        cambiarFilas(
-                          Number(
-                            evento
-                              .target
-                              .value,
-                          ),
-                        )
-                      }
-                    />
+                        e,
+                      ) => {
 
-                    {errors.filas && (
-                      <span className="form-error">
-                        {
-                          errors.filas
-                            .message
-                        }
-                      </span>
-                    )}
+                        const valor =
+                          Number(
+                            e.target
+                              .value,
+                          );
+
+                        setValue(
+                          "filas",
+                          valor,
+                        );
+
+                        redimensionar(
+                          valor,
+                          Number(
+                            columnasManual,
+                          ) ||
+                            1,
+                        );
+                      }}
+                    />
 
                   </div>
 
 
                   <div className="form-group">
 
-                    <label htmlFor="columnas">
+                    <label>
                       {texto(
                         "Columnas",
                         "Columns",
@@ -2555,152 +3026,89 @@ function Matrices() {
                     </label>
 
                     <input
-                      id="columnas"
                       type="number"
                       min="1"
                       max="10"
                       value={
-                        Number.isFinite(
-                          columnas,
-                        )
-                          ? columnas
-                          : ""
+                        columnasManual
                       }
                       onChange={(
-                        evento,
-                      ) =>
-                        cambiarColumnas(
-                          Number(
-                            evento
-                              .target
-                              .value,
-                          ),
-                        )
-                      }
-                    />
+                        e,
+                      ) => {
 
-                    {errors.columnas && (
-                      <span className="form-error">
-                        {
-                          errors.columnas
-                            .message
-                        }
-                      </span>
-                    )}
+                        const valor =
+                          Number(
+                            e.target
+                              .value,
+                          );
+
+                        setValue(
+                          "columnas",
+                          valor,
+                        );
+
+                        redimensionar(
+                          Number(
+                            filasManual,
+                          ) ||
+                            1,
+                          valor,
+                        );
+                      }}
+                    />
 
                   </div>
 
                 </div>
 
 
-                <div className="matrix-editor-section">
+                <div className="matrix-pro-manual-grid">
 
-                  <div className="matrix-editor-header">
+                  {valoresTemporales.map(
+                    (
+                      fila,
+                      indiceFila,
+                    ) => (
 
-                    <div>
+                      <div
+                        className="matrix-pro-manual-row"
+                        key={
+                          indiceFila
+                        }
+                      >
 
-                      <strong>
-                        {texto(
-                          "Valores de la matriz",
-                          "Matrix values",
+                        {fila.map(
+                          (
+                            valor,
+                            indiceColumna,
+                          ) => (
+
+                            <input
+                              key={`${indiceFila}-${indiceColumna}`}
+                              type="number"
+                              step="any"
+                              value={
+                                valor
+                              }
+                              onChange={(
+                                e,
+                              ) =>
+                                cambiarValor(
+                                  indiceFila,
+                                  indiceColumna,
+                                  e.target
+                                    .value,
+                                )
+                              }
+                            />
+
+                          ),
                         )}
-                      </strong>
 
-                      <span>
-                        {texto(
-                          "Introduce un valor en cada posición.",
-                          "Enter a value in each position.",
-                        )}
-                      </span>
+                      </div>
 
-                    </div>
-
-
-                    <span className="matrix-dimension-badge">
-                      {Number(
-                        filas,
-                      ) || 0}
-                      {" × "}
-                      {Number(
-                        columnas,
-                      ) || 0}
-                    </span>
-
-                  </div>
-
-
-                  <div className="matrix-editor-wrapper">
-
-                    <span className="matrix-editor-bracket">
-                      [
-                    </span>
-
-                    <div className="matrix-editor">
-
-                      {valoresTemporales.map(
-                        (
-                          fila,
-                          indiceFila,
-                        ) => (
-
-                          <div
-                            className="matrix-editor-row"
-                            key={`editor-fila-${indiceFila}`}
-                          >
-
-                            {fila.map(
-                              (
-                                valor,
-                                indiceColumna,
-                              ) => (
-
-                                <input
-                                  key={`editor-${indiceFila}-${indiceColumna}`}
-                                  type="number"
-                                  step="any"
-                                  value={
-                                    valor
-                                  }
-                                  aria-label={`${texto(
-                                    "Fila",
-                                    "Row",
-                                  )} ${
-                                    indiceFila +
-                                    1
-                                  }, ${texto(
-                                    "columna",
-                                    "column",
-                                  )} ${
-                                    indiceColumna +
-                                    1
-                                  }`}
-                                  onChange={(
-                                    evento,
-                                  ) =>
-                                    cambiarValor(
-                                      indiceFila,
-                                      indiceColumna,
-                                      evento.target
-                                        .value,
-                                    )
-                                  }
-                                />
-
-                              ),
-                            )}
-
-                          </div>
-
-                        ),
-                      )}
-
-                    </div>
-
-                    <span className="matrix-editor-bracket">
-                      ]
-                    </span>
-
-                  </div>
+                    ),
+                  )}
 
                 </div>
 
@@ -2714,9 +3122,6 @@ function Matrices() {
                   className="button-secondary"
                   onClick={
                     cerrarModal
-                  }
-                  disabled={
-                    isSubmitting
                   }
                 >
                   {texto(
@@ -2733,22 +3138,16 @@ function Matrices() {
                     isSubmitting
                   }
                 >
-
                   {matrizEditando ? (
                     <>
                       <Edit3
                         size={16}
                       />
 
-                      {isSubmitting
-                        ? texto(
-                            "Guardando...",
-                            "Saving...",
-                          )
-                        : texto(
-                            "Guardar cambios",
-                            "Save changes",
-                          )}
+                      {texto(
+                        "Guardar cambios",
+                        "Save changes",
+                      )}
                     </>
                   ) : (
                     <>
@@ -2756,18 +3155,12 @@ function Matrices() {
                         size={16}
                       />
 
-                      {isSubmitting
-                        ? texto(
-                            "Creando...",
-                            "Creating...",
-                          )
-                        : texto(
-                            "Crear matriz manual",
-                            "Create manual matrix",
-                          )}
+                      {texto(
+                        "Crear matriz",
+                        "Create matrix",
+                      )}
                     </>
                   )}
-
                 </button>
 
               </div>
@@ -2777,7 +3170,6 @@ function Matrices() {
           </div>
 
         </div>
-
       )}
 
     </div>

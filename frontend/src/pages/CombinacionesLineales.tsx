@@ -7,11 +7,13 @@ import {
 import {
   Calculator,
   CheckCircle2,
+  Equal,
   Plus,
-  RotateCcw,
+  RefreshCcw,
   Sigma,
   Trash2,
   TriangleAlert,
+  Weight,
 } from "lucide-react";
 
 import PageHeader from "../components/ui/PageHeader";
@@ -39,98 +41,212 @@ import {
 import "../styles/CombinacionesLineales.css";
 
 
-interface TerminoPonderado {
+type ModoCombinacion =
+  | "porcentaje"
+  | "coeficiente";
+
+
+type TipoUnidad =
+  | "moneda"
+  | "porcentaje"
+  | "unidades"
+  | "desconocida";
+
+
+interface TerminoCombinacion {
   id: number;
   vectorId: string;
-  peso: string;
+  valor: string;
 }
 
 
-function formatearVector(
-  vector: number[],
-): string {
-  return `[${vector.join(", ")}]`;
+interface ValidacionCombinacion {
+  ok: boolean;
+  completa: boolean;
+  mensajeEs: string;
+  mensajeEn: string;
 }
 
 
-function crearPesosEquitativos(
-  cantidad: number,
-): number[] {
-  if (cantidad <= 0) {
-    return [];
+// ==========================================================
+// UTILIDADES DE METADATOS
+// ==========================================================
+
+function extraerLista(
+  descripcion: string,
+  patrones: string[],
+): string[] {
+  for (const patron of patrones) {
+    const expresion =
+      new RegExp(
+        `${patron}:\\s*([^.]*)`,
+        "i",
+      );
+
+    const coincidencia =
+      descripcion.match(
+        expresion,
+      );
+
+    if (
+      coincidencia?.[1]
+    ) {
+      return coincidencia[1]
+        .split(",")
+        .map(
+          (item) =>
+            item.trim(),
+        )
+        .filter(Boolean);
+    }
   }
 
-  if (cantidad === 1) {
-    return [100];
-  }
-
-  const base =
-    Math.floor(
-      (100 / cantidad) * 100,
-    ) / 100;
-
-  const pesos =
-    Array.from(
-      {
-        length: cantidad,
-      },
-      () => base,
-    );
-
-  const sumaAnteriores =
-    base *
-    (cantidad - 1);
-
-  pesos[
-    cantidad - 1
-  ] =
-    Number(
-      (
-        100 -
-        sumaAnteriores
-      ).toFixed(2),
-    );
-
-  return pesos;
+  return [];
 }
 
 
-function extraerEtiquetas(
+function obtenerEtiquetas(
   vector: VectorVista,
 ): string[] {
-  const descripcion =
-    vector.descripcion ??
-    "";
-
-  const coincidencia =
-    descripcion.match(
-      /(?:Orden de productos|Product order):\s*([^.]*)/i,
-    );
-
-  if (!coincidencia) {
-    return [];
-  }
-
-  return coincidencia[1]
-    .split(",")
-    .map(
-      (valor) =>
-        valor.trim(),
-    )
-    .filter(Boolean);
+  return extraerLista(
+    vector.descripcion,
+    [
+      "Etiquetas",
+      "Labels",
+      "Orden de productos",
+      "Product order",
+    ],
+  );
 }
 
+
+function listasIguales(
+  a: string[],
+  b: string[],
+): boolean {
+  if (
+    a.length === 0 ||
+    b.length === 0
+  ) {
+    return true;
+  }
+
+  if (
+    a.length !==
+    b.length
+  ) {
+    return false;
+  }
+
+  return a.every(
+    (
+      valor,
+      indice,
+    ) =>
+      valor
+        .trim()
+        .toLowerCase() ===
+      b[indice]
+        .trim()
+        .toLowerCase(),
+  );
+}
+
+
+// ==========================================================
+// DETECTAR UNIDAD
+// ==========================================================
+
+function detectarUnidad(
+  vector: VectorVista,
+): TipoUnidad {
+  const contenido =
+    `${vector.nombre} ${vector.descripcion}`
+      .toLowerCase();
+
+
+  if (
+    contenido.includes(
+      "cumplimiento",
+    ) ||
+    contenido.includes(
+      "cobertura",
+    ) ||
+    contenido.includes(
+      "achievement",
+    ) ||
+    contenido.includes(
+      "coverage",
+    ) ||
+    contenido.includes("%")
+  ) {
+    return "porcentaje";
+  }
+
+
+  if (
+    contenido.includes(
+      "importe",
+    ) ||
+    contenido.includes(
+      "precio",
+    ) ||
+    contenido.includes(
+      "meta monetaria",
+    ) ||
+    contenido.includes(
+      "ventas reales",
+    ) ||
+    contenido.includes(
+      "diferencia ventas",
+    ) ||
+    contenido.includes(
+      "sales amount",
+    ) ||
+    contenido.includes(
+      "price",
+    ) ||
+    contenido.includes(
+      "monetary target",
+    ) ||
+    contenido.includes(
+      "actual sales",
+    )
+  ) {
+    return "moneda";
+  }
+
+
+  if (
+    contenido.includes(
+      "unidades",
+    ) ||
+    contenido.includes(
+      "stock",
+    ) ||
+    contenido.includes(
+      "units",
+    )
+  ) {
+    return "unidades";
+  }
+
+
+  return "desconocida";
+}
+
+
+// ==========================================================
+// COMPONENTE
+// ==========================================================
 
 function CombinacionesLineales() {
   const {
     texto,
+    formatearMoneda,
     locale,
   } = useAppSettings();
 
-
-  // =========================================================
-  // DATOS
-  // =========================================================
 
   const vectoresQuery =
     useVectores();
@@ -151,28 +267,35 @@ function CombinacionesLineales() {
       .isPending;
 
 
-  // =========================================================
-  // INDICADORES Y PESOS
-  // =========================================================
+  // ========================================================
+  // ESTADO
+  // ========================================================
+
+  const [
+    modo,
+    setModo,
+  ] =
+    useState<ModoCombinacion>(
+      "porcentaje",
+    );
+
 
   const [
     terminos,
     setTerminos,
   ] =
-    useState<TerminoPonderado[]>(
-      [
-        {
-          id: 1,
-          vectorId: "",
-          peso: "50",
-        },
-        {
-          id: 2,
-          vectorId: "",
-          peso: "50",
-        },
-      ],
-    );
+    useState<TerminoCombinacion[]>([
+      {
+        id: 1,
+        vectorId: "",
+        valor: "50",
+      },
+      {
+        id: 2,
+        vectorId: "",
+        valor: "50",
+      },
+    ]);
 
 
   const [
@@ -187,12 +310,20 @@ function CombinacionesLineales() {
   const [
     error,
     setError,
-  ] = useState("");
+  ] =
+    useState("");
 
 
-  // =========================================================
-  // NOTIFICACIONES
-  // =========================================================
+  const [
+    operacionGuardada,
+    setOperacionGuardada,
+  ] =
+    useState(false);
+
+
+  // ========================================================
+  // NOTIFICACIÓN DE ERROR
+  // ========================================================
 
   useEffect(() => {
     if (!error) {
@@ -213,7 +344,7 @@ function CombinacionesLineales() {
         error,
 
       mensajeEn:
-        "A mathematical operation could not be completed.",
+        "A linear combination could not be completed.",
 
       ruta:
         "/combinaciones-lineales",
@@ -223,386 +354,31 @@ function CombinacionesLineales() {
   ]);
 
 
-  // =========================================================
-  // VECTORES SELECCIONADOS
-  // =========================================================
+  // ========================================================
+  // OBTENER VECTOR
+  // ========================================================
 
-  const obtenerVector = (
-    vectorId: string,
-  ) =>
-    vectores.find(
-      (vector) =>
-        String(
-          vector.id,
-        ) ===
-        vectorId,
-    ) ?? null;
+  const obtenerVector =
+    (
+      vectorId: string,
+    ) =>
+      vectores.find(
+        (vector) =>
+          String(
+            vector.id,
+          ) ===
+          vectorId,
+      ) ??
+      null;
 
 
-  const vectoresSeleccionados =
+  // ========================================================
+  // TÉRMINOS PROCESADOS
+  // ========================================================
+
+  const terminosProcesados =
     useMemo(
       () =>
-        terminos
-          .map(
-            (termino) =>
-              obtenerVector(
-                termino.vectorId,
-              ),
-          )
-          .filter(
-            (
-              vector,
-            ): vector is VectorVista =>
-              vector !== null,
-          ),
-      [
-        terminos,
-        vectores,
-      ],
-    );
-
-
-  const totalPeso =
-    useMemo(
-      () =>
-        terminos.reduce(
-          (
-            total,
-            termino,
-          ) => {
-            const valor =
-              Number(
-                termino.peso,
-              );
-
-            return total +
-              (
-                Number.isFinite(
-                  valor,
-                )
-                  ? valor
-                  : 0
-              );
-          },
-          0,
-        ),
-      [
-        terminos,
-      ],
-    );
-
-
-  const totalPesoValido =
-    Math.abs(
-      totalPeso -
-      100,
-    ) < 0.01;
-
-
-  // =========================================================
-  // ETIQUETAS DE PRODUCTOS
-  // =========================================================
-
-  const etiquetasResultado =
-    useMemo(() => {
-      if (
-        vectoresSeleccionados.length ===
-        0
-      ) {
-        return [];
-      }
-
-      const etiquetas =
-        extraerEtiquetas(
-          vectoresSeleccionados[0],
-        );
-
-      if (
-        etiquetas.length ===
-        0
-      ) {
-        return [];
-      }
-
-      return etiquetas;
-    }, [
-      vectoresSeleccionados,
-    ]);
-
-
-  // =========================================================
-  // ACTUALIZAR
-  // =========================================================
-
-  const actualizarTermino = (
-    id: number,
-    campo:
-      | "vectorId"
-      | "peso",
-    valor: string,
-  ) => {
-    setTerminos(
-      (actuales) =>
-        actuales.map(
-          (termino) =>
-            termino.id === id
-              ? {
-                  ...termino,
-                  [campo]:
-                    valor,
-                }
-              : termino,
-        ),
-    );
-
-    setResultado(
-      null,
-    );
-
-    setError("");
-  };
-
-
-  // =========================================================
-  // REPARTIR PESOS
-  // =========================================================
-
-  const repartirPesos =
-    () => {
-      const pesos =
-        crearPesosEquitativos(
-          terminos.length,
-        );
-
-      setTerminos(
-        (actuales) =>
-          actuales.map(
-            (
-              termino,
-              indice,
-            ) => ({
-              ...termino,
-
-              peso:
-                String(
-                  pesos[
-                    indice
-                  ],
-                ),
-            }),
-          ),
-      );
-
-      setResultado(
-        null,
-      );
-
-      setError("");
-    };
-
-
-  // =========================================================
-  // AGREGAR INDICADOR
-  // =========================================================
-
-  const agregarTermino =
-    () => {
-      setTerminos(
-        (actuales) => {
-          const nuevos = [
-            ...actuales,
-
-            {
-              id:
-                Date.now(),
-
-              vectorId:
-                "",
-
-              peso:
-                "0",
-            },
-          ];
-
-          const pesos =
-            crearPesosEquitativos(
-              nuevos.length,
-            );
-
-          return nuevos.map(
-            (
-              termino,
-              indice,
-            ) => ({
-              ...termino,
-
-              peso:
-                String(
-                  pesos[
-                    indice
-                  ],
-                ),
-            }),
-          );
-        },
-      );
-
-      setResultado(
-        null,
-      );
-
-      setError("");
-    };
-
-
-  // =========================================================
-  // ELIMINAR INDICADOR
-  // =========================================================
-
-  const eliminarTermino = (
-    id: number,
-  ) => {
-    if (
-      terminos.length <=
-      2
-    ) {
-      setError(
-        texto(
-          "Debes mantener al menos dos indicadores para construir un indicador ponderado.",
-          "You must keep at least two indicators to build a weighted indicator.",
-        ),
-      );
-
-      return;
-    }
-
-
-    setTerminos(
-      (actuales) => {
-        const restantes =
-          actuales.filter(
-            (termino) =>
-              termino.id !==
-              id,
-          );
-
-        const pesos =
-          crearPesosEquitativos(
-            restantes.length,
-          );
-
-        return restantes.map(
-          (
-            termino,
-            indice,
-          ) => ({
-            ...termino,
-
-            peso:
-              String(
-                pesos[
-                  indice
-                ],
-              ),
-          }),
-        );
-      },
-    );
-
-    setResultado(
-      null,
-    );
-
-    setError("");
-  };
-
-
-  // =========================================================
-  // EXPRESIONES
-  // =========================================================
-
-  const obtenerResumenEmpresarial =
-    () =>
-      terminos
-        .map(
-          (termino) => {
-            const vector =
-              obtenerVector(
-                termino.vectorId,
-              );
-
-            return `${
-              termino.peso ||
-              "?"
-            }% ${
-              vector?.nombre ??
-              texto(
-                "Indicador",
-                "Indicator",
-              )
-            }`;
-          },
-        )
-        .join(" + ");
-
-
-  const obtenerExpresionMatematica =
-    () =>
-      terminos
-        .map(
-          (termino) => {
-            const vector =
-              obtenerVector(
-                termino.vectorId,
-              );
-
-            const peso =
-              Number(
-                termino.peso,
-              );
-
-            const coeficiente =
-              Number.isFinite(
-                peso,
-              )
-                ? Number(
-                    (
-                      peso /
-                      100
-                    ).toFixed(
-                      4,
-                    ),
-                  )
-                : "?";
-
-            return `${coeficiente}·${
-              vector?.nombre ??
-              "V"
-            }`;
-          },
-        )
-        .join(" + ");
-
-
-  // =========================================================
-  // VALIDAR ESTRUCTURA
-  // =========================================================
-
-  const validar =
-    (): string => {
-
-      if (
-        terminos.length <
-        2
-      ) {
-        return texto(
-          "Debes seleccionar al menos dos indicadores.",
-          "You must select at least two indicators.",
-        );
-      }
-
-
-      const procesados =
         terminos.map(
           (termino) => ({
             ...termino,
@@ -612,201 +388,754 @@ function CombinacionesLineales() {
                 termino.vectorId,
               ),
 
-            pesoNumero:
+            valorNumero:
               Number(
-                termino.peso,
+                termino.valor,
               ),
           }),
-        );
+        ),
+      [
+        terminos,
+        vectores,
+      ],
+    );
 
 
-      if (
-        procesados.some(
-          (termino) =>
-            !termino.vector,
-        )
-      ) {
-        return texto(
-          "Selecciona un indicador en cada fila.",
-          "Select an indicator in each row.",
-        );
-      }
-
-
-      const ids =
-        procesados.map(
-          (termino) =>
-            (
-              termino.vector as
-              VectorVista
-            ).id,
-        );
-
-
-      if (
-        new Set(
-          ids,
-        ).size !==
-        ids.length
-      ) {
-        return texto(
-          "No repitas el mismo indicador. Selecciona vectores diferentes.",
-          "Do not repeat the same indicator. Select different vectors.",
-        );
-      }
-
-
-      if (
-        procesados.some(
-          (termino) =>
-            !Number.isFinite(
-              termino.pesoNumero,
-            ) ||
-            termino.pesoNumero <
-              0 ||
-            termino.pesoNumero >
-              100,
-        )
-      ) {
-        return texto(
-          "Cada peso debe ser un número entre 0 y 100.",
-          "Each weight must be a number between 0 and 100.",
-        );
-      }
-
-
-      const suma =
-        procesados.reduce(
+  const sumaValores =
+    useMemo(
+      () =>
+        terminosProcesados.reduce(
           (
             total,
             termino,
           ) =>
             total +
-            termino.pesoNumero,
-          0,
-        );
-
-
-      if (
-        Math.abs(
-          suma -
-          100,
-        ) >= 0.01
-      ) {
-        return texto(
-          `Los pesos deben sumar 100 %. Actualmente suman ${Number(
-            suma.toFixed(
-              2,
-            ),
-          )} %.`,
-          `Weights must add up to 100%. They currently add up to ${Number(
-            suma.toFixed(
-              2,
-            ),
-          )}%.`,
-        );
-      }
-
-
-      const primerVector =
-        procesados[0]
-          .vector as
-          VectorVista;
-
-
-      const dimension =
-        primerVector
-          .valores.length;
-
-
-      const dimensionesCorrectas =
-        procesados.every(
-          (termino) =>
             (
-              termino.vector as
-              VectorVista
-            ).valores.length ===
-            dimension,
+              Number.isFinite(
+                termino.valorNumero,
+              )
+                ? termino.valorNumero
+                : 0
+            ),
+          0,
+        ),
+      [
+        terminosProcesados,
+      ],
+    );
+
+
+  // ========================================================
+  // ACTUALIZAR
+  // ========================================================
+
+  const actualizarTermino =
+    (
+      id: number,
+      campo:
+        | "vectorId"
+        | "valor",
+      valor: string,
+    ) => {
+
+      setTerminos(
+        (actuales) =>
+          actuales.map(
+            (termino) =>
+              termino.id ===
+              id
+                ? {
+                    ...termino,
+                    [campo]:
+                      valor,
+                  }
+                : termino,
+          ),
+      );
+
+      setResultado(
+        null,
+      );
+
+      setOperacionGuardada(
+        false,
+      );
+
+      setError("");
+    };
+
+
+  // ========================================================
+  // AGREGAR
+  // ========================================================
+
+  const agregarTermino =
+    () => {
+
+      const cantidad =
+        terminos.length +
+        1;
+
+      const valorInicial =
+        modo ===
+        "porcentaje"
+          ? String(
+              Number(
+                (
+                  100 /
+                  cantidad
+                ).toFixed(
+                  2,
+                ),
+              ),
+            )
+          : "1";
+
+
+      setTerminos(
+        (actuales) => [
+          ...actuales,
+          {
+            id:
+              Date.now(),
+
+            vectorId:
+              "",
+
+            valor:
+              valorInicial,
+          },
+        ],
+      );
+
+
+      setResultado(
+        null,
+      );
+
+      setOperacionGuardada(
+        false,
+      );
+
+      setError("");
+    };
+
+
+  // ========================================================
+  // ELIMINAR
+  // ========================================================
+
+  const eliminarTermino =
+    (
+      id: number,
+    ) => {
+
+      if (
+        terminos.length <=
+        2
+      ) {
+        setError(
+          texto(
+            "La combinación debe contener al menos dos vectores.",
+            "The combination must contain at least two vectors.",
+          ),
         );
+
+        return;
+      }
+
+
+      setTerminos(
+        (actuales) =>
+          actuales.filter(
+            (termino) =>
+              termino.id !==
+              id,
+          ),
+      );
+
+      setResultado(
+        null,
+      );
+
+      setOperacionGuardada(
+        false,
+      );
+
+      setError("");
+    };
+
+
+  // ========================================================
+  // DISTRIBUIR PESOS
+  // ========================================================
+
+  const distribuirIgualmente =
+    () => {
+
+      if (
+        terminos.length ===
+        0
+      ) {
+        return;
+      }
 
 
       if (
-        !dimensionesCorrectas
+        modo ===
+        "porcentaje"
       ) {
-        const detalle =
-          procesados
-            .map(
-              (termino) => {
-                const vector =
-                  termino.vector as
-                  VectorVista;
 
-                return `${vector.nombre}: ${vector.valores.length}`;
+        const base =
+          Math.floor(
+            (
+              100 /
+              terminos.length
+            ) * 100,
+          ) /
+          100;
+
+
+        let acumulado =
+          0;
+
+
+        setTerminos(
+          (actuales) =>
+            actuales.map(
+              (
+                termino,
+                indice,
+              ) => {
+
+                const esUltimo =
+                  indice ===
+                  actuales.length -
+                    1;
+
+
+                const valor =
+                  esUltimo
+                    ? Number(
+                        (
+                          100 -
+                          acumulado
+                        ).toFixed(
+                          2,
+                        ),
+                      )
+                    : base;
+
+
+                acumulado +=
+                  valor;
+
+
+                return {
+                  ...termino,
+
+                  valor:
+                    String(
+                      valor,
+                    ),
+                };
               },
-            )
-            .join(", ");
+            ),
+        );
+
+      } else {
+
+        const coeficiente =
+          Number(
+            (
+              1 /
+              terminos.length
+            ).toFixed(
+              4,
+            ),
+          );
 
 
-        return texto(
-          `Los indicadores deben tener la misma dimensión. Dimensiones actuales: ${detalle}.`,
-          `Indicators must have the same dimension. Current dimensions: ${detalle}.`,
+        setTerminos(
+          (actuales) =>
+            actuales.map(
+              (termino) => ({
+                ...termino,
+
+                valor:
+                  String(
+                    coeficiente,
+                  ),
+              }),
+            ),
         );
       }
 
 
-      const ordenes =
-        procesados
-          .map(
+      setResultado(
+        null,
+      );
+
+      setOperacionGuardada(
+        false,
+      );
+
+      setError("");
+    };
+
+
+  // ========================================================
+  // CAMBIAR MODO
+  // ========================================================
+
+  const cambiarModo =
+    (
+      nuevoModo:
+        ModoCombinacion,
+    ) => {
+
+      setModo(
+        nuevoModo,
+      );
+
+
+      const cantidad =
+        terminos.length;
+
+
+      setTerminos(
+        (actuales) =>
+          actuales.map(
+            (
+              termino,
+              indice,
+            ) => {
+
+              if (
+                nuevoModo ===
+                "porcentaje"
+              ) {
+                const peso =
+                  indice ===
+                  cantidad -
+                    1
+                    ? 100 -
+                      Number(
+                        (
+                          100 /
+                          cantidad
+                        ).toFixed(
+                          2,
+                        ),
+                      ) *
+                        (
+                          cantidad -
+                          1
+                        )
+                    : Number(
+                        (
+                          100 /
+                          cantidad
+                        ).toFixed(
+                          2,
+                        ),
+                      );
+
+
+                return {
+                  ...termino,
+
+                  valor:
+                    String(
+                      Number(
+                        peso.toFixed(
+                          2,
+                        ),
+                      ),
+                    ),
+                };
+              }
+
+
+              return {
+                ...termino,
+
+                valor:
+                  String(
+                    Number(
+                      (
+                        1 /
+                        cantidad
+                      ).toFixed(
+                        4,
+                      ),
+                    ),
+                  ),
+              };
+            },
+          ),
+      );
+
+
+      setResultado(
+        null,
+      );
+
+      setOperacionGuardada(
+        false,
+      );
+
+      setError("");
+    };
+
+
+  // ========================================================
+  // VALIDACIÓN COMPLETA
+  // ========================================================
+
+  const validacion =
+    useMemo<ValidacionCombinacion>(
+      () => {
+
+        if (
+          terminosProcesados.length <
+          2
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              false,
+
+            mensajeEs:
+              "Debes utilizar al menos dos vectores.",
+
+            mensajeEn:
+              "You must use at least two vectors.",
+          };
+        }
+
+
+        const sinVector =
+          terminosProcesados.some(
             (termino) =>
-              extraerEtiquetas(
-                termino.vector as
-                VectorVista,
-              ),
-          )
-          .filter(
-            (etiquetas) =>
-              etiquetas.length >
-              0,
-          );
-
-
-      if (
-        ordenes.length >
-        1
-      ) {
-        const referencia =
-          ordenes[0].join(
-            "|||",
-          );
-
-        const mismoOrden =
-          ordenes.every(
-            (etiquetas) =>
-              etiquetas.join(
-                "|||",
-              ) ===
-              referencia,
+              !termino.vector,
           );
 
 
         if (
-          !mismoOrden
+          sinVector
         ) {
-          return texto(
-            "Los vectores seleccionados no utilizan el mismo orden de productos. No sería correcto combinarlos.",
-            "The selected vectors do not use the same product order. Combining them would not be correct.",
-          );
+          return {
+            ok:
+              false,
+
+            completa:
+              false,
+
+            mensajeEs:
+              "Selecciona un vector en cada término.",
+
+            mensajeEn:
+              "Select a vector for each term.",
+          };
         }
-      }
 
 
-      return "";
-    };
+        const valoresInvalidos =
+          terminosProcesados.some(
+            (termino) =>
+              !Number.isFinite(
+                termino.valorNumero,
+              ),
+          );
 
 
-  // =========================================================
+        if (
+          valoresInvalidos
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              true,
+
+            mensajeEs:
+              "Todos los pesos o coeficientes deben ser números válidos.",
+
+            mensajeEn:
+              "All weights or coefficients must be valid numbers.",
+          };
+        }
+
+
+        const ids =
+          terminosProcesados.map(
+            (termino) =>
+              termino.vectorId,
+          );
+
+
+        if (
+          new Set(
+            ids,
+          ).size !==
+          ids.length
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              true,
+
+            mensajeEs:
+              "No debes seleccionar el mismo vector más de una vez.",
+
+            mensajeEn:
+              "You should not select the same vector more than once.",
+          };
+        }
+
+
+        const seleccionados =
+          terminosProcesados.map(
+            (termino) =>
+              termino.vector as
+                VectorVista,
+          );
+
+
+        const dimension =
+          seleccionados[0]
+            .dimension;
+
+
+        const dimensionesIguales =
+          seleccionados.every(
+            (vector) =>
+              vector.dimension ===
+              dimension,
+          );
+
+
+        if (
+          !dimensionesIguales
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              true,
+
+            mensajeEs:
+              `Todos los vectores deben tener la misma dimensión. Se esperaba dimensión ${dimension}.`,
+
+            mensajeEn:
+              `All vectors must have the same dimension. Expected dimension ${dimension}.`,
+          };
+        }
+
+
+        const etiquetasBase =
+          obtenerEtiquetas(
+            seleccionados[0],
+          );
+
+
+        const etiquetasCompatibles =
+          seleccionados.every(
+            (vector) =>
+              listasIguales(
+                etiquetasBase,
+                obtenerEtiquetas(
+                  vector,
+                ),
+              ),
+          );
+
+
+        if (
+          !etiquetasCompatibles
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              true,
+
+            mensajeEs:
+              "Los vectores tienen dimensiones iguales, pero representan elementos diferentes o en distinto orden.",
+
+            mensajeEn:
+              "The vectors have equal dimensions, but represent different elements or use a different order.",
+          };
+        }
+
+
+        const unidades =
+          seleccionados
+            .map(
+              detectarUnidad,
+            )
+            .filter(
+              (unidad) =>
+                unidad !==
+                "desconocida",
+            );
+
+
+        if (
+          unidades.length >
+            1 &&
+          new Set(
+            unidades,
+          ).size >
+            1
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              true,
+
+            mensajeEs:
+              "Los vectores utilizan unidades diferentes. No es recomendable combinarlos directamente sin normalización.",
+
+            mensajeEn:
+              "The vectors use different units. They should not be directly combined without normalization.",
+          };
+        }
+
+
+        if (
+          modo ===
+            "porcentaje" &&
+          Math.abs(
+            sumaValores -
+              100,
+          ) >
+            0.01
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              true,
+
+            mensajeEs:
+              `Los pesos deben sumar 100 %. Total actual: ${sumaValores.toFixed(
+                2,
+              )} %.`,
+
+            mensajeEn:
+              `Weights must total 100%. Current total: ${sumaValores.toFixed(
+                2,
+              )}%.`,
+          };
+        }
+
+
+        return {
+          ok:
+            true,
+
+          completa:
+            true,
+
+          mensajeEs:
+            modo ===
+            "porcentaje"
+              ? `Configuración válida. ${seleccionados.length} vectores compatibles y pesos = 100 %.`
+              : `Configuración válida. ${seleccionados.length} vectores compatibles.`,
+
+          mensajeEn:
+            modo ===
+            "porcentaje"
+              ? `Valid configuration. ${seleccionados.length} compatible vectors and weights = 100%.`
+              : `Valid configuration. ${seleccionados.length} compatible vectors.`,
+        };
+      },
+      [
+        terminosProcesados,
+        modo,
+        sumaValores,
+      ],
+    );
+
+
+  // ========================================================
+  // ESCALARES BACKEND
+  // ========================================================
+
+  const obtenerEscalares =
+    () =>
+      terminosProcesados.map(
+        (termino) =>
+          modo ===
+          "porcentaje"
+            ? termino.valorNumero /
+                100
+            : termino.valorNumero,
+      );
+
+
+  // ========================================================
+  // EXPRESIÓN
+  // ========================================================
+
+  const expresion =
+    useMemo(
+      () =>
+        terminosProcesados
+          .map(
+            (termino) => {
+
+              const vector =
+                termino.vector;
+
+              const coeficiente =
+                modo ===
+                "porcentaje"
+                  ? Number.isFinite(
+                      termino.valorNumero,
+                    )
+                    ? (
+                        termino.valorNumero /
+                        100
+                      ).toFixed(
+                        2,
+                      )
+                    : "?"
+                  : termino.valor ||
+                    "?";
+
+
+              return `${coeficiente}·${
+                vector?.nombre ??
+                "Vector"
+              }`;
+            },
+          )
+          .join(
+            " + ",
+          ),
+      [
+        terminosProcesados,
+        modo,
+      ],
+    );
+
+
+  // ========================================================
   // CALCULAR
-  // =========================================================
+  // ========================================================
 
   const calcularCombinacion =
     async () => {
@@ -815,67 +1144,62 @@ function CombinacionesLineales() {
         null,
       );
 
+      setOperacionGuardada(
+        false,
+      );
+
       setError("");
 
 
-      const errorValidacion =
-        validar();
-
       if (
-        errorValidacion
+        !validacion.ok
       ) {
         setError(
-          errorValidacion,
+          texto(
+            validacion.mensajeEs,
+            validacion.mensajeEn,
+          ),
         );
 
         return;
       }
 
 
-      const datosProcesados =
-        terminos.map(
-          (termino) => ({
-            vector:
-              obtenerVector(
-                termino.vectorId,
-              ) as VectorVista,
-
-            peso:
-              Number(
-                termino.peso,
-              ),
-          }),
+      const seleccionados =
+        terminosProcesados.map(
+          (termino) =>
+            termino.vector as
+              VectorVista,
         );
 
 
       const recursoIds =
-        datosProcesados.map(
-          (termino) =>
-            termino.vector.id,
+        seleccionados.map(
+          (vector) =>
+            vector.id,
         );
 
 
       const escalares =
-        datosProcesados.map(
-          (termino) =>
-            termino.peso /
-            100,
-        );
-
-
-      const expresion =
-        obtenerExpresionMatematica();
+        obtenerEscalares();
 
 
       try {
+
         const respuesta =
           await ejecutarOperacionMutation
             .mutateAsync({
               nombre:
-                texto(
-                  "Indicador ponderado",
-                  "Weighted indicator",
-                ),
+                modo ===
+                "porcentaje"
+                  ? texto(
+                      "Indicador ponderado",
+                      "Weighted indicator",
+                    )
+                  : texto(
+                      "Combinación lineal",
+                      "Linear combination",
+                    ),
 
               tipo_operacion:
                 "combinacion_lineal",
@@ -889,27 +1213,17 @@ function CombinacionesLineales() {
               escalares,
 
               descripcion:
-                expresion,
+                `${texto(
+                  "Expresión",
+                  "Expression",
+                )}: ${expresion}`,
             });
 
 
         if (
           !Array.isArray(
             respuesta.resultado,
-          )
-        ) {
-          setError(
-            texto(
-              "No se obtuvo un vector válido como resultado.",
-              "A valid vector was not obtained as the result.",
-            ),
-          );
-
-          return;
-        }
-
-
-        if (
+          ) ||
           respuesta.resultado.some(
             (valor) =>
               Array.isArray(
@@ -919,8 +1233,8 @@ function CombinacionesLineales() {
         ) {
           setError(
             texto(
-              "El resultado recibido no corresponde a un indicador vectorial.",
-              "The received result does not correspond to a vector indicator.",
+              "El backend no devolvió un vector válido.",
+              "The backend did not return a valid vector.",
             ),
           );
 
@@ -930,41 +1244,50 @@ function CombinacionesLineales() {
 
         setResultado(
           respuesta.resultado as
-          number[],
+            number[],
+        );
+
+        setOperacionGuardada(
+          true,
         );
 
       } catch (
         errorCalculo
       ) {
+
         setError(
-          errorCalculo instanceof
-          Error
+          errorCalculo instanceof Error
             ? errorCalculo.message
             : texto(
-                "No se pudo calcular el indicador ponderado.",
-                "The weighted indicator could not be calculated.",
+                "No se pudo calcular la combinación lineal.",
+                "The linear combination could not be calculated.",
               ),
         );
       }
     };
 
 
-  // =========================================================
+  // ========================================================
   // REINICIAR
-  // =========================================================
+  // ========================================================
 
   const reiniciar =
     () => {
+
+      setModo(
+        "porcentaje",
+      );
+
       setTerminos([
         {
           id: 1,
           vectorId: "",
-          peso: "50",
+          valor: "50",
         },
         {
           id: 2,
           vectorId: "",
-          peso: "50",
+          valor: "50",
         },
       ]);
 
@@ -972,38 +1295,93 @@ function CombinacionesLineales() {
         null,
       );
 
+      setOperacionGuardada(
+        false,
+      );
+
       setError("");
     };
 
 
-  // =========================================================
-  // FORMATO
-  // =========================================================
+  // ========================================================
+  // RESULTADO: METADATOS
+  // ========================================================
 
-  const formatearNumero = (
-    valor: number,
-  ) =>
-    new Intl.NumberFormat(
-      locale,
-      {
-        maximumFractionDigits:
-          2,
-      },
-    ).format(
-      valor,
-    );
+  const primerVector =
+    terminosProcesados.find(
+      (termino) =>
+        termino.vector,
+    )?.vector ??
+    null;
 
 
-  // =========================================================
-  // ERROR DE CARGA
-  // =========================================================
+  const etiquetasResultado =
+    primerVector
+      ? obtenerEtiquetas(
+          primerVector,
+        )
+      : [];
+
+
+  const unidadResultado =
+    primerVector
+      ? detectarUnidad(
+          primerVector,
+        )
+      : "desconocida";
+
+
+  const formatearValor =
+    (
+      valor: number,
+    ) => {
+
+      if (
+        unidadResultado ===
+        "moneda"
+      ) {
+        return formatearMoneda(
+          valor,
+        );
+      }
+
+
+      if (
+        unidadResultado ===
+        "porcentaje"
+      ) {
+        return `${new Intl.NumberFormat(
+          locale,
+          {
+            maximumFractionDigits:
+              2,
+          },
+        ).format(
+          valor,
+        )}%`;
+      }
+
+
+      return new Intl.NumberFormat(
+        locale,
+        {
+          maximumFractionDigits:
+            2,
+        },
+      ).format(
+        valor,
+      );
+    };
+
+
+  // ========================================================
+  // ERROR CARGA
+  // ========================================================
 
   const errorCarga =
     vectoresQuery.error
-      ? vectoresQuery.error instanceof
-        Error
-        ? vectoresQuery
-            .error.message
+      ? vectoresQuery.error instanceof Error
+        ? vectoresQuery.error.message
         : texto(
             "No se pudieron cargar los vectores.",
             "Vectors could not be loaded.",
@@ -1011,39 +1389,37 @@ function CombinacionesLineales() {
       : "";
 
 
-  // =========================================================
-  // INTERFAZ
-  // =========================================================
+  // ========================================================
+  // UI
+  // ========================================================
 
   return (
     <div className="linear-page">
 
       <PageHeader
         etiqueta={texto(
-          "ANÁLISIS EMPRESARIAL",
-          "BUSINESS ANALYSIS",
+          "ANÁLISIS MATEMÁTICO",
+          "MATHEMATICAL ANALYSIS",
         )}
         titulo={texto(
-          "Indicador ponderado",
-          "Weighted indicator",
+          "Combinaciones lineales",
+          "Linear combinations",
         )}
         descripcion={texto(
-          "Combina varios indicadores empresariales asignándoles diferentes pesos para obtener un nuevo resultado.",
-          "Combine several business indicators by assigning different weights to obtain a new result.",
+          "Combina varios vectores compatibles mediante pesos o coeficientes para construir un nuevo vector o indicador empresarial.",
+          "Combine compatible vectors using weights or coefficients to build a new vector or business indicator.",
         )}
       />
 
 
-      {/* EXPLICACIÓN PRINCIPAL */}
+      {/* EXPLICACIÓN */}
 
-      <section className="linear-business-explanation">
+      <section className="linear-pro-explanation">
 
-        <div className="linear-explanation-icon">
-
+        <div className="linear-pro-explanation-icon">
           <Sigma
-            size={22}
+            size={24}
           />
-
         </div>
 
 
@@ -1051,22 +1427,19 @@ function CombinacionesLineales() {
 
           <span>
             {texto(
-              "¿QUÉ ESTÁS HACIENDO?",
-              "WHAT ARE YOU DOING?",
+              "COMBINACIÓN LINEAL",
+              "LINEAR COMBINATION",
             )}
           </span>
 
           <strong>
-            {texto(
-              "Combinar información según su importancia",
-              "Combine information according to its importance",
-            )}
+            c₁V₁ + c₂V₂ + ... + cₙVₙ
           </strong>
 
           <p>
             {texto(
-              "Selecciona dos o más vectores empresariales y asigna qué porcentaje de importancia tendrá cada uno. Los pesos deben sumar 100 %.",
-              "Select two or more business vectors and assign how important each one is. The weights must add up to 100%.",
+              "Cada vector se multiplica por un peso o coeficiente. Después todos los resultados se suman posición por posición.",
+              "Each vector is multiplied by a weight or coefficient. The results are then added position by position.",
             )}
           </p>
 
@@ -1075,109 +1448,166 @@ function CombinacionesLineales() {
       </section>
 
 
-      {/* FLUJO */}
+      {/* MODO */}
 
-      <section className="linear-business-flow">
+      <section className="linear-pro-card">
 
-        <div>
+        <div className="linear-pro-heading">
+
           <span>
-            1
+            {texto(
+              "PASO 1",
+              "STEP 1",
+            )}
           </span>
 
-          <strong>
+          <h2>
             {texto(
-              "Selecciona indicadores",
-              "Select indicators",
+              "Elige cómo quieres combinar los vectores",
+              "Choose how to combine the vectors",
             )}
-          </strong>
+          </h2>
+
         </div>
 
-        <div className="linear-flow-arrow">
-          →
-        </div>
 
-        <div>
-          <span>
-            2
-          </span>
+        <div className="linear-pro-modes">
 
-          <strong>
-            {texto(
-              "Asigna pesos",
-              "Assign weights",
-            )}
-          </strong>
-        </div>
+          <button
+            type="button"
+            className={
+              modo ===
+              "porcentaje"
+                ? "linear-pro-mode active"
+                : "linear-pro-mode"
+            }
+            onClick={() =>
+              cambiarModo(
+                "porcentaje",
+              )
+            }
+          >
+            <Weight
+              size={21}
+            />
 
-        <div className="linear-flow-arrow">
-          →
-        </div>
+            <div>
 
-        <div>
-          <span>
-            3
-          </span>
+              <strong>
+                {texto(
+                  "Indicador ponderado",
+                  "Weighted indicator",
+                )}
+              </strong>
 
-          <strong>
-            {texto(
-              "Combina",
-              "Combine",
-            )}
-          </strong>
-        </div>
+              <span>
+                {texto(
+                  "Usa porcentajes que deben sumar 100 %. Es la opción más fácil para análisis empresarial.",
+                  "Uses percentages that must total 100%. This is the easiest option for business analysis.",
+                )}
+              </span>
 
-        <div className="linear-flow-arrow">
-          →
-        </div>
+            </div>
 
-        <div>
-          <span>
-            4
-          </span>
+          </button>
 
-          <strong>
-            {texto(
-              "Interpreta",
-              "Interpret",
-            )}
-          </strong>
+
+          <button
+            type="button"
+            className={
+              modo ===
+              "coeficiente"
+                ? "linear-pro-mode active"
+                : "linear-pro-mode"
+            }
+            onClick={() =>
+              cambiarModo(
+                "coeficiente",
+              )
+            }
+          >
+            <Sigma
+              size={21}
+            />
+
+            <div>
+
+              <strong>
+                {texto(
+                  "Coeficientes matemáticos",
+                  "Mathematical coefficients",
+                )}
+              </strong>
+
+              <span>
+                {texto(
+                  "Permite introducir directamente c₁, c₂, c₃... sin exigir que sumen 100 %.",
+                  "Allows direct entry of c₁, c₂, c₃... without requiring them to total 100%.",
+                )}
+              </span>
+
+            </div>
+
+          </button>
+
         </div>
 
       </section>
 
 
-      <section className="linear-layout">
+      {/* EDITOR */}
 
-        {/* EDITOR */}
+      <section className="linear-pro-card">
 
-        <div className="linear-editor">
+        <div className="linear-pro-editor-head">
 
-          <div className="linear-editor-header">
+          <div className="linear-pro-heading">
 
-            <div>
+            <span>
+              {texto(
+                "PASO 2",
+                "STEP 2",
+              )}
+            </span>
 
-              <span>
-                {texto(
-                  "INDICADORES Y PESOS",
-                  "INDICATORS AND WEIGHTS",
-                )}
-              </span>
+            <h2>
+              {texto(
+                "Selecciona vectores y asigna sus pesos",
+                "Select vectors and assign their weights",
+              )}
+            </h2>
 
-              <h2>
-                {texto(
-                  "Construir indicador ponderado",
-                  "Build weighted indicator",
-                )}
-              </h2>
+            <p>
+              {texto(
+                "Todos los vectores deben tener la misma dimensión y representar los mismos elementos en el mismo orden.",
+                "All vectors must have the same dimension and represent the same elements in the same order.",
+              )}
+            </p>
 
-              <p>
-                {texto(
-                  "Utiliza vectores que representen la misma estructura de productos.",
-                  "Use vectors that represent the same product structure.",
-                )}
-              </p>
+          </div>
 
-            </div>
+
+          <div className="linear-pro-editor-actions">
+
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={
+                distribuirIgualmente
+              }
+              disabled={
+                calculando
+              }
+            >
+              <Equal
+                size={15}
+              />
+
+              {texto(
+                "Distribuir igual",
+                "Distribute equally",
+              )}
+            </button>
 
 
             <button
@@ -1187,504 +1617,17 @@ function CombinacionesLineales() {
                 agregarTermino
               }
               disabled={
-                calculando ||
-                cargando
+                calculando
               }
             >
-
               <Plus
                 size={15}
               />
 
               {texto(
-                "Agregar indicador",
-                "Add indicator",
+                "Agregar vector",
+                "Add vector",
               )}
-
-            </button>
-
-          </div>
-
-
-          {/* PESO TOTAL */}
-
-          <div
-            className={
-              totalPesoValido
-                ? "linear-weight-summary linear-weight-summary-valid"
-                : "linear-weight-summary linear-weight-summary-warning"
-            }
-          >
-
-            <div>
-
-              <span>
-                {texto(
-                  "PESO TOTAL",
-                  "TOTAL WEIGHT",
-                )}
-              </span>
-
-              <strong>
-                {Number(
-                  totalPeso.toFixed(
-                    2,
-                  ),
-                )}
-                %
-              </strong>
-
-            </div>
-
-
-            <p>
-              {totalPesoValido
-                ? texto(
-                    "Correcto. Los pesos suman 100 %.",
-                    "Correct. The weights add up to 100%.",
-                  )
-                : texto(
-                    "Ajusta los pesos hasta alcanzar 100 %.",
-                    "Adjust the weights until they reach 100%.",
-                  )}
-            </p>
-
-
-            <button
-              type="button"
-              className="linear-balance-button"
-              onClick={
-                repartirPesos
-              }
-              disabled={
-                calculando
-              }
-            >
-              {texto(
-                "Repartir automáticamente",
-                "Distribute automatically",
-              )}
-            </button>
-
-          </div>
-
-
-          {/* CARGANDO */}
-
-          {cargando && (
-
-            <div className="linear-info">
-
-              <p>
-                {texto(
-                  "Cargando indicadores...",
-                  "Loading indicators...",
-                )}
-              </p>
-
-            </div>
-
-          )}
-
-
-          {/* SIN VECTORES */}
-
-          {!cargando &&
-            vectores.length <
-              2 && (
-
-            <div className="linear-error">
-
-              <TriangleAlert
-                size={22}
-              />
-
-              <div>
-
-                <strong>
-                  {texto(
-                    "Faltan indicadores",
-                    "Indicators are missing",
-                  )}
-                </strong>
-
-                <p>
-                  {texto(
-                    "Primero genera y guarda al menos dos vectores empresariales en el módulo Vectores.",
-                    "First generate and save at least two business vectors in the Vectors module.",
-                  )}
-                </p>
-
-              </div>
-
-            </div>
-
-          )}
-
-
-          {/* INDICADORES */}
-
-          <div className="linear-terms">
-
-            {terminos.map(
-              (
-                termino,
-                indice,
-              ) => {
-
-                const vector =
-                  obtenerVector(
-                    termino.vectorId,
-                  );
-
-
-                return (
-
-                  <div
-                    className="linear-term"
-                    key={
-                      termino.id
-                    }
-                  >
-
-                    <div className="linear-term-number">
-                      {
-                        indice +
-                        1
-                      }
-                    </div>
-
-
-                    <div className="linear-term-fields linear-business-term-fields">
-
-                      {/* VECTOR */}
-
-                      <div className="linear-field">
-
-                        <label>
-                          {texto(
-                            "Indicador empresarial",
-                            "Business indicator",
-                          )}
-                        </label>
-
-
-                        <select
-                          value={
-                            termino.vectorId
-                          }
-                          disabled={
-                            calculando ||
-                            cargando
-                          }
-                          onChange={(
-                            evento,
-                          ) =>
-                            actualizarTermino(
-                              termino.id,
-                              "vectorId",
-                              evento
-                                .target
-                                .value,
-                            )
-                          }
-                        >
-
-                          <option value="">
-                            {texto(
-                              "Seleccionar indicador",
-                              "Select indicator",
-                            )}
-                          </option>
-
-
-                          {vectores.map(
-                            (
-                              item,
-                            ) => {
-
-                              const usado =
-                                terminos.some(
-                                  (
-                                    otro,
-                                  ) =>
-                                    otro.id !==
-                                      termino.id &&
-                                    otro.vectorId ===
-                                      String(
-                                        item.id,
-                                      ),
-                                );
-
-
-                              return (
-
-                                <option
-                                  key={
-                                    item.id
-                                  }
-                                  value={
-                                    item.id
-                                  }
-                                  disabled={
-                                    usado
-                                  }
-                                >
-                                  {
-                                    item.nombre
-                                  }
-                                  {" — "}
-                                  {texto(
-                                    "dimensión",
-                                    "dimension",
-                                  )}
-                                  {" "}
-                                  {
-                                    item.dimension
-                                  }
-                                </option>
-
-                              );
-                            },
-                          )}
-
-                        </select>
-
-                      </div>
-
-
-                      {/* PESO */}
-
-                      <div className="linear-field linear-weight-field">
-
-                        <label>
-                          {texto(
-                            "Peso (%)",
-                            "Weight (%)",
-                          )}
-                        </label>
-
-
-                        <div className="linear-percentage-input">
-
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={
-                              termino.peso
-                            }
-                            disabled={
-                              calculando
-                            }
-                            onChange={(
-                              evento,
-                            ) =>
-                              actualizarTermino(
-                                termino.id,
-                                "peso",
-                                evento
-                                  .target
-                                  .value,
-                              )
-                            }
-                          />
-
-                          <span>
-                            %
-                          </span>
-
-                        </div>
-
-                      </div>
-
-
-                      {/* VISTA PREVIA */}
-
-                      <div className="linear-field">
-
-                        <label>
-                          {texto(
-                            "Datos del indicador",
-                            "Indicator data",
-                          )}
-                        </label>
-
-
-                        <input
-                          type="text"
-                          value={
-                            vector
-                              ? formatearVector(
-                                  vector.valores,
-                                )
-                              : ""
-                          }
-                          placeholder={texto(
-                            "Selecciona un indicador",
-                            "Select an indicator",
-                          )}
-                          readOnly
-                        />
-
-
-                        {vector?.descripcion && (
-
-                          <small className="linear-vector-description">
-                            {
-                              vector.descripcion
-                            }
-                          </small>
-
-                        )}
-
-                      </div>
-
-                    </div>
-
-
-                    <button
-                      type="button"
-                      className="linear-delete"
-                      title={texto(
-                        "Eliminar indicador",
-                        "Remove indicator",
-                      )}
-                      disabled={
-                        calculando
-                      }
-                      onClick={() =>
-                        eliminarTermino(
-                          termino.id,
-                        )
-                      }
-                    >
-
-                      <Trash2
-                        size={15}
-                      />
-
-                    </button>
-
-                  </div>
-
-                );
-              },
-            )}
-
-          </div>
-
-
-          {/* RESUMEN EMPRESARIAL */}
-
-          <div className="linear-business-summary">
-
-            <span>
-              {texto(
-                "COMBINACIÓN EMPRESARIAL",
-                "BUSINESS COMBINATION",
-              )}
-            </span>
-
-            <strong>
-              {
-                obtenerResumenEmpresarial()
-              }
-            </strong>
-
-            <p>
-              {texto(
-                "Los porcentajes indican cuánto influye cada indicador en el resultado final.",
-                "The percentages indicate how much each indicator influences the final result.",
-              )}
-            </p>
-
-          </div>
-
-
-          {/* MATEMÁTICA */}
-
-          <div className="linear-expression">
-
-            <span>
-              {texto(
-                "OPERACIÓN MATEMÁTICA UTILIZADA",
-                "MATHEMATICAL OPERATION USED",
-              )}
-            </span>
-
-            <strong>
-              {
-                obtenerExpresionMatematica()
-              }
-            </strong>
-
-            <p className="linear-expression-help">
-              {texto(
-                "Internamente MatrixFlow convierte los porcentajes a coeficientes decimales y ejecuta una combinación lineal.",
-                "Internally MatrixFlow converts percentages to decimal coefficients and performs a linear combination.",
-              )}
-            </p>
-
-          </div>
-
-
-          {/* BOTONES */}
-
-          <div className="linear-actions">
-
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={
-                reiniciar
-              }
-              disabled={
-                calculando
-              }
-            >
-
-              <RotateCcw
-                size={15}
-              />
-
-              {texto(
-                "Reiniciar",
-                "Reset",
-              )}
-
-            </button>
-
-
-            <button
-              type="button"
-              className="button-primary"
-              onClick={() =>
-                void calcularCombinacion()
-              }
-              disabled={
-                vectores.length <
-                  2 ||
-                calculando ||
-                cargando
-              }
-            >
-
-              <Calculator
-                size={16}
-              />
-
-              {calculando
-                ? texto(
-                    "Combinando...",
-                    "Combining...",
-                  )
-                : texto(
-                    "Combinar indicadores",
-                    "Combine indicators",
-                  )}
-
             </button>
 
           </div>
@@ -1692,224 +1635,611 @@ function CombinacionesLineales() {
         </div>
 
 
-        {/* RESULTADO */}
-
-        <aside className="linear-result">
-
-          <div className="linear-result-header">
-
-            <div>
-
-              <span>
-                {texto(
-                  "RESULTADO",
-                  "RESULT",
-                )}
-              </span>
-
-              <strong>
-                {texto(
-                  "Indicador ponderado",
-                  "Weighted indicator",
-                )}
-              </strong>
-
-            </div>
-
-
-            {resultado && (
-
-              <CheckCircle2
-                size={19}
-              />
-
+        {cargando && (
+          <div className="linear-pro-info">
+            {texto(
+              "Cargando vectores...",
+              "Loading vectors...",
             )}
-
           </div>
+        )}
 
 
-          {(error ||
-            errorCarga) ? (
-
-            <div className="linear-error">
+        {!cargando &&
+          vectores.length <
+            2 && (
+            <div className="linear-pro-warning">
 
               <TriangleAlert
-                size={22}
+                size={20}
               />
 
               <div>
 
                 <strong>
                   {texto(
-                    "No se puede generar el indicador",
-                    "Unable to generate the indicator",
+                    "Se necesitan al menos dos vectores",
+                    "At least two vectors are required",
                   )}
                 </strong>
 
                 <p>
-                  {
-                    error ||
-                    errorCarga
-                  }
+                  {texto(
+                    "Crea primero los vectores que quieres combinar en el módulo Vectores.",
+                    "First create the vectors you want to combine in the Vectors module.",
+                  )}
                 </p>
 
               </div>
 
             </div>
-
-          ) : resultado ? (
-
-            <div className="linear-result-content">
+          )}
 
 
-              {/* RESULTADO POR PRODUCTO */}
+        <div className="linear-pro-terms">
 
-              {etiquetasResultado.length ===
-              resultado.length ? (
+          {terminos.map(
+            (
+              termino,
+              indice,
+            ) => {
 
-                <div className="linear-business-result-list">
+              const vector =
+                obtenerVector(
+                  termino.vectorId,
+                );
 
-                  <div className="linear-result-list-heading">
 
-                    <strong>
-                      {texto(
-                        "Resultado por producto",
-                        "Result by product",
-                      )}
-                    </strong>
+              return (
+                <div
+                  className="linear-pro-term"
+                  key={
+                    termino.id
+                  }
+                >
 
-                    <span>
-                      {texto(
-                        "Cada valor combina los indicadores seleccionados según sus pesos.",
-                        "Each value combines the selected indicators according to their weights.",
-                      )}
-                    </span>
-
+                  <div className="linear-pro-term-number">
+                    {
+                      indice +
+                      1
+                    }
                   </div>
 
 
-                  {resultado.map(
-                    (
-                      valor,
-                      indice,
-                    ) => (
+                  <div className="linear-pro-term-main">
 
-                      <div
-                        className="linear-business-result-row"
-                        key={
-                          indice
+                    <div className="linear-pro-field">
+
+                      <label>
+                        {texto(
+                          "Vector",
+                          "Vector",
+                        )}
+                      </label>
+
+                      <select
+                        value={
+                          termino.vectorId
+                        }
+                        onChange={(
+                          e,
+                        ) =>
+                          actualizarTermino(
+                            termino.id,
+                            "vectorId",
+                            e.target.value,
+                          )
                         }
                       >
 
-                        <span className="linear-product-position">
-                          {
-                            indice +
-                            1
-                          }
-                        </span>
-
-                        <span className="linear-product-name">
-                          {
-                            etiquetasResultado[
-                              indice
-                            ]
-                          }
-                        </span>
-
-                        <strong>
-                          {formatearNumero(
-                            valor,
+                        <option value="">
+                          {texto(
+                            "Seleccionar vector...",
+                            "Select vector...",
                           )}
-                        </strong>
+                        </option>
 
-                      </div>
 
-                    ),
-                  )}
+                        {vectores.map(
+                          (
+                            item,
+                          ) => (
+                            <option
+                              key={
+                                item.id
+                              }
+                              value={
+                                item.id
+                              }
+                            >
+                              {
+                                item.nombre
+                              }
+                              {" · "}
+                              {
+                                item.dimension
+                              }
+                              D
+                            </option>
+                          ),
+                        )}
 
-                </div>
+                      </select>
 
-              ) : (
+                    </div>
 
-                <div className="linear-result-vector">
 
-                  <span>
-                    [
-                  </span>
+                    <div className="linear-pro-field linear-pro-weight">
 
-                  <div>
+                      <label>
+                        {modo ===
+                        "porcentaje"
+                          ? texto(
+                              "Peso (%)",
+                              "Weight (%)",
+                            )
+                          : texto(
+                              "Coeficiente",
+                              "Coefficient",
+                            )}
+                      </label>
 
-                    {resultado.map(
-                      (
-                        valor,
-                        indice,
-                      ) => (
+                      <input
+                        type="number"
+                        step="any"
+                        value={
+                          termino.valor
+                        }
+                        onChange={(
+                          e,
+                        ) =>
+                          actualizarTermino(
+                            termino.id,
+                            "valor",
+                            e.target.value,
+                          )
+                        }
+                      />
 
-                        <strong
-                          key={
-                            indice
-                          }
-                        >
-                          {formatearNumero(
-                            valor,
-                          )}
-                        </strong>
+                    </div>
 
-                      ),
-                    )}
+
+                    <button
+                      type="button"
+                      className="linear-pro-delete"
+                      title={texto(
+                        "Eliminar",
+                        "Delete",
+                      )}
+                      onClick={() =>
+                        eliminarTermino(
+                          termino.id,
+                        )
+                      }
+                    >
+                      <Trash2
+                        size={16}
+                      />
+                    </button>
 
                   </div>
 
-                  <span>
-                    ]
-                  </span>
+
+                  {vector && (
+                    <div className="linear-pro-preview">
+
+                      <div>
+
+                        <strong>
+                          {
+                            vector.nombre
+                          }
+                        </strong>
+
+                        <span>
+                          {texto(
+                            "Dimensión",
+                            "Dimension",
+                          )}
+                          :{" "}
+                          {
+                            vector.dimension
+                          }
+                        </span>
+
+                      </div>
+
+
+                      <code>
+                        [
+                        {
+                          vector.valores
+                            .join(
+                              ", ",
+                            )
+                        }
+                        ]
+                      </code>
+
+                    </div>
+                  )}
 
                 </div>
+              );
+            },
+          )}
 
+        </div>
+
+
+        {/* TOTAL */}
+
+        <div className="linear-pro-total">
+
+          <div>
+
+            <span>
+              {modo ===
+              "porcentaje"
+                ? texto(
+                    "TOTAL DE PESOS",
+                    "TOTAL WEIGHTS",
+                  )
+                : texto(
+                    "SUMA DE COEFICIENTES",
+                    "COEFFICIENT SUM",
+                  )}
+            </span>
+
+            <strong
+              className={
+                modo ===
+                  "porcentaje" &&
+                Math.abs(
+                  sumaValores -
+                    100,
+                ) >
+                  0.01
+                  ? "invalid"
+                  : ""
+              }
+            >
+              {new Intl.NumberFormat(
+                locale,
+                {
+                  maximumFractionDigits:
+                    2,
+                },
+              ).format(
+                sumaValores,
               )}
 
+              {modo ===
+                "porcentaje" &&
+                "%"}
+            </strong>
 
-              <div className="linear-result-details">
+          </div>
 
-                <div>
 
-                  <span>
-                    {texto(
-                      "Dimensión",
-                      "Dimension",
+          {modo ===
+            "porcentaje" && (
+            <p>
+              {Math.abs(
+                sumaValores -
+                  100,
+              ) <=
+              0.01
+                ? texto(
+                    "✓ Los pesos suman correctamente 100 %.",
+                    "✓ Weights correctly total 100%.",
+                  )
+                : texto(
+                    "Los pesos deben sumar exactamente 100 %.",
+                    "Weights must total exactly 100%.",
+                  )}
+            </p>
+          )}
+
+        </div>
+
+
+        {/* VALIDACIÓN */}
+
+        <div
+          className={
+            validacion.ok
+              ? "linear-pro-validation valid"
+              : validacion.completa
+                ? "linear-pro-validation invalid"
+                : "linear-pro-validation waiting"
+          }
+        >
+
+          {validacion.ok ? (
+            <CheckCircle2
+              size={19}
+            />
+          ) : (
+            <TriangleAlert
+              size={19}
+            />
+          )}
+
+
+          <div>
+
+            <strong>
+              {validacion.ok
+                ? texto(
+                    "Combinación válida",
+                    "Valid combination",
+                  )
+                : validacion.completa
+                  ? texto(
+                      "Revisa la configuración",
+                      "Check the configuration",
+                    )
+                  : texto(
+                      "Configuración pendiente",
+                      "Configuration pending",
                     )}
-                  </span>
+            </strong>
 
-                  <strong>
-                    {
-                      resultado.length
-                    }
-                  </strong>
+            <p>
+              {texto(
+                validacion.mensajeEs,
+                validacion.mensajeEn,
+              )}
+            </p>
 
-                </div>
+          </div>
+
+        </div>
 
 
-                <div>
+        {/* EXPRESIÓN */}
 
-                  <span>
-                    {texto(
-                      "Indicadores utilizados",
-                      "Indicators used",
-                    )}
-                  </span>
+        <div className="linear-pro-expression">
 
-                  <strong>
-                    {
-                      terminos.length
-                    }
-                  </strong>
+          <span>
+            {texto(
+              "EXPRESIÓN MATEMÁTICA",
+              "MATHEMATICAL EXPRESSION",
+            )}
+          </span>
 
-                </div>
+          <strong>
+            {
+              expresion
+            }
+          </strong>
+
+        </div>
+
+
+        <div className="linear-pro-actions">
+
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={
+              reiniciar
+            }
+            disabled={
+              calculando
+            }
+          >
+            <RefreshCcw
+              size={15}
+            />
+
+            {texto(
+              "Reiniciar",
+              "Reset",
+            )}
+          </button>
+
+
+          <button
+            type="button"
+            className="button-primary"
+            onClick={() =>
+              void calcularCombinacion()
+            }
+            disabled={
+              !validacion.ok ||
+              calculando ||
+              cargando
+            }
+          >
+            <Calculator
+              size={16}
+            />
+
+            {calculando
+              ? texto(
+                  "Calculando...",
+                  "Calculating...",
+                )
+              : modo ===
+                  "porcentaje"
+                ? texto(
+                    "Calcular indicador",
+                    "Calculate indicator",
+                  )
+                : texto(
+                    "Calcular combinación",
+                    "Calculate combination",
+                  )}
+          </button>
+
+        </div>
+
+      </section>
+
+
+      {/* RESULTADO */}
+
+      <section className="linear-pro-card">
+
+        <div className="linear-pro-result-head">
+
+          <div>
+
+            <span>
+              {texto(
+                "PASO 3",
+                "STEP 3",
+              )}
+            </span>
+
+            <h2>
+              {modo ===
+              "porcentaje"
+                ? texto(
+                    "Resultado del indicador ponderado",
+                    "Weighted indicator result",
+                  )
+                : texto(
+                    "Vector resultante",
+                    "Resulting vector",
+                  )}
+            </h2>
+
+          </div>
+
+
+          {operacionGuardada &&
+            resultado && (
+              <div className="linear-pro-saved">
+                <CheckCircle2
+                  size={16}
+                />
+
+                {texto(
+                  "Guardado en historial",
+                  "Saved in history",
+                )}
+              </div>
+            )}
+
+        </div>
+
+
+        {(error ||
+          errorCarga) ? (
+
+          <div className="linear-pro-warning">
+
+            <TriangleAlert
+              size={21}
+            />
+
+            <div>
+
+              <strong>
+                {texto(
+                  "No se puede calcular",
+                  "Cannot calculate",
+                )}
+              </strong>
+
+              <p>
+                {error ||
+                  errorCarga}
+              </p>
+
+            </div>
+
+          </div>
+
+        ) : resultado ? (
+
+          <div className="linear-pro-result-content">
+
+            <div className="linear-pro-result-vector">
+
+              <span>
+                [
+              </span>
+
+              <div>
+
+                {resultado.map(
+                  (
+                    valor,
+                    indice,
+                  ) => (
+                    <strong
+                      key={
+                        indice
+                      }
+                    >
+                      {formatearValor(
+                        valor,
+                      )}
+                    </strong>
+                  ),
+                )}
 
               </div>
 
+              <span>
+                ]
+              </span>
 
-              <div className="linear-result-interpretation">
+            </div>
+
+
+            <div className="linear-pro-result-list">
+
+              {resultado.map(
+                (
+                  valor,
+                  indice,
+                ) => (
+
+                  <div
+                    className="linear-pro-result-row"
+                    key={
+                      indice
+                    }
+                  >
+
+                    <span>
+                      {
+                        etiquetasResultado[
+                          indice
+                        ] ??
+                        `${texto(
+                          "Posición",
+                          "Position",
+                        )} ${indice + 1}`
+                      }
+                    </span>
+
+                    <strong>
+                      {formatearValor(
+                        valor,
+                      )}
+                    </strong>
+
+                  </div>
+
+                ),
+              )}
+
+            </div>
+
+
+            <div className="linear-pro-interpretation">
+
+              <Weight
+                size={19}
+              />
+
+              <div>
 
                 <span>
                   {texto(
@@ -1919,50 +2249,127 @@ function CombinacionesLineales() {
                 </span>
 
                 <strong>
-                  {texto(
-                    "¿Qué representa?",
-                    "What does it represent?",
-                  )}
+                  {modo ===
+                  "porcentaje"
+                    ? texto(
+                        "Indicador empresarial ponderado",
+                        "Weighted business indicator",
+                      )
+                    : texto(
+                        "Combinación matemática",
+                        "Mathematical combination",
+                      )}
                 </strong>
 
                 <p>
-                  {texto(
-                    "Cada posición del resultado es una combinación ponderada de la misma posición en todos los indicadores seleccionados. Los indicadores con mayor peso influyen más en el resultado.",
-                    "Each result position is a weighted combination of the same position across all selected indicators. Indicators with greater weight have more influence on the result.",
-                  )}
+                  {modo ===
+                  "porcentaje"
+                    ? texto(
+                        "Cada posición representa la suma ponderada de los valores equivalentes de todos los vectores seleccionados. Los porcentajes indican cuánto influye cada vector en el resultado final.",
+                        "Each position represents the weighted sum of matching values from all selected vectors. Percentages indicate how much each vector influences the final result.",
+                      )
+                    : texto(
+                        "Cada vector fue multiplicado por su coeficiente y posteriormente se sumaron todos los resultados posición por posición.",
+                        "Each vector was multiplied by its coefficient and all results were then added position by position.",
+                      )}
                 </p>
 
               </div>
 
             </div>
 
-          ) : (
 
-            <div className="linear-result-empty">
+            <div className="linear-pro-summary">
 
-              <Sigma
-                size={31}
-              />
+              <div>
 
-              <strong>
-                {texto(
-                  "Sin resultado",
-                  "No result",
-                )}
-              </strong>
+                <span>
+                  {texto(
+                    "Dimensión",
+                    "Dimension",
+                  )}
+                </span>
 
-              <p>
-                {texto(
-                  "Selecciona tus indicadores, asigna pesos que sumen 100 % y presiona Combinar indicadores.",
-                  "Select your indicators, assign weights that add up to 100%, and press Combine indicators.",
-                )}
-              </p>
+                <strong>
+                  {
+                    resultado.length
+                  }
+                </strong>
+
+              </div>
+
+
+              <div>
+
+                <span>
+                  {texto(
+                    "Vectores utilizados",
+                    "Vectors used",
+                  )}
+                </span>
+
+                <strong>
+                  {
+                    terminos.length
+                  }
+                </strong>
+
+              </div>
+
+
+              <div>
+
+                <span>
+                  {texto(
+                    "Método",
+                    "Method",
+                  )}
+                </span>
+
+                <strong>
+                  {modo ===
+                  "porcentaje"
+                    ? texto(
+                        "Pesos %",
+                        "Weights %",
+                      )
+                    : texto(
+                        "Coeficientes",
+                        "Coefficients",
+                      )}
+                </strong>
+
+              </div>
 
             </div>
 
-          )}
+          </div>
 
-        </aside>
+        ) : (
+
+          <div className="linear-pro-empty">
+
+            <Sigma
+              size={32}
+            />
+
+            <strong>
+              {texto(
+                "Sin resultado",
+                "No result",
+              )}
+            </strong>
+
+            <p>
+              {texto(
+                "Selecciona al menos dos vectores compatibles, configura sus pesos y ejecuta la combinación.",
+                "Select at least two compatible vectors, configure their weights and run the combination.",
+              )}
+            </p>
+
+          </div>
+
+        )}
 
       </section>
 

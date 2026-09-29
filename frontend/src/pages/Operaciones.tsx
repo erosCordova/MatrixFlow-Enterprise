@@ -5,11 +5,17 @@ import {
 } from "react";
 
 import {
+  ArrowLeftRight,
   Calculator,
   CheckCircle2,
+  Combine,
   Grid3X3,
+  Layers3,
+  Percent,
+  RefreshCcw,
   RotateCcw,
   Sigma,
+  TrendingUp,
   TriangleAlert,
 } from "lucide-react";
 
@@ -35,6 +41,11 @@ import {
 import "../styles/Operaciones.css";
 
 
+type CategoriaOperacion =
+  | "vectores"
+  | "matrices";
+
+
 type TipoOperacion =
   | "suma-vectores"
   | "resta-vectores"
@@ -47,49 +58,127 @@ type TipoOperacion =
   | "transpuesta";
 
 
-interface ResultadoOperacion {
-  tipo:
-    | "vector"
-    | "matriz"
-    | "escalar";
+type ModoEscalar =
+  | "factor"
+  | "porcentaje";
 
-  valor:
-    | number[]
-    | number[][]
-    | number;
-}
+
+type ResultadoMatematico =
+  | number
+  | number[]
+  | number[][];
 
 
 interface OpcionOperacion {
   id: TipoOperacion;
 
-  tituloEs: string;
-  tituloEn: string;
-
-  descripcionEs: string;
-  descripcionEn: string;
-
-  usoEs: string;
-  usoEn: string;
-
-  nombreMatematicoEs: string;
-  nombreMatematicoEn: string;
-
   categoria:
-    | "vector"
-    | "matriz";
+    CategoriaOperacion;
 
   tipoAPI:
     TipoOperacionAPI;
+
+  tituloEs:
+    string;
+
+  tituloEn:
+    string;
+
+  matematicoEs:
+    string;
+
+  matematicoEn:
+    string;
+
+  descripcionEs:
+    string;
+
+  descripcionEn:
+    string;
+
+  ejemploEs:
+    string;
+
+  ejemploEn:
+    string;
 }
 
 
-const operaciones:
+interface Compatibilidad {
+  ok: boolean;
+  completa: boolean;
+  mensajeEs: string;
+  mensajeEn: string;
+}
+
+
+interface MetadataVector {
+  etiquetas:
+    string[];
+}
+
+
+interface MetadataMatriz {
+  filas:
+    string[];
+
+  columnas:
+    string[];
+}
+
+
+// ==========================================================
+// OPERACIONES DISPONIBLES
+// ==========================================================
+
+const OPERACIONES:
   OpcionOperacion[] = [
 
   {
     id:
+      "suma-vectores",
+
+    categoria:
+      "vectores",
+
+    tipoAPI:
+      "suma_vector",
+
+    tituloEs:
+      "Consolidar información",
+
+    tituloEn:
+      "Consolidate information",
+
+    matematicoEs:
+      "Suma de vectores",
+
+    matematicoEn:
+      "Vector addition",
+
+    descripcionEs:
+      "Suma dos conjuntos equivalentes elemento por elemento.",
+
+    descripcionEn:
+      "Adds two equivalent datasets element by element.",
+
+    ejemploEs:
+      "Ejemplo: ventas de enero + ventas de febrero.",
+
+    ejemploEn:
+      "Example: January sales + February sales.",
+  },
+
+
+  {
+    id:
       "resta-vectores",
+
+    categoria:
+      "vectores",
+
+    tipoAPI:
+      "resta_vector",
 
     tituloEs:
       "Comparar dos escenarios",
@@ -97,69 +186,71 @@ const operaciones:
     tituloEn:
       "Compare two scenarios",
 
-    descripcionEs:
-      "Muestra la diferencia producto por producto entre dos vectores.",
-
-    descripcionEn:
-      "Shows the difference product by product between two vectors.",
-
-    usoEs:
-      "Útil para comparar ventas entre periodos, sucursales, metas o inventarios.",
-
-    usoEn:
-      "Useful for comparing sales between periods, branches, goals or inventories.",
-
-    nombreMatematicoEs:
+    matematicoEs:
       "Resta de vectores",
 
-    nombreMatematicoEn:
+    matematicoEn:
       "Vector subtraction",
 
-    categoria:
-      "vector",
+    descripcionEs:
+      "Calcula la diferencia entre dos vectores comparables.",
 
-    tipoAPI:
-      "resta_vector",
+    descripcionEn:
+      "Calculates the difference between two comparable vectors.",
+
+    ejemploEs:
+      "Ejemplo: ventas reales - metas o septiembre - agosto.",
+
+    ejemploEn:
+      "Example: actual sales - targets or September - August.",
   },
+
 
   {
     id:
-      "suma-vectores",
-
-    tituloEs:
-      "Combinar información",
-
-    tituloEn:
-      "Combine information",
-
-    descripcionEs:
-      "Combina dos conjuntos de datos sumando cada producto con su equivalente.",
-
-    descripcionEn:
-      "Combines two data sets by adding each product to its equivalent.",
-
-    usoEs:
-      "Puede utilizarse para unir ventas de dos periodos o dos grupos de datos.",
-
-    usoEn:
-      "Can be used to combine sales from two periods or two data sets.",
-
-    nombreMatematicoEs:
-      "Suma de vectores",
-
-    nombreMatematicoEn:
-      "Vector addition",
+      "escalar-vector",
 
     categoria:
-      "vector",
+      "vectores",
 
     tipoAPI:
-      "suma_vector",
+      "escalar_vector",
+
+    tituloEs:
+      "Simular un ajuste",
+
+    tituloEn:
+      "Simulate an adjustment",
+
+    matematicoEs:
+      "Vector por escalar",
+
+    matematicoEn:
+      "Vector scalar multiplication",
+
+    descripcionEs:
+      "Aplica el mismo factor a todos los valores del vector.",
+
+    descripcionEn:
+      "Applies the same factor to every value in the vector.",
+
+    ejemploEs:
+      "Ejemplo: proyectar un aumento de ventas del 10 %.",
+
+    ejemploEn:
+      "Example: project a 10% sales increase.",
   },
+
 
   {
     id:
       "producto-punto",
+
+    categoria:
+      "vectores",
+
+    tipoAPI:
+      "producto_escalar",
 
     tituloEs:
       "Calcular un indicador combinado",
@@ -167,139 +258,107 @@ const operaciones:
     tituloEn:
       "Calculate a combined indicator",
 
-    descripcionEs:
-      "Relaciona dos vectores y produce un único resultado numérico.",
-
-    descripcionEn:
-      "Relates two vectors and produces a single numeric result.",
-
-    usoEs:
-      "Por ejemplo, cantidades × precios puede utilizarse para obtener un ingreso total.",
-
-    usoEn:
-      "For example, quantities × prices can be used to obtain total revenue.",
-
-    nombreMatematicoEs:
+    matematicoEs:
       "Producto escalar",
 
-    nombreMatematicoEn:
+    matematicoEn:
       "Dot product",
 
-    categoria:
-      "vector",
-
-    tipoAPI:
-      "producto_escalar",
-  },
-
-  {
-    id:
-      "escalar-vector",
-
-    tituloEs:
-      "Aplicar un ajuste a un conjunto",
-
-    tituloEn:
-      "Apply an adjustment to a data set",
-
     descripcionEs:
-      "Multiplica todos los valores de un vector por un mismo factor.",
+      "Multiplica posiciones equivalentes y suma todos los productos.",
 
     descripcionEn:
-      "Multiplies all vector values by the same factor.",
+      "Multiplies matching positions and sums all products.",
 
-    usoEs:
-      "Útil para simulaciones como +10 %, -5 % o crecimiento proyectado.",
+    ejemploEs:
+      "Ejemplo: cantidades vendidas × precios = ingreso total.",
 
-    usoEn:
-      "Useful for simulations such as +10%, -5% or projected growth.",
-
-    nombreMatematicoEs:
-      "Multiplicación de vector por escalar",
-
-    nombreMatematicoEn:
-      "Vector scalar multiplication",
-
-    categoria:
-      "vector",
-
-    tipoAPI:
-      "escalar_vector",
+    ejemploEn:
+      "Example: sold quantities × prices = total revenue.",
   },
 
-  {
-    id:
-      "resta-matrices",
-
-    tituloEs:
-      "Comparar ventas por sucursal y producto",
-
-    tituloEn:
-      "Compare sales by branch and product",
-
-    descripcionEs:
-      "Calcula la diferencia celda por celda entre dos matrices empresariales.",
-
-    descripcionEn:
-      "Calculates the cell-by-cell difference between two business matrices.",
-
-    usoEs:
-      "Permite comparar dos periodos, dos escenarios o resultados frente a objetivos.",
-
-    usoEn:
-      "Allows comparison of two periods, scenarios or results against targets.",
-
-    nombreMatematicoEs:
-      "Resta de matrices",
-
-    nombreMatematicoEn:
-      "Matrix subtraction",
-
-    categoria:
-      "matriz",
-
-    tipoAPI:
-      "resta_matriz",
-  },
 
   {
     id:
       "suma-matrices",
 
-    tituloEs:
-      "Consolidar información empresarial",
-
-    tituloEn:
-      "Consolidate business information",
-
-    descripcionEs:
-      "Suma dos matrices con la misma estructura.",
-
-    descripcionEn:
-      "Adds two matrices with the same structure.",
-
-    usoEs:
-      "Sirve para consolidar información de periodos o escenarios compatibles.",
-
-    usoEn:
-      "Useful for consolidating information from compatible periods or scenarios.",
-
-    nombreMatematicoEs:
-      "Suma de matrices",
-
-    nombreMatematicoEn:
-      "Matrix addition",
-
     categoria:
-      "matriz",
+      "matrices",
 
     tipoAPI:
       "suma_matriz",
+
+    tituloEs:
+      "Consolidar matrices",
+
+    tituloEn:
+      "Consolidate matrices",
+
+    matematicoEs:
+      "Suma de matrices",
+
+    matematicoEn:
+      "Matrix addition",
+
+    descripcionEs:
+      "Suma celda por celda dos matrices con la misma estructura.",
+
+    descripcionEn:
+      "Adds two matrices cell by cell when they have the same structure.",
+
+    ejemploEs:
+      "Ejemplo: consolidar ventas de dos periodos.",
+
+    ejemploEn:
+      "Example: consolidate sales from two periods.",
   },
+
+
+  {
+    id:
+      "resta-matrices",
+
+    categoria:
+      "matrices",
+
+    tipoAPI:
+      "resta_matriz",
+
+    tituloEs:
+      "Comparar matrices",
+
+    tituloEn:
+      "Compare matrices",
+
+    matematicoEs:
+      "Resta de matrices",
+
+    matematicoEn:
+      "Matrix subtraction",
+
+    descripcionEs:
+      "Calcula la diferencia celda por celda entre dos matrices.",
+
+    descripcionEn:
+      "Calculates the cell-by-cell difference between two matrices.",
+
+    ejemploEs:
+      "Ejemplo: ventas reales - metas por sucursal y periodo.",
+
+    ejemploEn:
+      "Example: actual sales - targets by branch and period.",
+  },
+
 
   {
     id:
       "escalar-matriz",
+
+    categoria:
+      "matrices",
+
+    tipoAPI:
+      "escalar_matriz",
 
     tituloEs:
       "Proyectar cambios generales",
@@ -307,69 +366,35 @@ const operaciones:
     tituloEn:
       "Project general changes",
 
-    descripcionEs:
-      "Aplica un mismo factor a todas las sucursales y productos.",
-
-    descripcionEn:
-      "Applies the same factor to all branches and products.",
-
-    usoEs:
-      "Permite simular crecimiento, reducción o ajustes porcentuales globales.",
-
-    usoEn:
-      "Allows simulation of growth, reduction or global percentage adjustments.",
-
-    nombreMatematicoEs:
+    matematicoEs:
       "Matriz por escalar",
 
-    nombreMatematicoEn:
+    matematicoEn:
       "Matrix scalar multiplication",
 
-    categoria:
-      "matriz",
-
-    tipoAPI:
-      "escalar_matriz",
-  },
-
-  {
-    id:
-      "transpuesta",
-
-    tituloEs:
-      "Cambiar la perspectiva del análisis",
-
-    tituloEn:
-      "Change the analysis perspective",
-
     descripcionEs:
-      "Intercambia filas y columnas de una matriz.",
+      "Aplica un mismo factor a todas las celdas de una matriz.",
 
     descripcionEn:
-      "Swaps matrix rows and columns.",
+      "Applies the same factor to every cell in a matrix.",
 
-    usoEs:
-      "Permite pasar de sucursales × productos a productos × sucursales.",
+    ejemploEs:
+      "Ejemplo: simular un crecimiento general del 15 %.",
 
-    usoEn:
-      "Allows switching from branches × products to products × branches.",
-
-    nombreMatematicoEs:
-      "Transposición de matriz",
-
-    nombreMatematicoEn:
-      "Matrix transpose",
-
-    categoria:
-      "matriz",
-
-    tipoAPI:
-      "transpuesta",
+    ejemploEn:
+      "Example: simulate overall growth of 15%.",
   },
+
 
   {
     id:
       "multiplicacion-matrices",
+
+    categoria:
+      "matrices",
+
+    tipoAPI:
+      "multiplicacion_matriz",
 
     tituloEs:
       "Relacionar dos estructuras",
@@ -377,55 +402,220 @@ const operaciones:
     tituloEn:
       "Relate two structures",
 
-    descripcionEs:
-      "Combina matemáticamente dos matrices compatibles.",
+    matematicoEs:
+      "Multiplicación matricial",
 
-    descripcionEn:
-      "Mathematically combines two compatible matrices.",
-
-    usoEs:
-      "Es una operación avanzada para modelos que relacionan varias dimensiones empresariales.",
-
-    usoEn:
-      "An advanced operation for models relating several business dimensions.",
-
-    nombreMatematicoEs:
-      "Multiplicación de matrices",
-
-    nombreMatematicoEn:
+    matematicoEn:
       "Matrix multiplication",
 
+    descripcionEs:
+      "Relaciona filas y columnas de dos matrices compatibles.",
+
+    descripcionEn:
+      "Relates rows and columns of two compatible matrices.",
+
+    ejemploEs:
+      "Uso avanzado para transformar cantidades en nuevos indicadores.",
+
+    ejemploEn:
+      "Advanced use for transforming quantities into new indicators.",
+  },
+
+
+  {
+    id:
+      "transpuesta",
+
     categoria:
-      "matriz",
+      "matrices",
 
     tipoAPI:
-      "multiplicacion_matriz",
+      "transpuesta",
+
+    tituloEs:
+      "Cambiar la perspectiva",
+
+    tituloEn:
+      "Change perspective",
+
+    matematicoEs:
+      "Matriz transpuesta",
+
+    matematicoEn:
+      "Matrix transpose",
+
+    descripcionEs:
+      "Convierte las filas en columnas y las columnas en filas.",
+
+    descripcionEn:
+      "Converts rows into columns and columns into rows.",
+
+    ejemploEs:
+      "Ejemplo: cambiar Sucursal × Producto a Producto × Sucursal.",
+
+    ejemploEn:
+      "Example: change Branch × Product into Product × Branch.",
   },
 ];
 
 
-function formatearVector(
-  vector: number[],
-): string {
-  return `[${vector.join(", ")}]`;
+// ==========================================================
+// METADATA
+// ==========================================================
+
+function extraerLista(
+  descripcion: string,
+  patrones: string[],
+): string[] {
+
+  for (
+    const patron of patrones
+  ) {
+    const expresion =
+      new RegExp(
+        `${patron}:\\s*([^.]*)`,
+        "i",
+      );
+
+    const coincidencia =
+      descripcion.match(
+        expresion,
+      );
+
+    if (
+      coincidencia?.[1]
+    ) {
+      return coincidencia[1]
+        .split(",")
+        .map(
+          (item) =>
+            item.trim(),
+        )
+        .filter(Boolean);
+    }
+  }
+
+  return [];
 }
 
 
-function formatearMatriz(
-  matriz: number[][],
-): string {
-  return matriz
-    .map(
-      (fila) =>
-        `[${fila.join(", ")}]`,
+function metadataVector(
+  descripcion: string,
+): MetadataVector {
+  return {
+    etiquetas:
+      extraerLista(
+        descripcion,
+        [
+          "Etiquetas",
+          "Labels",
+          "Orden de productos",
+          "Product order",
+        ],
+      ),
+  };
+}
+
+
+function metadataMatriz(
+  descripcion: string,
+): MetadataMatriz {
+  return {
+    filas:
+      extraerLista(
+        descripcion,
+        [
+          "Filas",
+          "Rows",
+        ],
+      ),
+
+    columnas:
+      extraerLista(
+        descripcion,
+        [
+          "Columnas",
+          "Columns",
+        ],
+      ),
+  };
+}
+
+
+function listasIguales(
+  a: string[],
+  b: string[],
+) {
+  if (
+    a.length === 0 ||
+    b.length === 0
+  ) {
+    return true;
+  }
+
+  if (
+    a.length !==
+    b.length
+  ) {
+    return false;
+  }
+
+  return a.every(
+    (
+      valor,
+      indice,
+    ) =>
+      valor.trim()
+        .toLowerCase() ===
+      b[indice]
+        .trim()
+        .toLowerCase(),
+  );
+}
+
+
+// ==========================================================
+// TIPO DE RESULTADO
+// ==========================================================
+
+function tipoResultado(
+  resultado:
+    ResultadoMatematico,
+):
+  | "escalar"
+  | "vector"
+  | "matriz" {
+
+  if (
+    typeof resultado ===
+    "number"
+  ) {
+    return "escalar";
+  }
+
+  if (
+    Array.isArray(
+      resultado,
+    ) &&
+    Array.isArray(
+      resultado[0],
     )
-    .join(" ");
+  ) {
+    return "matriz";
+  }
+
+  return "vector";
 }
 
+
+// ==========================================================
+// COMPONENTE
+// ==========================================================
 
 function Operaciones() {
   const {
     texto,
+    formatearMoneda,
     locale,
   } = useAppSettings();
 
@@ -448,11 +638,20 @@ function Operaciones() {
 
 
   const [
+    categoria,
+    setCategoria,
+  ] =
+    useState<CategoriaOperacion>(
+      "vectores",
+    );
+
+
+  const [
     operacion,
     setOperacion,
   ] =
     useState<TipoOperacion>(
-      "resta-vectores",
+      "suma-vectores",
     );
 
 
@@ -461,34 +660,56 @@ function Operaciones() {
     setVectorAId,
   ] = useState("");
 
+
   const [
     vectorBId,
     setVectorBId,
   ] = useState("");
+
 
   const [
     matrizAId,
     setMatrizAId,
   ] = useState("");
 
+
   const [
     matrizBId,
     setMatrizBId,
   ] = useState("");
 
+
+  const [
+    modoEscalar,
+    setModoEscalar,
+  ] =
+    useState<ModoEscalar>(
+      "porcentaje",
+    );
+
+
   const [
     escalar,
     setEscalar,
-  ] = useState("1.10");
+  ] =
+    useState("1.10");
+
+
+  const [
+    porcentaje,
+    setPorcentaje,
+  ] =
+    useState("10");
 
 
   const [
     resultado,
     setResultado,
   ] =
-    useState<ResultadoOperacion | null>(
+    useState<ResultadoMatematico | null>(
       null,
     );
+
 
   const [
     error,
@@ -496,7 +717,114 @@ function Operaciones() {
   ] = useState("");
 
 
-  // matrixflow-alerta-error-local
+  const [
+    ejecutada,
+    setEjecutada,
+  ] = useState(false);
+
+
+  const operacionActual =
+    useMemo(
+      () =>
+        OPERACIONES.find(
+          (item) =>
+            item.id ===
+            operacion,
+        ) ??
+        OPERACIONES[0],
+      [
+        operacion,
+      ],
+    );
+
+
+  const operacionesCategoria =
+    useMemo(
+      () =>
+        OPERACIONES.filter(
+          (item) =>
+            item.categoria ===
+            categoria,
+        ),
+      [
+        categoria,
+      ],
+    );
+
+
+  const vectorA =
+    vectores.find(
+      (item) =>
+        String(
+          item.id,
+        ) ===
+        vectorAId,
+    ) ??
+    null;
+
+
+  const vectorB =
+    vectores.find(
+      (item) =>
+        String(
+          item.id,
+        ) ===
+        vectorBId,
+    ) ??
+    null;
+
+
+  const matrizA =
+    matrices.find(
+      (item) =>
+        String(
+          item.id,
+        ) ===
+        matrizAId,
+    ) ??
+    null;
+
+
+  const matrizB =
+    matrices.find(
+      (item) =>
+        String(
+          item.id,
+        ) ===
+        matrizBId,
+    ) ??
+    null;
+
+
+  const requiereSegundoVector =
+    operacion ===
+      "suma-vectores" ||
+    operacion ===
+      "resta-vectores" ||
+    operacion ===
+      "producto-punto";
+
+
+  const requiereSegundaMatriz =
+    operacion ===
+      "suma-matrices" ||
+    operacion ===
+      "resta-matrices" ||
+    operacion ===
+      "multiplicacion-matrices";
+
+
+  const usaEscalar =
+    operacion ===
+      "escalar-vector" ||
+    operacion ===
+      "escalar-matriz";
+
+
+  // ========================================================
+  // ERROR -> NOTIFICACIÓN
+  // ========================================================
+
   useEffect(() => {
     if (!error) {
       return;
@@ -526,218 +854,255 @@ function Operaciones() {
   ]);
 
 
-  const calculando =
-    ejecutarOperacionMutation
-      .isPending;
+  // ========================================================
+  // CAMBIAR CATEGORÍA
+  // ========================================================
+
+  const cambiarCategoria =
+    (
+      nueva:
+        CategoriaOperacion,
+    ) => {
+
+      setCategoria(
+        nueva,
+      );
+
+      setOperacion(
+        nueva ===
+        "vectores"
+          ? "suma-vectores"
+          : "suma-matrices",
+      );
+
+      setResultado(
+        null,
+      );
+
+      setEjecutada(
+        false,
+      );
+
+      setError("");
+    };
 
 
-  const vectorA =
-    vectores.find(
-      (vector) =>
-        String(
-          vector.id,
-        ) ===
-        vectorAId,
-    ) ?? null;
+  const cambiarOperacion =
+    (
+      nueva:
+        TipoOperacion,
+    ) => {
+
+      setOperacion(
+        nueva,
+      );
+
+      setResultado(
+        null,
+      );
+
+      setEjecutada(
+        false,
+      );
+
+      setError("");
+    };
 
 
-  const vectorB =
-    vectores.find(
-      (vector) =>
-        String(
-          vector.id,
-        ) ===
-        vectorBId,
-    ) ?? null;
+  // ========================================================
+  // COMPATIBILIDAD
+  // ========================================================
 
-
-  const matrizA =
-    matrices.find(
-      (matriz) =>
-        String(
-          matriz.id,
-        ) ===
-        matrizAId,
-    ) ?? null;
-
-
-  const matrizB =
-    matrices.find(
-      (matriz) =>
-        String(
-          matriz.id,
-        ) ===
-        matrizBId,
-    ) ?? null;
-
-
-  const operacionActual =
-    useMemo(
-      () =>
-        operaciones.find(
-          (item) =>
-            item.id ===
-            operacion,
-        ) ??
-        operaciones[0],
-      [
-        operacion,
-      ],
-    );
-
-
-  const esOperacionVector =
-    operacionActual.categoria ===
-    "vector";
-
-
-  const necesitaSegundoVector =
-    operacion ===
-      "suma-vectores" ||
-    operacion ===
-      "resta-vectores" ||
-    operacion ===
-      "producto-punto";
-
-
-  const necesitaEscalarVector =
-    operacion ===
-    "escalar-vector";
-
-
-  const necesitaSegundaMatriz =
-    operacion ===
-      "suma-matrices" ||
-    operacion ===
-      "resta-matrices" ||
-    operacion ===
-      "multiplicacion-matrices";
-
-
-  const necesitaEscalarMatriz =
-    operacion ===
-    "escalar-matriz";
-
-
-  const seleccionarOperacion = (
-    nuevaOperacion:
-      TipoOperacion,
-  ) => {
-    setOperacion(
-      nuevaOperacion,
-    );
-
-    setResultado(
-      null,
-    );
-
-    setError("");
-  };
-
-
-  const determinarTipoResultado = (
-    valor:
-      | number
-      | number[]
-      | number[][],
-  ): ResultadoOperacion["tipo"] => {
-
-    if (
-      typeof valor ===
-      "number"
-    ) {
-      return "escalar";
-    }
-
-    if (
-      Array.isArray(
-        valor,
-      ) &&
-      Array.isArray(
-        valor[0],
-      )
-    ) {
-      return "matriz";
-    }
-
-    return "vector";
-  };
-
-
-  const validarCompatibilidad =
-    (): string => {
-
-      if (
-        esOperacionVector
-      ) {
-        if (!vectorA) {
-          return texto(
-            "Selecciona el primer conjunto de datos.",
-            "Select the first data set.",
-          );
-        }
+  const compatibilidad =
+    useMemo<Compatibilidad>(
+      () => {
 
         if (
-          necesitaSegundoVector
+          categoria ===
+          "vectores"
         ) {
-          if (!vectorB) {
-            return texto(
-              "Selecciona el segundo conjunto de datos.",
-              "Select the second data set.",
-            );
+
+          if (!vectorA) {
+            return {
+              ok:
+                false,
+
+              completa:
+                false,
+
+              mensajeEs:
+                "Selecciona el primer vector.",
+
+              mensajeEn:
+                "Select the first vector.",
+            };
           }
+
+
+          if (
+            !requiereSegundoVector
+          ) {
+            return {
+              ok:
+                true,
+
+              completa:
+                true,
+
+              mensajeEs:
+                `Vector disponible: dimensión ${vectorA.dimension}.`,
+
+              mensajeEn:
+                `Vector available: dimension ${vectorA.dimension}.`,
+            };
+          }
+
+
+          if (!vectorB) {
+            return {
+              ok:
+                false,
+
+              completa:
+                false,
+
+              mensajeEs:
+                "Selecciona el segundo vector.",
+
+              mensajeEn:
+                "Select the second vector.",
+            };
+          }
+
 
           if (
             vectorA.dimension !==
             vectorB.dimension
           ) {
-            return texto(
-              `Los dos vectores deben tener la misma dimensión. Actualmente son ${vectorA.dimension} y ${vectorB.dimension}.`,
-              `Both vectors must have the same dimension. They are currently ${vectorA.dimension} and ${vectorB.dimension}.`,
-            );
+            return {
+              ok:
+                false,
+
+              completa:
+                true,
+
+              mensajeEs:
+                `Dimensiones incompatibles: ${vectorA.dimension} y ${vectorB.dimension}.`,
+
+              mensajeEn:
+                `Incompatible dimensions: ${vectorA.dimension} and ${vectorB.dimension}.`,
+            };
           }
+
+
+          const metaA =
+            metadataVector(
+              vectorA.descripcion,
+            );
+
+          const metaB =
+            metadataVector(
+              vectorB.descripcion,
+            );
+
+
+          if (
+            metaA.etiquetas.length >
+              0 &&
+            metaB.etiquetas.length >
+              0 &&
+            !listasIguales(
+              metaA.etiquetas,
+              metaB.etiquetas,
+            )
+          ) {
+            return {
+              ok:
+                false,
+
+              completa:
+                true,
+
+              mensajeEs:
+                "Los vectores tienen la misma dimensión, pero representan elementos distintos o están en diferente orden.",
+
+              mensajeEn:
+                "The vectors have the same dimension, but represent different elements or use a different order.",
+            };
+          }
+
+
+          return {
+            ok:
+              true,
+
+            completa:
+              true,
+
+            mensajeEs:
+              `Compatibles: ambos vectores tienen dimensión ${vectorA.dimension}.`,
+
+            mensajeEn:
+              `Compatible: both vectors have dimension ${vectorA.dimension}.`,
+          };
         }
 
-        return "";
-      }
 
+        // MATRICES
 
-      if (!matrizA) {
-        return texto(
-          "Selecciona la primera matriz empresarial.",
-          "Select the first business matrix.",
-        );
-      }
+        if (!matrizA) {
+          return {
+            ok:
+              false,
 
+            completa:
+              false,
 
-      if (
-        necesitaSegundaMatriz
-      ) {
-        if (!matrizB) {
-          return texto(
-            "Selecciona la segunda matriz empresarial.",
-            "Select the second business matrix.",
-          );
+            mensajeEs:
+              "Selecciona la primera matriz.",
+
+            mensajeEn:
+              "Select the first matrix.",
+          };
         }
 
 
         if (
           operacion ===
-            "suma-matrices" ||
+          "transpuesta" ||
           operacion ===
-            "resta-matrices"
+          "escalar-matriz"
         ) {
-          if (
-            matrizA.filas !==
-              matrizB.filas ||
-            matrizA.columnas !==
-              matrizB.columnas
-          ) {
-            return texto(
-              `Para esta comparación ambas matrices deben tener el mismo tamaño. Actualmente son ${matrizA.filas} × ${matrizA.columnas} y ${matrizB.filas} × ${matrizB.columnas}.`,
-              `For this comparison both matrices must have the same size. They are currently ${matrizA.filas} × ${matrizA.columnas} and ${matrizB.filas} × ${matrizB.columnas}.`,
-            );
-          }
+          return {
+            ok:
+              true,
+
+            completa:
+              true,
+
+            mensajeEs:
+              `Matriz disponible: ${matrizA.filas} × ${matrizA.columnas}.`,
+
+            mensajeEn:
+              `Matrix available: ${matrizA.filas} × ${matrizA.columnas}.`,
+          };
+        }
+
+
+        if (!matrizB) {
+          return {
+            ok:
+              false,
+
+            completa:
+              false,
+
+            mensajeEs:
+              "Selecciona la segunda matriz.",
+
+            mensajeEn:
+              "Select the second matrix.",
+          };
         }
 
 
@@ -745,21 +1110,358 @@ function Operaciones() {
           operacion ===
           "multiplicacion-matrices"
         ) {
+
           if (
             matrizA.columnas !==
             matrizB.filas
           ) {
-            return texto(
-              `No son compatibles para multiplicación. Las columnas de la primera matriz (${matrizA.columnas}) deben coincidir con las filas de la segunda (${matrizB.filas}).`,
-              `They are not compatible for multiplication. The first matrix columns (${matrizA.columnas}) must match the second matrix rows (${matrizB.filas}).`,
-            );
+            return {
+              ok:
+                false,
+
+              completa:
+                true,
+
+              mensajeEs:
+                `No se pueden multiplicar: A tiene ${matrizA.columnas} columnas y B tiene ${matrizB.filas} filas.`,
+
+              mensajeEn:
+                `Cannot multiply: A has ${matrizA.columnas} columns and B has ${matrizB.filas} rows.`,
+            };
           }
+
+
+          const metaA =
+            metadataMatriz(
+              matrizA.descripcion,
+            );
+
+          const metaB =
+            metadataMatriz(
+              matrizB.descripcion,
+            );
+
+
+          if (
+            metaA.columnas.length >
+              0 &&
+            metaB.filas.length >
+              0 &&
+            !listasIguales(
+              metaA.columnas,
+              metaB.filas,
+            )
+          ) {
+            return {
+              ok:
+                false,
+
+              completa:
+                true,
+
+              mensajeEs:
+                "Las dimensiones permiten multiplicar, pero las columnas de A no representan lo mismo que las filas de B.",
+
+              mensajeEn:
+                "The dimensions allow multiplication, but A's columns do not represent the same items as B's rows.",
+            };
+          }
+
+
+          return {
+            ok:
+              true,
+
+            completa:
+              true,
+
+            mensajeEs:
+              `Multiplicación válida: (${matrizA.filas} × ${matrizA.columnas}) × (${matrizB.filas} × ${matrizB.columnas}) → ${matrizA.filas} × ${matrizB.columnas}.`,
+
+            mensajeEn:
+              `Valid multiplication: (${matrizA.filas} × ${matrizA.columnas}) × (${matrizB.filas} × ${matrizB.columnas}) → ${matrizA.filas} × ${matrizB.columnas}.`,
+          };
         }
+
+
+        if (
+          matrizA.filas !==
+            matrizB.filas ||
+          matrizA.columnas !==
+            matrizB.columnas
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              true,
+
+            mensajeEs:
+              `Las matrices deben tener la misma dimensión. A: ${matrizA.filas} × ${matrizA.columnas}; B: ${matrizB.filas} × ${matrizB.columnas}.`,
+
+            mensajeEn:
+              `Matrices must have the same dimensions. A: ${matrizA.filas} × ${matrizA.columnas}; B: ${matrizB.filas} × ${matrizB.columnas}.`,
+          };
+        }
+
+
+        const metaA =
+          metadataMatriz(
+            matrizA.descripcion,
+          );
+
+        const metaB =
+          metadataMatriz(
+            matrizB.descripcion,
+          );
+
+
+        if (
+          metaA.filas.length >
+            0 &&
+          metaB.filas.length >
+            0 &&
+          (
+            !listasIguales(
+              metaA.filas,
+              metaB.filas,
+            ) ||
+            !listasIguales(
+              metaA.columnas,
+              metaB.columnas,
+            )
+          )
+        ) {
+          return {
+            ok:
+              false,
+
+            completa:
+              true,
+
+            mensajeEs:
+              "Las matrices tienen la misma dimensión, pero sus filas o columnas representan información diferente.",
+
+            mensajeEn:
+              "The matrices have the same dimensions, but their rows or columns represent different information.",
+          };
+        }
+
+
+        return {
+          ok:
+            true,
+
+          completa:
+            true,
+
+          mensajeEs:
+            `Matrices compatibles: ${matrizA.filas} × ${matrizA.columnas}.`,
+
+          mensajeEn:
+            `Compatible matrices: ${matrizA.filas} × ${matrizA.columnas}.`,
+        };
+      },
+      [
+        categoria,
+        vectorA,
+        vectorB,
+        matrizA,
+        matrizB,
+        requiereSegundoVector,
+        operacion,
+      ],
+    );
+
+
+  // ========================================================
+  // ESCALAR REAL
+  // ========================================================
+
+  const obtenerEscalar =
+    () => {
+
+      if (
+        modoEscalar ===
+        "porcentaje"
+      ) {
+        const variacion =
+          Number(
+            porcentaje,
+          );
+
+        if (
+          !Number.isFinite(
+            variacion,
+          )
+        ) {
+          return null;
+        }
+
+        return (
+          1 +
+          variacion /
+            100
+        );
       }
 
-      return "";
+
+      const factor =
+        Number(
+          escalar,
+        );
+
+      return Number.isFinite(
+        factor,
+      )
+        ? factor
+        : null;
     };
 
+
+  // ========================================================
+  // FORMATOS
+  // ========================================================
+
+  const descripcionCompleta =
+    (
+      recurso:
+        {
+          nombre: string;
+          descripcion: string;
+        } | null,
+    ) =>
+      recurso
+        ? `${recurso.nombre} ${recurso.descripcion}`.toLowerCase()
+        : "";
+
+
+  const recursoMonetario =
+    (
+      recurso:
+        {
+          nombre: string;
+          descripcion: string;
+        } | null,
+    ) => {
+
+      const valor =
+        descripcionCompleta(
+          recurso,
+        );
+
+      return (
+        valor.includes(
+          "importe",
+        ) ||
+        valor.includes(
+          "precio",
+        ) ||
+        valor.includes(
+          "meta monetaria",
+        ) ||
+        valor.includes(
+          "ventas reales",
+        ) ||
+        valor.includes(
+          "sales amount",
+        ) ||
+        valor.includes(
+          "price",
+        ) ||
+        valor.includes(
+          "monetary target",
+        ) ||
+        valor.includes(
+          "actual sales",
+        )
+      );
+    };
+
+
+  const resultadoMonetario =
+    useMemo(() => {
+
+      if (
+        operacion ===
+        "producto-punto"
+      ) {
+        return (
+          recursoMonetario(
+            vectorA,
+          ) ||
+          recursoMonetario(
+            vectorB,
+          )
+        );
+      }
+
+
+      if (
+        categoria ===
+        "vectores"
+      ) {
+        return (
+          recursoMonetario(
+            vectorA,
+          ) ||
+          recursoMonetario(
+            vectorB,
+          )
+        );
+      }
+
+
+      return (
+        recursoMonetario(
+          matrizA,
+        ) ||
+        recursoMonetario(
+          matrizB,
+        )
+      );
+    }, [
+      operacion,
+      categoria,
+      vectorA,
+      vectorB,
+      matrizA,
+      matrizB,
+    ]);
+
+
+  const formatearNumero =
+    (
+      valor: number,
+      monetario =
+        false,
+    ) => {
+
+      if (
+        monetario
+      ) {
+        return formatearMoneda(
+          valor,
+        );
+      }
+
+
+      return new Intl.NumberFormat(
+        locale,
+        {
+          maximumFractionDigits:
+            2,
+        },
+      ).format(
+        valor,
+      );
+    };
+
+
+  // ========================================================
+  // EJECUTAR
+  // ========================================================
 
   const calcular =
     async () => {
@@ -768,17 +1470,21 @@ function Operaciones() {
         null,
       );
 
+      setEjecutada(
+        false,
+      );
+
       setError("");
 
 
-      const errorValidacion =
-        validarCompatibilidad();
-
       if (
-        errorValidacion
+        !compatibilidad.ok
       ) {
         setError(
-          errorValidacion,
+          texto(
+            compatibilidad.mensajeEs,
+            compatibilidad.mensajeEn,
+          ),
         );
 
         return;
@@ -790,7 +1496,8 @@ function Operaciones() {
 
 
       if (
-        esOperacionVector
+        categoria ===
+        "vectores"
       ) {
         if (!vectorA) {
           return;
@@ -801,14 +1508,16 @@ function Operaciones() {
         ];
 
         if (
-          necesitaSegundoVector &&
+          requiereSegundoVector &&
           vectorB
         ) {
           recursoIds.push(
             vectorB.id,
           );
         }
+
       } else {
+
         if (!matrizA) {
           return;
         }
@@ -818,7 +1527,7 @@ function Operaciones() {
         ];
 
         if (
-          necesitaSegundaMatriz &&
+          requiereSegundaMatriz &&
           matrizB
         ) {
           recursoIds.push(
@@ -829,27 +1538,24 @@ function Operaciones() {
 
 
       let numeroEscalar:
-        number | null = null;
+        number | null =
+        null;
 
 
       if (
-        necesitaEscalarVector ||
-        necesitaEscalarMatriz
+        usaEscalar
       ) {
         numeroEscalar =
-          Number(
-            escalar,
-          );
+          obtenerEscalar();
 
         if (
-          !Number.isFinite(
-            numeroEscalar,
-          )
+          numeroEscalar ===
+          null
         ) {
           setError(
             texto(
-              "El factor debe ser un número válido.",
-              "The factor must be a valid number.",
+              "Introduce un ajuste válido.",
+              "Enter a valid adjustment.",
             ),
           );
 
@@ -859,22 +1565,33 @@ function Operaciones() {
 
 
       try {
+
+        const titulo =
+          texto(
+            operacionActual.tituloEs,
+            operacionActual.tituloEn,
+          );
+
+
+        const matematica =
+          texto(
+            operacionActual.matematicoEs,
+            operacionActual.matematicoEn,
+          );
+
+
         const respuesta =
           await ejecutarOperacionMutation
             .mutateAsync({
               nombre:
-                texto(
-                  operacionActual
-                    .tituloEs,
-                  operacionActual
-                    .tituloEn,
-                ),
+                `${titulo} - ${matematica}`,
 
               tipo_operacion:
                 operacionActual.tipoAPI,
 
               tipo_recurso:
-                esOperacionVector
+                categoria ===
+                "vectores"
                   ? "vector"
                   : "matriz",
 
@@ -885,12 +1602,10 @@ function Operaciones() {
                 numeroEscalar,
 
               descripcion:
-                texto(
-                  operacionActual
-                    .descripcionEs,
-                  operacionActual
-                    .descripcionEn,
-                ),
+                `${titulo}. ${matematica}. ${texto(
+                  operacionActual.ejemploEs,
+                  operacionActual.ejemploEn,
+                )}`,
             });
 
 
@@ -900,8 +1615,8 @@ function Operaciones() {
         ) {
           setError(
             texto(
-              "No se obtuvo un resultado válido.",
-              "No valid result was obtained.",
+              "La operación terminó sin un resultado matemático.",
+              "The operation finished without a mathematical result.",
             ),
           );
 
@@ -909,158 +1624,268 @@ function Operaciones() {
         }
 
 
-        const valor =
-          respuesta.resultado;
+        setResultado(
+          respuesta.resultado,
+        );
 
-
-        setResultado({
-          tipo:
-            determinarTipoResultado(
-              valor,
-            ),
-
-          valor,
-        });
+        setEjecutada(
+          true,
+        );
 
       } catch (
-        errorCalculo
+        errorOperacion
       ) {
+
         setError(
-          errorCalculo instanceof
-          Error
-            ? errorCalculo.message
+          errorOperacion instanceof Error
+            ? errorOperacion.message
             : texto(
-                "No se pudo ejecutar el análisis.",
-                "The analysis could not be performed.",
+                "No se pudo ejecutar la operación.",
+                "The operation could not be executed.",
               ),
         );
       }
     };
 
 
-  const limpiar = () => {
-    setVectorAId("");
-    setVectorBId("");
-    setMatrizAId("");
-    setMatrizBId("");
-    setEscalar(
-      "1.10",
-    );
-    setResultado(
-      null,
-    );
-    setError("");
-  };
+  // ========================================================
+  // LIMPIAR
+  // ========================================================
+
+  const limpiar =
+    () => {
+      setVectorAId("");
+      setVectorBId("");
+      setMatrizAId("");
+      setMatrizBId("");
+      setEscalar(
+        "1.10",
+      );
+      setPorcentaje(
+        "10",
+      );
+      setResultado(
+        null,
+      );
+      setEjecutada(
+        false,
+      );
+      setError("");
+    };
 
 
-  const formatearNumero = (
-    valor: number,
-  ) =>
-    new Intl.NumberFormat(
-      locale,
-      {
-        maximumFractionDigits:
-          2,
-      },
-    ).format(
-      valor,
-    );
+  // ========================================================
+  // ETIQUETAS RESULTADO VECTOR
+  // ========================================================
+
+  const etiquetasResultado =
+    useMemo(() => {
+
+      if (
+        !vectorA
+      ) {
+        return [];
+      }
+
+      return metadataVector(
+        vectorA.descripcion,
+      ).etiquetas;
+
+    }, [
+      vectorA,
+    ]);
 
 
-  const obtenerInterpretacion =
+  // ========================================================
+  // MATRIZ RESULTANTE: ETIQUETAS
+  // ========================================================
+
+  const metadataResultadoMatriz =
+    useMemo(() => {
+
+      if (
+        !matrizA
+      ) {
+        return {
+          filas:
+            [] as string[],
+
+          columnas:
+            [] as string[],
+        };
+      }
+
+
+      const metaA =
+        metadataMatriz(
+          matrizA.descripcion,
+        );
+
+
+      if (
+        operacion ===
+        "transpuesta"
+      ) {
+        return {
+          filas:
+            metaA.columnas,
+
+          columnas:
+            metaA.filas,
+        };
+      }
+
+
+      if (
+        operacion ===
+          "multiplicacion-matrices" &&
+        matrizB
+      ) {
+        const metaB =
+          metadataMatriz(
+            matrizB.descripcion,
+          );
+
+        return {
+          filas:
+            metaA.filas,
+
+          columnas:
+            metaB.columnas,
+        };
+      }
+
+
+      return metaA;
+
+    }, [
+      matrizA,
+      matrizB,
+      operacion,
+    ]);
+
+
+  // ========================================================
+  // INTERPRETACIÓN
+  // ========================================================
+
+  const resumenInterpretacion =
     () => {
 
-      if (!resultado) {
+      if (
+        !resultado
+      ) {
         return "";
       }
 
 
-      switch (
-        operacion
+      if (
+        operacion ===
+        "producto-punto"
       ) {
 
-        case "resta-vectores":
+        if (
+          resultadoMonetario
+        ) {
           return texto(
-            "Los valores positivos indican dónde el primer conjunto supera al segundo. Los valores negativos indican dónde el segundo es mayor.",
-            "Positive values indicate where the first data set exceeds the second. Negative values indicate where the second is greater.",
+            "El producto escalar combina los valores posición por posición. Si los vectores representan cantidades y precios en el mismo orden, el resultado corresponde al ingreso total.",
+            "The dot product combines values position by position. If the vectors represent quantities and prices in the same order, the result corresponds to total revenue.",
           );
+        }
 
-        case "suma-vectores":
-          return texto(
-            "El resultado representa la combinación de ambos conjuntos de información elemento por elemento.",
-            "The result represents the combination of both data sets element by element.",
-          );
 
-        case "producto-punto":
-          return texto(
-            "El resultado resume la relación entre los dos vectores en un único valor. Si los vectores representan cantidades y precios, puede interpretarse como ingreso total.",
-            "The result summarizes the relationship between both vectors into one value. If the vectors represent quantities and prices, it can be interpreted as total revenue.",
-          );
-
-        case "escalar-vector":
-          return texto(
-            `Cada valor fue multiplicado por ${escalar}. Por ejemplo, 1.10 representa un incremento del 10 %.`,
-            `Each value was multiplied by ${escalar}. For example, 1.10 represents a 10% increase.`,
-          );
-
-        case "resta-matrices":
-          return texto(
-            "Cada celda muestra la diferencia entre la primera y la segunda matriz para la misma posición.",
-            "Each cell shows the difference between the first and second matrix at the same position.",
-          );
-
-        case "suma-matrices":
-          return texto(
-            "Cada celda contiene la suma de los valores equivalentes de ambas matrices.",
-            "Each cell contains the sum of equivalent values from both matrices.",
-          );
-
-        case "escalar-matriz":
-          return texto(
-            `Todos los valores fueron ajustados utilizando el factor ${escalar}.`,
-            `All values were adjusted using factor ${escalar}.`,
-          );
-
-        case "transpuesta":
-          return texto(
-            "Las filas se convirtieron en columnas y las columnas en filas. Esto permite observar la misma información desde otra perspectiva.",
-            "Rows became columns and columns became rows. This allows the same information to be viewed from another perspective.",
-          );
-
-        case "multiplicacion-matrices":
-          return texto(
-            "El resultado combina matemáticamente las relaciones contenidas en ambas matrices. Esta operación se utiliza en análisis multidimensionales avanzados.",
-            "The result mathematically combines the relationships contained in both matrices. This operation is used in advanced multidimensional analysis.",
-          );
-
-        default:
-          return "";
+        return texto(
+          "El resultado resume en un único valor la relación entre los dos vectores seleccionados.",
+          "The result summarizes the relationship between the two selected vectors in a single value.",
+        );
       }
+
+
+      if (
+        operacion ===
+        "resta-vectores" ||
+        operacion ===
+        "resta-matrices"
+      ) {
+        return texto(
+          "Los valores positivos indican que el primer recurso está por encima del segundo; los negativos indican que está por debajo.",
+          "Positive values indicate that the first resource is above the second; negative values indicate that it is below.",
+        );
+      }
+
+
+      if (
+        operacion ===
+        "suma-vectores" ||
+        operacion ===
+        "suma-matrices"
+      ) {
+        return texto(
+          "El resultado representa la información acumulada de ambos recursos.",
+          "The result represents the accumulated information from both resources.",
+        );
+      }
+
+
+      if (
+        operacion ===
+        "escalar-vector" ||
+        operacion ===
+        "escalar-matriz"
+      ) {
+        return texto(
+          `Se aplicó el factor ${obtenerEscalar() ?? 0} a todos los valores.`,
+          `A factor of ${obtenerEscalar() ?? 0} was applied to all values.`,
+        );
+      }
+
+
+      if (
+        operacion ===
+        "transpuesta"
+      ) {
+        return texto(
+          "La información es la misma, pero ahora las filas se convirtieron en columnas y las columnas en filas.",
+          "The information is the same, but rows have become columns and columns have become rows.",
+        );
+      }
+
+
+      return texto(
+        "La matriz resultante relaciona matemáticamente las filas de la primera matriz con las columnas de la segunda.",
+        "The resulting matrix mathematically relates the rows of the first matrix to the columns of the second.",
+      );
     };
 
 
-  const renderizarResultado =
+  // ========================================================
+  // RENDER RESULTADO
+  // ========================================================
+
+  const renderResultado =
     () => {
 
-      if (!resultado) {
+      if (
+        !resultado
+      ) {
         return (
-          <div className="operations-result-empty">
+          <div className="operation-pro-empty">
 
             <Calculator
-              size={30}
+              size={32}
             />
 
             <strong>
               {texto(
-                "Resultado del análisis",
-                "Analysis result",
+                "Todavía no hay resultado",
+                "There is no result yet",
               )}
             </strong>
 
             <p>
               {texto(
-                'Selecciona los datos y presiona "Analizar".',
-                'Select the data and press "Analyze".',
+                "Selecciona los datos, revisa la compatibilidad y ejecuta la operación.",
+                "Select the data, check compatibility and run the operation.",
               )}
             </p>
 
@@ -1069,26 +1894,48 @@ function Operaciones() {
       }
 
 
+      const tipo =
+        tipoResultado(
+          resultado,
+        );
+
+
       if (
-        resultado.tipo ===
+        tipo ===
         "escalar"
       ) {
+
+        const valor =
+          resultado as number;
+
+
         return (
-          <div className="operations-scalar-result">
+          <div className="operation-pro-scalar">
 
             <span>
               {texto(
-                "Resultado",
-                "Result",
+                "RESULTADO ESCALAR",
+                "SCALAR RESULT",
               )}
             </span>
 
             <strong>
               {formatearNumero(
-                resultado.valor as
-                number,
+                valor,
+                resultadoMonetario,
               )}
             </strong>
+
+            {operacion ===
+              "producto-punto" &&
+              resultadoMonetario && (
+                <small>
+                  {texto(
+                    "Interpretado como valor monetario cuando los recursos representan cantidades y precios compatibles.",
+                    "Interpreted as a monetary value when the resources represent compatible quantities and prices.",
+                  )}
+                </small>
+              )}
 
           </div>
         );
@@ -1096,44 +1943,117 @@ function Operaciones() {
 
 
       if (
-        resultado.tipo ===
+        tipo ===
         "vector"
       ) {
+
         const vector =
-          resultado.valor as
-          number[];
+          resultado as number[];
+
 
         return (
-          <div className="operations-vector-result">
+          <div className="operation-pro-vector-result">
 
-            <span>
-              [
-            </span>
+            <div className="operation-pro-vector-expression">
 
-            <div>
+              <span>
+                [
+              </span>
+
+              <div>
+                {vector.map(
+                  (
+                    valor,
+                    indice,
+                  ) => (
+                    <strong
+                      key={
+                        indice
+                      }
+                    >
+                      {formatearNumero(
+                        valor,
+                        resultadoMonetario,
+                      )}
+                    </strong>
+                  ),
+                )}
+              </div>
+
+              <span>
+                ]
+              </span>
+
+            </div>
+
+
+            <div className="operation-pro-result-list">
 
               {vector.map(
                 (
                   valor,
                   indice,
-                ) => (
-                  <strong
-                    key={
+                ) => {
+
+                  const etiqueta =
+                    etiquetasResultado[
                       indice
-                    }
-                  >
-                    {formatearNumero(
-                      valor,
-                    )}
-                  </strong>
-                ),
+                    ] ??
+                    `${texto(
+                      "Posición",
+                      "Position",
+                    )} ${indice + 1}`;
+
+
+                  return (
+                    <div
+                      className="operation-pro-result-row"
+                      key={
+                        indice
+                      }
+                    >
+
+                      <span>
+                        {
+                          etiqueta
+                        }
+                      </span>
+
+                      <strong
+                        className={
+                          (
+                            operacion ===
+                              "resta-vectores" &&
+                            valor < 0
+                          )
+                            ? "negative"
+                            : (
+                                operacion ===
+                                  "resta-vectores" &&
+                                valor > 0
+                              )
+                              ? "positive"
+                              : ""
+                        }
+                      >
+                        {operacion ===
+                          "resta-vectores" &&
+                          valor > 0
+                          ? "+"
+                          : ""}
+
+                        {formatearNumero(
+                          valor,
+                          resultadoMonetario,
+                        )}
+                      </strong>
+
+                    </div>
+                  );
+                },
               )}
 
             </div>
-
-            <span>
-              ]
-            </span>
 
           </div>
         );
@@ -1141,84 +2061,192 @@ function Operaciones() {
 
 
       const matriz =
-        resultado.valor as
-        number[][];
+        resultado as
+          number[][];
 
 
       return (
-        <div className="operations-matrix-result">
+        <div className="operation-pro-matrix-result">
 
-          <span>
-            [
-          </span>
+          <div className="operation-pro-table-wrap">
 
-          <div>
+            <table className="operation-pro-result-table">
 
-            {matriz.map(
-              (
-                fila,
-                indiceFila,
-              ) => (
+              <thead>
+                <tr>
 
-                <div
-                  key={
-                    indiceFila
-                  }
-                >
+                  <th>
+                    {texto(
+                      "Resultado",
+                      "Result",
+                    )}
+                  </th>
 
-                  {fila.map(
+                  {matriz[0]?.map(
                     (
-                      valor,
-                      indiceColumna,
+                      _,
+                      indice,
                     ) => (
-
-                      <strong
-                        key={`${indiceFila}-${indiceColumna}`}
+                      <th
+                        key={
+                          indice
+                        }
                       >
-                        {formatearNumero(
-                          valor,
-                        )}
-                      </strong>
-
+                        {
+                          metadataResultadoMatriz
+                            .columnas[
+                              indice
+                            ] ??
+                          `C${indice + 1}`
+                        }
+                      </th>
                     ),
                   )}
 
-                </div>
+                </tr>
+              </thead>
 
-              ),
-            )}
+
+              <tbody>
+
+                {matriz.map(
+                  (
+                    fila,
+                    indiceFila,
+                  ) => (
+
+                    <tr
+                      key={
+                        indiceFila
+                      }
+                    >
+
+                      <th>
+                        {
+                          metadataResultadoMatriz
+                            .filas[
+                              indiceFila
+                            ] ??
+                          `F${indiceFila + 1}`
+                        }
+                      </th>
+
+
+                      {fila.map(
+                        (
+                          valor,
+                          indiceColumna,
+                        ) => (
+
+                          <td
+                            key={`${indiceFila}-${indiceColumna}`}
+                            className={
+                              (
+                                operacion ===
+                                  "resta-matrices" &&
+                                valor < 0
+                              )
+                                ? "negative"
+                                : (
+                                    operacion ===
+                                      "resta-matrices" &&
+                                    valor > 0
+                                  )
+                                  ? "positive"
+                                  : ""
+                            }
+                          >
+                            {operacion ===
+                              "resta-matrices" &&
+                              valor > 0
+                              ? "+"
+                              : ""}
+
+                            {formatearNumero(
+                              valor,
+                              resultadoMonetario,
+                            )}
+                          </td>
+
+                        ),
+                      )}
+
+                    </tr>
+
+                  ),
+                )}
+
+              </tbody>
+
+            </table>
 
           </div>
 
-          <span>
-            ]
-          </span>
+
+          <div className="operation-pro-matrix-expression">
+
+            <span>
+              [
+            </span>
+
+            <div>
+              {matriz.map(
+                (
+                  fila,
+                  indiceFila,
+                ) => (
+
+                  <div
+                    key={
+                      indiceFila
+                    }
+                  >
+                    {fila.map(
+                      (
+                        valor,
+                        indiceColumna,
+                      ) => (
+                        <strong
+                          key={`${indiceFila}-${indiceColumna}`}
+                        >
+                          {Number(
+                            valor.toFixed(
+                              2,
+                            ),
+                          )}
+                        </strong>
+                      ),
+                    )}
+                  </div>
+
+                ),
+              )}
+            </div>
+
+            <span>
+              ]
+            </span>
+
+          </div>
 
         </div>
       );
     };
 
 
+  // ========================================================
+  // UI
+  // ========================================================
+
   const errorDatos =
     datosOperaciones.error
-      ? datosOperaciones.error instanceof
-        Error
-        ? datosOperaciones
-            .error.message
+      ? datosOperaciones.error instanceof Error
+        ? datosOperaciones.error.message
         : texto(
-            "No se pudieron cargar los vectores y matrices.",
-            "Vectors and matrices could not be loaded.",
+            "No se pudieron cargar los recursos matemáticos.",
+            "Mathematical resources could not be loaded.",
           )
       : "";
-
-
-  const nombreOperacionMatematica =
-    texto(
-      operacionActual
-        .nombreMatematicoEs,
-      operacionActual
-        .nombreMatematicoEn,
-    );
 
 
   return (
@@ -1226,1075 +2254,1164 @@ function Operaciones() {
 
       <PageHeader
         etiqueta={texto(
-          "ANÁLISIS EMPRESARIAL",
-          "BUSINESS ANALYSIS",
+          "ANÁLISIS MATEMÁTICO",
+          "MATHEMATICAL ANALYSIS",
         )}
         titulo={texto(
           "Operaciones empresariales",
           "Business operations",
         )}
         descripcion={texto(
-          "Analiza los vectores y matrices creados a partir de ventas, inventario y otros datos empresariales.",
-          "Analyze vectors and matrices created from sales, inventory and other business data.",
+          "Selecciona una operación, utiliza los vectores o matrices guardados y MatrixFlow validará automáticamente si el cálculo es posible.",
+          "Select an operation, use your saved vectors or matrices and MatrixFlow will automatically validate whether the calculation is possible.",
         )}
       />
 
 
-      <section className="operations-business-guide">
+      {errorDatos && (
+        <div className="operation-pro-message operation-pro-error-message">
+          {
+            errorDatos
+          }
+        </div>
+      )}
 
-        <div>
+
+      {/* CATEGORIA */}
+
+      <section className="operation-pro-card">
+
+        <div className="operation-pro-heading">
+
           <span>
-            1
+            {texto(
+              "PASO 1",
+              "STEP 1",
+            )}
           </span>
 
-          <strong>
+          <h2>
             {texto(
-              "Elige qué quieres analizar",
-              "Choose what you want to analyze",
+              "¿Con qué deseas trabajar?",
+              "What do you want to work with?",
             )}
-          </strong>
-        </div>
+          </h2>
 
-        <div className="operations-guide-arrow">
-          →
-        </div>
-
-        <div>
-          <span>
-            2
-          </span>
-
-          <strong>
+          <p>
             {texto(
-              "Selecciona tus datos",
-              "Select your data",
+              "Vectores trabajan con una dimensión de información. Matrices permiten relacionar filas y columnas.",
+              "Vectors work with one dimension of information. Matrices relate rows and columns.",
             )}
-          </strong>
+          </p>
+
         </div>
 
-        <div className="operations-guide-arrow">
-          →
-        </div>
 
-        <div>
-          <span>
-            3
-          </span>
+        <div className="operation-pro-categories">
 
-          <strong>
-            {texto(
-              "MatrixFlow calcula",
-              "MatrixFlow calculates",
-            )}
-          </strong>
-        </div>
+          <button
+            type="button"
+            className={
+              categoria ===
+              "vectores"
+                ? "operation-pro-category active"
+                : "operation-pro-category"
+            }
+            onClick={() =>
+              cambiarCategoria(
+                "vectores",
+              )
+            }
+          >
+            <Sigma
+              size={22}
+            />
 
-        <div className="operations-guide-arrow">
-          →
-        </div>
+            <div>
+              <strong>
+                {texto(
+                  "Vectores",
+                  "Vectors",
+                )}
+              </strong>
 
-        <div>
-          <span>
-            4
-          </span>
+              <span>
+                {texto(
+                  "Suma, resta, escalar y producto escalar.",
+                  "Addition, subtraction, scalar and dot product.",
+                )}
+              </span>
+            </div>
+          </button>
 
-          <strong>
-            {texto(
-              "Interpreta el resultado",
-              "Interpret the result",
-            )}
-          </strong>
+
+          <button
+            type="button"
+            className={
+              categoria ===
+              "matrices"
+                ? "operation-pro-category active"
+                : "operation-pro-category"
+            }
+            onClick={() =>
+              cambiarCategoria(
+                "matrices",
+              )
+            }
+          >
+            <Grid3X3
+              size={22}
+            />
+
+            <div>
+              <strong>
+                {texto(
+                  "Matrices",
+                  "Matrices",
+                )}
+              </strong>
+
+              <span>
+                {texto(
+                  "Suma, resta, escalar, multiplicación y transpuesta.",
+                  "Addition, subtraction, scalar, multiplication and transpose.",
+                )}
+              </span>
+            </div>
+          </button>
+
         </div>
 
       </section>
 
 
-      <section className="operations-layout">
+      {/* OPERACIÓN */}
 
-        <aside className="operations-selector">
+      <section className="operation-pro-card">
 
-          <div className="operations-selector-header">
+        <div className="operation-pro-heading">
 
-            <span>
-              {texto(
-                "¿QUÉ QUIERES HACER?",
-                "WHAT DO YOU WANT TO DO?",
-              )}
-            </span>
+          <span>
+            {texto(
+              "PASO 2",
+              "STEP 2",
+            )}
+          </span>
 
-            <strong>
-              {texto(
-                "Selecciona un análisis",
-                "Select an analysis",
-              )}
-            </strong>
+          <h2>
+            {texto(
+              "¿Qué quieres hacer?",
+              "What do you want to do?",
+            )}
+          </h2>
 
-          </div>
-
-
-          <div className="operations-category">
-
-            <span>
-              {texto(
-                "Análisis por producto",
-                "Product analysis",
-              )}
-            </span>
+        </div>
 
 
-            {operaciones
-              .filter(
-                (item) =>
-                  item.categoria ===
-                  "vector",
-              )
-              .map(
-                (item) => (
+        <div className="operation-pro-options">
 
-                  <button
-                    type="button"
-                    key={
-                      item.id
-                    }
-                    className={
-                      operacion ===
-                      item.id
-                        ? "operation-option operation-option-active"
-                        : "operation-option"
-                    }
-                    onClick={() =>
-                      seleccionarOperacion(
-                        item.id,
-                      )
-                    }
-                  >
+          {operacionesCategoria.map(
+            (
+              item,
+            ) => {
 
-                    <Sigma
-                      size={17}
+              const icono =
+                item.id ===
+                "resta-vectores" ||
+                item.id ===
+                "resta-matrices"
+                  ? (
+                    <ArrowLeftRight
+                      size={19}
                     />
-
-                    <div>
-
-                      <strong>
-                        {texto(
-                          item.tituloEs,
-                          item.tituloEn,
-                        )}
-                      </strong>
-
-                      <span>
-                        {texto(
-                          item.usoEs,
-                          item.usoEn,
-                        )}
-                      </span>
-
-                    </div>
-
-                  </button>
-
-                ),
-              )}
-
-          </div>
-
-
-          <div className="operations-category">
-
-            <span>
-              {texto(
-                "Análisis por sucursal y producto",
-                "Branch and product analysis",
-              )}
-            </span>
-
-
-            {operaciones
-              .filter(
-                (item) =>
-                  item.categoria ===
-                  "matriz",
-              )
-              .map(
-                (item) => (
-
-                  <button
-                    type="button"
-                    key={
-                      item.id
-                    }
-                    className={
-                      operacion ===
-                      item.id
-                        ? "operation-option operation-option-active"
-                        : "operation-option"
-                    }
-                    onClick={() =>
-                      seleccionarOperacion(
-                        item.id,
+                  )
+                  : item.id ===
+                      "producto-punto"
+                    ? (
+                      <Calculator
+                        size={19}
+                      />
+                    )
+                    : item.id ===
+                        "transpuesta"
+                      ? (
+                        <RotateCcw
+                          size={19}
+                        />
                       )
+                      : item.id ===
+                          "multiplicacion-matrices"
+                        ? (
+                          <Combine
+                            size={19}
+                          />
+                        )
+                        : item.id ===
+                            "escalar-vector" ||
+                          item.id ===
+                            "escalar-matriz"
+                          ? (
+                            <Percent
+                              size={19}
+                            />
+                          )
+                          : (
+                            <Layers3
+                              size={19}
+                            />
+                          );
+
+
+              return (
+                <button
+                  type="button"
+                  key={
+                    item.id
+                  }
+                  className={
+                    operacion ===
+                    item.id
+                      ? "operation-pro-option active"
+                      : "operation-pro-option"
+                  }
+                  onClick={() =>
+                    cambiarOperacion(
+                      item.id,
+                    )
+                  }
+                >
+
+                  <div className="operation-pro-option-icon">
+                    {
+                      icono
                     }
-                  >
+                  </div>
 
-                    <Grid3X3
-                      size={17}
-                    />
 
-                    <div>
+                  <div>
 
-                      <strong>
-                        {texto(
-                          item.tituloEs,
-                          item.tituloEn,
-                        )}
-                      </strong>
+                    <strong>
+                      {texto(
+                        item.tituloEs,
+                        item.tituloEn,
+                      )}
+                    </strong>
 
-                      <span>
-                        {texto(
-                          item.usoEs,
-                          item.usoEn,
-                        )}
-                      </span>
+                    <span className="operation-pro-math-name">
+                      {texto(
+                        item.matematicoEs,
+                        item.matematicoEn,
+                      )}
+                    </span>
 
-                    </div>
+                    <p>
+                      {texto(
+                        item.ejemploEs,
+                        item.ejemploEn,
+                      )}
+                    </p>
 
-                  </button>
+                  </div>
 
-                ),
+                </button>
+              );
+            },
+          )}
+
+        </div>
+
+      </section>
+
+
+      {/* CONFIGURACIÓN */}
+
+      <section className="operation-pro-card">
+
+        <div className="operation-pro-heading">
+
+          <span>
+            {texto(
+              "PASO 3",
+              "STEP 3",
+            )}
+          </span>
+
+          <h2>
+            {texto(
+              "Selecciona los datos",
+              "Select the data",
+            )}
+          </h2>
+
+          <p>
+            {texto(
+              operacionActual.descripcionEs,
+              operacionActual.descripcionEn,
+            )}
+          </p>
+
+        </div>
+
+
+        {cargandoDatos ? (
+
+          <div className="operation-pro-loading">
+            {texto(
+              "Cargando vectores y matrices...",
+              "Loading vectors and matrices...",
+            )}
+          </div>
+
+        ) : categoria ===
+          "vectores" ? (
+
+          <div className="operation-pro-input-grid">
+
+            <div className="operation-pro-field">
+
+              <label>
+                {texto(
+                  "Vector A",
+                  "Vector A",
+                )}
+              </label>
+
+              <select
+                value={
+                  vectorAId
+                }
+                onChange={(
+                  e,
+                ) => {
+                  setVectorAId(
+                    e.target.value,
+                  );
+
+                  setResultado(
+                    null,
+                  );
+
+                  setEjecutada(
+                    false,
+                  );
+
+                  setError("");
+                }}
+              >
+
+                <option value="">
+                  {texto(
+                    "Seleccionar...",
+                    "Select...",
+                  )}
+                </option>
+
+                {vectores.map(
+                  (
+                    vector,
+                  ) => (
+                    <option
+                      key={
+                        vector.id
+                      }
+                      value={
+                        vector.id
+                      }
+                    >
+                      {
+                        vector.nombre
+                      }
+                      {" · "}
+                      {vector.dimension}
+                      D
+                    </option>
+                  ),
+                )}
+
+              </select>
+
+
+              {vectorA && (
+                <div className="operation-pro-resource-preview">
+
+                  <strong>
+                    {
+                      vectorA.nombre
+                    }
+                  </strong>
+
+                  <span>
+                    {texto(
+                      "Dimensión",
+                      "Dimension",
+                    )}
+                    :{" "}
+                    {
+                      vectorA.dimension
+                    }
+                  </span>
+
+                  <code>
+                    [
+                    {
+                      vectorA.valores
+                        .join(
+                          ", ",
+                        )
+                    }
+                    ]
+                  </code>
+
+                </div>
               )}
+
+            </div>
+
+
+            {requiereSegundoVector && (
+              <div className="operation-pro-field">
+
+                <label>
+                  {texto(
+                    "Vector B",
+                    "Vector B",
+                  )}
+                </label>
+
+                <select
+                  value={
+                    vectorBId
+                  }
+                  onChange={(
+                    e,
+                  ) => {
+                    setVectorBId(
+                      e.target.value,
+                    );
+
+                    setResultado(
+                      null,
+                    );
+
+                    setEjecutada(
+                      false,
+                    );
+
+                    setError("");
+                  }}
+                >
+
+                  <option value="">
+                    {texto(
+                      "Seleccionar...",
+                      "Select...",
+                    )}
+                  </option>
+
+                  {vectores.map(
+                    (
+                      vector,
+                    ) => (
+                      <option
+                        key={
+                          vector.id
+                        }
+                        value={
+                          vector.id
+                        }
+                      >
+                        {
+                          vector.nombre
+                        }
+                        {" · "}
+                        {
+                          vector.dimension
+                        }
+                        D
+                      </option>
+                    ),
+                  )}
+
+                </select>
+
+
+                {vectorB && (
+                  <div className="operation-pro-resource-preview">
+
+                    <strong>
+                      {
+                        vectorB.nombre
+                      }
+                    </strong>
+
+                    <span>
+                      {texto(
+                        "Dimensión",
+                        "Dimension",
+                      )}
+                      :{" "}
+                      {
+                        vectorB.dimension
+                      }
+                    </span>
+
+                    <code>
+                      [
+                      {
+                        vectorB.valores
+                          .join(
+                            ", ",
+                          )
+                      }
+                      ]
+                    </code>
+
+                  </div>
+                )}
+
+              </div>
+            )}
 
           </div>
 
-        </aside>
+        ) : (
+
+          <div className="operation-pro-input-grid">
+
+            <div className="operation-pro-field">
+
+              <label>
+                {texto(
+                  "Matriz A",
+                  "Matrix A",
+                )}
+              </label>
+
+              <select
+                value={
+                  matrizAId
+                }
+                onChange={(
+                  e,
+                ) => {
+                  setMatrizAId(
+                    e.target.value,
+                  );
+
+                  setResultado(
+                    null,
+                  );
+
+                  setEjecutada(
+                    false,
+                  );
+
+                  setError("");
+                }}
+              >
+
+                <option value="">
+                  {texto(
+                    "Seleccionar...",
+                    "Select...",
+                  )}
+                </option>
+
+                {matrices.map(
+                  (
+                    matriz,
+                  ) => (
+                    <option
+                      key={
+                        matriz.id
+                      }
+                      value={
+                        matriz.id
+                      }
+                    >
+                      {
+                        matriz.nombre
+                      }
+                      {" · "}
+                      {
+                        matriz.filas
+                      }
+                      ×
+                      {
+                        matriz.columnas
+                      }
+                    </option>
+                  ),
+                )}
+
+              </select>
 
 
-        <div className="operations-workspace">
+              {matrizA && (
+                <div className="operation-pro-resource-preview">
 
-          <section className="operations-panel">
+                  <strong>
+                    {
+                      matrizA.nombre
+                    }
+                  </strong>
 
-            <div className="operations-panel-header">
+                  <span>
+                    {
+                      matrizA.filas
+                    }
+                    ×
+                    {
+                      matrizA.columnas
+                    }
+                  </span>
+
+                  <code>
+                    {
+                      matrizA.valores
+                        .map(
+                          (fila) =>
+                            `[${fila.join(
+                              ", ",
+                            )}]`,
+                        )
+                        .join(
+                          " ",
+                        )
+                    }
+                  </code>
+
+                </div>
+              )}
+
+            </div>
+
+
+            {requiereSegundaMatriz && (
+              <div className="operation-pro-field">
+
+                <label>
+                  {texto(
+                    "Matriz B",
+                    "Matrix B",
+                  )}
+                </label>
+
+                <select
+                  value={
+                    matrizBId
+                  }
+                  onChange={(
+                    e,
+                  ) => {
+                    setMatrizBId(
+                      e.target.value,
+                    );
+
+                    setResultado(
+                      null,
+                    );
+
+                    setEjecutada(
+                      false,
+                    );
+
+                    setError("");
+                  }}
+                >
+
+                  <option value="">
+                    {texto(
+                      "Seleccionar...",
+                      "Select...",
+                    )}
+                  </option>
+
+                  {matrices.map(
+                    (
+                      matriz,
+                    ) => (
+                      <option
+                        key={
+                          matriz.id
+                        }
+                        value={
+                          matriz.id
+                        }
+                      >
+                        {
+                          matriz.nombre
+                        }
+                        {" · "}
+                        {
+                          matriz.filas
+                        }
+                        ×
+                        {
+                          matriz.columnas
+                        }
+                      </option>
+                    ),
+                  )}
+
+                </select>
+
+
+                {matrizB && (
+                  <div className="operation-pro-resource-preview">
+
+                    <strong>
+                      {
+                        matrizB.nombre
+                      }
+                    </strong>
+
+                    <span>
+                      {
+                        matrizB.filas
+                      }
+                      ×
+                      {
+                        matrizB.columnas
+                      }
+                    </span>
+
+                    <code>
+                      {
+                        matrizB.valores
+                          .map(
+                            (fila) =>
+                              `[${fila.join(
+                                ", ",
+                              )}]`,
+                          )
+                          .join(
+                            " ",
+                          )
+                      }
+                    </code>
+
+                  </div>
+                )}
+
+              </div>
+            )}
+
+          </div>
+        )}
+
+
+        {/* AJUSTE ESCALAR */}
+
+        {usaEscalar && (
+          <div className="operation-pro-scalar-config">
+
+            <div className="operation-pro-scalar-head">
+
+              <TrendingUp
+                size={19}
+              />
 
               <div>
 
+                <strong>
+                  {texto(
+                    "Configura el ajuste",
+                    "Configure adjustment",
+                  )}
+                </strong>
+
                 <span>
                   {texto(
-                    esOperacionVector
-                      ? "ANÁLISIS DE VECTORES"
-                      : "ANÁLISIS DE MATRICES",
-
-                    esOperacionVector
-                      ? "VECTOR ANALYSIS"
-                      : "MATRIX ANALYSIS",
+                    "Puedes introducir un porcentaje o utilizar directamente un factor matemático.",
+                    "You can enter a percentage or use a mathematical factor directly.",
                   )}
                 </span>
 
-                <h2>
-                  {texto(
-                    operacionActual
-                      .tituloEs,
-                    operacionActual
-                      .tituloEn,
-                  )}
-                </h2>
-
-                <p>
-                  {texto(
-                    operacionActual
-                      .descripcionEs,
-                    operacionActual
-                      .descripcionEn,
-                  )}
-                </p>
-
-              </div>
-
-
-              <div className="operations-type-icon">
-
-                {esOperacionVector ? (
-                  <Sigma
-                    size={22}
-                  />
-                ) : (
-                  <Grid3X3
-                    size={22}
-                  />
-                )}
-
               </div>
 
             </div>
 
 
-            <div className="operation-math-explanation">
+            <div className="operation-pro-scalar-controls">
 
-              <span>
-                {texto(
-                  "OPERACIÓN MATEMÁTICA UTILIZADA",
-                  "MATHEMATICAL OPERATION USED",
-                )}
-              </span>
+              <div className="operation-pro-field">
 
-              <strong>
-                {
-                  nombreOperacionMatematica
-                }
-              </strong>
+                <label>
+                  {texto(
+                    "Tipo de ajuste",
+                    "Adjustment type",
+                  )}
+                </label>
 
-              <p>
-                {texto(
-                  "MatrixFlow realiza esta operación automáticamente. No necesitas calcularla manualmente.",
-                  "MatrixFlow performs this operation automatically. You do not need to calculate it manually.",
-                )}
-              </p>
+                <select
+                  value={
+                    modoEscalar
+                  }
+                  onChange={(
+                    e,
+                  ) =>
+                    setModoEscalar(
+                      e.target
+                        .value as
+                        ModoEscalar,
+                    )
+                  }
+                >
+                  <option value="porcentaje">
+                    {texto(
+                      "Variación porcentual",
+                      "Percentage variation",
+                    )}
+                  </option>
 
-            </div>
+                  <option value="factor">
+                    {texto(
+                      "Factor directo",
+                      "Direct factor",
+                    )}
+                  </option>
+                </select>
+
+              </div>
 
 
-            {cargandoDatos ? (
+              {modoEscalar ===
+              "porcentaje" ? (
 
-              <div className="operations-inputs">
+                <div className="operation-pro-field">
 
-                <div className="operation-field">
+                  <label>
+                    {texto(
+                      "Variación (%)",
+                      "Variation (%)",
+                    )}
+                  </label>
+
+                  <input
+                    type="number"
+                    step="any"
+                    value={
+                      porcentaje
+                    }
+                    onChange={(
+                      e,
+                    ) =>
+                      setPorcentaje(
+                        e.target.value,
+                      )
+                    }
+                  />
 
                   <small>
                     {texto(
-                      "Cargando datos...",
-                      "Loading data...",
+                      "Ej.: 10 = aumentar 10 %, -5 = reducir 5 %.",
+                      "E.g. 10 = increase 10%, -5 = reduce 5%.",
                     )}
                   </small>
 
                 </div>
 
-              </div>
+              ) : (
 
-            ) : esOperacionVector ? (
+                <div className="operation-pro-field">
 
-              <div className="operations-inputs">
-
-                <div className="operation-field">
-
-                  <label htmlFor="vector-a">
-
-                    {necesitaSegundoVector
-                      ? texto(
-                          "Primer conjunto de datos",
-                          "First data set",
-                        )
-                      : texto(
-                          "Conjunto de datos",
-                          "Data set",
-                        )}
-
+                  <label>
+                    {texto(
+                      "Factor",
+                      "Factor",
+                    )}
                   </label>
 
-
-                  <select
-                    id="vector-a"
+                  <input
+                    type="number"
+                    step="any"
                     value={
-                      vectorAId
+                      escalar
                     }
                     onChange={(
-                      evento,
-                    ) => {
+                      e,
+                    ) =>
+                      setEscalar(
+                        e.target.value,
+                      )
+                    }
+                  />
 
-                      setVectorAId(
-                        evento.target
-                          .value,
-                      );
-
-                      setResultado(
-                        null,
-                      );
-
-                      setError("");
-                    }}
-                  >
-
-                    <option value="">
-                      {texto(
-                        "Seleccionar vector empresarial",
-                        "Select business vector",
-                      )}
-                    </option>
-
-
-                    {vectores.map(
-                      (vector) => (
-
-                        <option
-                          key={
-                            vector.id
-                          }
-                          value={
-                            vector.id
-                          }
-                        >
-                          {
-                            vector.nombre
-                          }
-                          {" — "}
-                          {texto(
-                            "dimensión",
-                            "dimension",
-                          )}
-                          {" "}
-                          {
-                            vector.dimension
-                          }
-                        </option>
-
-                      ),
+                  <small>
+                    {texto(
+                      "Ej.: 1.10 aumenta 10 %; 0.90 reduce 10 %.",
+                      "E.g. 1.10 increases 10%; 0.90 reduces 10%.",
                     )}
-
-                  </select>
-
-
-                  {vectorA && (
-
-                    <div className="operation-resource-preview">
-
-                      <strong>
-                        {
-                          vectorA.nombre
-                        }
-                      </strong>
-
-                      <span>
-                        {formatearVector(
-                          vectorA.valores,
-                        )}
-                      </span>
-
-                      {vectorA.descripcion && (
-                        <small>
-                          {
-                            vectorA.descripcion
-                          }
-                        </small>
-                      )}
-
-                    </div>
-
-                  )}
-
-
-                  {!vectorA &&
-                    vectores.length ===
-                      0 && (
-
-                    <small>
-                      {texto(
-                        "Primero genera y guarda un vector empresarial en el módulo Vectores.",
-                        "First generate and save a business vector in the Vectors module.",
-                      )}
-                    </small>
-
-                  )}
+                  </small>
 
                 </div>
 
-
-                {necesitaSegundoVector && (
-
-                  <div className="operation-field">
-
-                    <label htmlFor="vector-b">
-                      {texto(
-                        "Segundo conjunto de datos",
-                        "Second data set",
-                      )}
-                    </label>
+              )}
 
 
-                    <select
-                      id="vector-b"
-                      value={
-                        vectorBId
-                      }
-                      onChange={(
-                        evento,
-                      ) => {
+              <div className="operation-pro-factor-preview">
 
-                        setVectorBId(
-                          evento.target
-                            .value,
-                        );
+                <span>
+                  {texto(
+                    "Factor matemático",
+                    "Mathematical factor",
+                  )}
+                </span>
 
-                        setResultado(
-                          null,
-                        );
-
-                        setError("");
-                      }}
-                    >
-
-                      <option value="">
-                        {texto(
-                          "Seleccionar vector empresarial",
-                          "Select business vector",
-                        )}
-                      </option>
-
-
-                      {vectores.map(
-                        (vector) => (
-
-                          <option
-                            key={
-                              vector.id
-                            }
-                            value={
-                              vector.id
-                            }
-                          >
-                            {
-                              vector.nombre
-                            }
-                            {" — "}
-                            {texto(
-                              "dimensión",
-                              "dimension",
-                            )}
-                            {" "}
-                            {
-                              vector.dimension
-                            }
-                          </option>
-
-                        ),
-                      )}
-
-                    </select>
-
-
-                    {vectorB && (
-
-                      <div className="operation-resource-preview">
-
-                        <strong>
-                          {
-                            vectorB.nombre
-                          }
-                        </strong>
-
-                        <span>
-                          {formatearVector(
-                            vectorB.valores,
-                          )}
-                        </span>
-
-                        {vectorB.descripcion && (
-                          <small>
-                            {
-                              vectorB.descripcion
-                            }
-                          </small>
-                        )}
-
-                      </div>
-
-                    )}
-
-                  </div>
-
-                )}
-
-
-                {necesitaEscalarVector && (
-
-                  <div className="operation-field">
-
-                    <label htmlFor="escalar-vector">
-                      {texto(
-                        "Factor de ajuste",
-                        "Adjustment factor",
-                      )}
-                    </label>
-
-                    <input
-                      id="escalar-vector"
-                      type="number"
-                      step="any"
-                      value={
-                        escalar
-                      }
-                      onChange={(
-                        evento,
-                      ) => {
-
-                        setEscalar(
-                          evento.target
-                            .value,
-                        );
-
-                        setResultado(
-                          null,
-                        );
-
-                        setError("");
-                      }}
-                    />
-
-                    <small>
-                      {texto(
-                        "Ejemplos: 1.10 = +10 %, 0.95 = -5 %, 2 = duplicar.",
-                        "Examples: 1.10 = +10%, 0.95 = -5%, 2 = double.",
-                      )}
-                    </small>
-
-                  </div>
-
-                )}
+                <strong>
+                  {
+                    obtenerEscalar() ??
+                    "—"
+                  }
+                </strong>
 
               </div>
-
-            ) : (
-
-              <div className="operations-inputs">
-
-                <div className="operation-field">
-
-                  <label htmlFor="matriz-a">
-
-                    {necesitaSegundaMatriz
-                      ? texto(
-                          "Primera matriz empresarial",
-                          "First business matrix",
-                        )
-                      : texto(
-                          "Matriz empresarial",
-                          "Business matrix",
-                        )}
-
-                  </label>
-
-
-                  <select
-                    id="matriz-a"
-                    value={
-                      matrizAId
-                    }
-                    onChange={(
-                      evento,
-                    ) => {
-
-                      setMatrizAId(
-                        evento.target
-                          .value,
-                      );
-
-                      setResultado(
-                        null,
-                      );
-
-                      setError("");
-                    }}
-                  >
-
-                    <option value="">
-                      {texto(
-                        "Seleccionar matriz empresarial",
-                        "Select business matrix",
-                      )}
-                    </option>
-
-
-                    {matrices.map(
-                      (matriz) => (
-
-                        <option
-                          key={
-                            matriz.id
-                          }
-                          value={
-                            matriz.id
-                          }
-                        >
-                          {
-                            matriz.nombre
-                          }
-                          {" — "}
-                          {
-                            matriz.filas
-                          }
-                          {" × "}
-                          {
-                            matriz.columnas
-                          }
-                        </option>
-
-                      ),
-                    )}
-
-                  </select>
-
-
-                  {matrizA && (
-
-                    <div className="operation-resource-preview">
-
-                      <strong>
-                        {
-                          matrizA.nombre
-                        }
-                      </strong>
-
-                      <span>
-                        {formatearMatriz(
-                          matrizA.valores,
-                        )}
-                      </span>
-
-                      {matrizA.descripcion && (
-                        <small>
-                          {
-                            matrizA.descripcion
-                          }
-                        </small>
-                      )}
-
-                    </div>
-
-                  )}
-
-
-                  {!matrizA &&
-                    matrices.length ===
-                      0 && (
-
-                    <small>
-                      {texto(
-                        "Primero genera y guarda una matriz empresarial en el módulo Matrices.",
-                        "First generate and save a business matrix in the Matrices module.",
-                      )}
-                    </small>
-
-                  )}
-
-                </div>
-
-
-                {necesitaSegundaMatriz && (
-
-                  <div className="operation-field">
-
-                    <label htmlFor="matriz-b">
-                      {texto(
-                        "Segunda matriz empresarial",
-                        "Second business matrix",
-                      )}
-                    </label>
-
-
-                    <select
-                      id="matriz-b"
-                      value={
-                        matrizBId
-                      }
-                      onChange={(
-                        evento,
-                      ) => {
-
-                        setMatrizBId(
-                          evento.target
-                            .value,
-                        );
-
-                        setResultado(
-                          null,
-                        );
-
-                        setError("");
-                      }}
-                    >
-
-                      <option value="">
-                        {texto(
-                          "Seleccionar matriz empresarial",
-                          "Select business matrix",
-                        )}
-                      </option>
-
-
-                      {matrices.map(
-                        (matriz) => (
-
-                          <option
-                            key={
-                              matriz.id
-                            }
-                            value={
-                              matriz.id
-                            }
-                          >
-                            {
-                              matriz.nombre
-                            }
-                            {" — "}
-                            {
-                              matriz.filas
-                            }
-                            {" × "}
-                            {
-                              matriz.columnas
-                            }
-                          </option>
-
-                        ),
-                      )}
-
-                    </select>
-
-
-                    {matrizB && (
-
-                      <div className="operation-resource-preview">
-
-                        <strong>
-                          {
-                            matrizB.nombre
-                          }
-                        </strong>
-
-                        <span>
-                          {formatearMatriz(
-                            matrizB.valores,
-                          )}
-                        </span>
-
-                        {matrizB.descripcion && (
-                          <small>
-                            {
-                              matrizB.descripcion
-                            }
-                          </small>
-                        )}
-
-                      </div>
-
-                    )}
-
-                  </div>
-
-                )}
-
-
-                {necesitaEscalarMatriz && (
-
-                  <div className="operation-field">
-
-                    <label htmlFor="escalar-matriz">
-                      {texto(
-                        "Factor de ajuste",
-                        "Adjustment factor",
-                      )}
-                    </label>
-
-                    <input
-                      id="escalar-matriz"
-                      type="number"
-                      step="any"
-                      value={
-                        escalar
-                      }
-                      onChange={(
-                        evento,
-                      ) => {
-
-                        setEscalar(
-                          evento.target
-                            .value,
-                        );
-
-                        setResultado(
-                          null,
-                        );
-
-                        setError("");
-                      }}
-                    />
-
-                    <small>
-                      {texto(
-                        "Ejemplos: 1.10 = +10 %, 0.90 = -10 %, 2 = duplicar.",
-                        "Examples: 1.10 = +10%, 0.90 = -10%, 2 = double.",
-                      )}
-                    </small>
-
-                  </div>
-
-                )}
-
-              </div>
-
-            )}
-
-
-            <div className="operations-actions">
-
-              <button
-                type="button"
-                className="button-secondary"
-                onClick={
-                  limpiar
-                }
-                disabled={
-                  calculando
-                }
-              >
-
-                <RotateCcw
-                  size={16}
-                />
-
-                {texto(
-                  "Limpiar",
-                  "Clear",
-                )}
-
-              </button>
-
-
-              <button
-                type="button"
-                className="button-primary"
-                onClick={() =>
-                  void calcular()
-                }
-                disabled={
-                  calculando ||
-                  cargandoDatos
-                }
-              >
-
-                <Calculator
-                  size={16}
-                />
-
-                {calculando
-                  ? texto(
-                      "Analizando...",
-                      "Analyzing...",
-                    )
-                  : texto(
-                      "Analizar",
-                      "Analyze",
-                    )}
-
-              </button>
 
             </div>
 
-          </section>
+          </div>
+        )}
 
 
-          <section className="operations-result-panel">
+        {/* COMPATIBILIDAD */}
 
-            <div className="operations-result-header">
+        <div
+          className={
+            compatibilidad.ok
+              ? "operation-pro-compatibility valid"
+              : compatibilidad.completa
+                ? "operation-pro-compatibility invalid"
+                : "operation-pro-compatibility waiting"
+          }
+        >
+
+          {compatibilidad.ok ? (
+            <CheckCircle2
+              size={19}
+            />
+          ) : (
+            <TriangleAlert
+              size={19}
+            />
+          )}
+
+
+          <div>
+
+            <strong>
+              {compatibilidad.ok
+                ? texto(
+                    "Datos compatibles",
+                    "Compatible data",
+                  )
+                : compatibilidad.completa
+                  ? texto(
+                      "Datos incompatibles",
+                      "Incompatible data",
+                    )
+                  : texto(
+                      "Configuración pendiente",
+                      "Configuration pending",
+                    )}
+            </strong>
+
+            <p>
+              {texto(
+                compatibilidad.mensajeEs,
+                compatibilidad.mensajeEn,
+              )}
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div className="operation-pro-actions">
+
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={
+              limpiar
+            }
+          >
+            <RefreshCcw
+              size={16}
+            />
+
+            {texto(
+              "Limpiar",
+              "Clear",
+            )}
+          </button>
+
+
+          <button
+            type="button"
+            className="button-primary"
+            onClick={() =>
+              void calcular()
+            }
+            disabled={
+              !compatibilidad.ok ||
+              ejecutarOperacionMutation
+                .isPending
+            }
+          >
+            <Calculator
+              size={17}
+            />
+
+            {ejecutarOperacionMutation
+              .isPending
+              ? texto(
+                  "Calculando...",
+                  "Calculating...",
+                )
+              : texto(
+                  "Ejecutar operación",
+                  "Run operation",
+                )}
+          </button>
+
+        </div>
+
+      </section>
+
+
+      {/* RESULTADO */}
+
+      <section className="operation-pro-card">
+
+        <div className="operation-pro-result-header">
+
+          <div>
+
+            <span>
+              {texto(
+                "PASO 4",
+                "STEP 4",
+              )}
+            </span>
+
+            <h2>
+              {texto(
+                "Resultado",
+                "Result",
+              )}
+            </h2>
+
+          </div>
+
+
+          {ejecutada &&
+            resultado && (
+              <div className="operation-pro-completed">
+                <CheckCircle2
+                  size={17}
+                />
+
+                {texto(
+                  "Operación guardada en el historial",
+                  "Operation saved in history",
+                )}
+              </div>
+            )}
+
+        </div>
+
+
+        {error ? (
+
+          <div className="operation-pro-error">
+
+            <TriangleAlert
+              size={23}
+            />
+
+            <div>
+
+              <strong>
+                {texto(
+                  "No se pudo completar la operación",
+                  "The operation could not be completed",
+                )}
+              </strong>
+
+              <p>
+                {
+                  error
+                }
+              </p>
+
+            </div>
+
+          </div>
+
+        ) : (
+          renderResultado()
+        )}
+
+
+        {resultado && (
+          <div className="operation-pro-interpretation">
+
+            <div className="operation-pro-interpretation-title">
+
+              <TrendingUp
+                size={18}
+              />
 
               <div>
 
                 <span>
                   {texto(
-                    "RESULTADO",
-                    "RESULT",
+                    "INTERPRETACIÓN",
+                    "INTERPRETATION",
                   )}
                 </span>
 
                 <strong>
                   {texto(
-                    "Resultado del análisis",
-                    "Analysis result",
+                    "¿Qué significa este resultado?",
+                    "What does this result mean?",
                   )}
                 </strong>
 
               </div>
 
-
-              {resultado &&
-                !error && (
-
-                <CheckCircle2
-                  size={19}
-                />
-
-              )}
-
             </div>
 
 
-            {error ||
-            errorDatos ? (
-
-              <div className="operations-error">
-
-                <TriangleAlert
-                  size={21}
-                />
-
-                <div>
-
-                  <strong>
-                    {texto(
-                      "No se puede realizar el análisis",
-                      "The analysis cannot be performed",
-                    )}
-                  </strong>
-
-                  <p>
-                    {
-                      error ||
-                      errorDatos
-                    }
-                  </p>
-
-                </div>
-
-              </div>
-
-            ) : (
-
-              <>
-                {
-                  renderizarResultado()
-                }
+            <p>
+              {
+                resumenInterpretacion()
+              }
+            </p>
 
 
-                {resultado && (
+            <div className="operation-pro-math-detail">
 
-                  <div className="operation-interpretation">
-
-                    <span>
-                      {texto(
-                        "INTERPRETACIÓN EMPRESARIAL",
-                        "BUSINESS INTERPRETATION",
-                      )}
-                    </span>
-
-                    <strong>
-                      {texto(
-                        "¿Qué significa este resultado?",
-                        "What does this result mean?",
-                      )}
-                    </strong>
-
-                    <p>
-                      {
-                        obtenerInterpretacion()
-                      }
-                    </p>
-
-                  </div>
-
+              <span>
+                {texto(
+                  "Operación matemática utilizada",
+                  "Mathematical operation used",
                 )}
-              </>
+              </span>
 
-            )}
+              <strong>
+                {texto(
+                  operacionActual.matematicoEs,
+                  operacionActual.matematicoEn,
+                )}
+              </strong>
 
-          </section>
+            </div>
 
-        </div>
+          </div>
+        )}
 
       </section>
 

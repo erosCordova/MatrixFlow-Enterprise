@@ -949,3 +949,325 @@
     margin-left: 12px;
   }
 }
+
+
+/* MATRIXFLOW MATRIX PRO FINAL */
+
+.matrix-pro-message {
+  margin-bottom: 14px;
+  padding: 12px 15px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.matrix-pro-success {
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.matrix-pro-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.matrix-pro-card,
+.matrix-pro-result {
+  margin-bottom: 18px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.matrix-pro-heading span,
+.matrix-pro-result-head span {
+  display: block;
+  margin-bottom: 4px;
+  color: #2563eb;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.matrix-pro-heading h2,
+.matrix-pro-result-head h2 {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.matrix-pro-heading p,
+.matrix-pro-result-head p {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 9px;
+}
+
+.matrix-pro-sources {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.matrix-pro-source {
+  display: flex;
+  min-height: 105px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: left;
+  cursor: pointer;
+}
+
+.matrix-pro-source.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.matrix-pro-source strong {
+  color: #0f172a;
+  font-size: 11px;
+}
+
+.matrix-pro-source span {
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.matrix-pro-config {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.matrix-pro-field label {
+  display: block;
+  margin-bottom: 6px;
+  color: #334155;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.matrix-pro-field select {
+  width: 100%;
+  height: 39px;
+  padding: 0 9px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 9px;
+}
+
+.matrix-pro-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.matrix-pro-info strong {
+  display: block;
+  color: #1e3a8a;
+  font-size: 10px;
+}
+
+.matrix-pro-info p {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 8px;
+}
+
+.matrix-pro-generate {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.matrix-pro-result {
+  border-color: #bfdbfe;
+}
+
+.matrix-pro-result-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.matrix-pro-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 13px 0;
+}
+
+.matrix-pro-meta span {
+  display: flex;
+  gap: 5px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 8px;
+}
+
+.matrix-pro-meta strong {
+  color: #334155;
+}
+
+.matrix-pro-section {
+  margin-top: 12px;
+  padding: 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.matrix-pro-section h3 {
+  color: #0f172a;
+  font-size: 11px;
+}
+
+.matrix-pro-section > p {
+  margin: 3px 0 11px;
+  color: #94a3b8;
+  font-size: 8px;
+}
+
+.matrix-pro-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.matrix-pro-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.matrix-pro-table th,
+.matrix-pro-table td {
+  padding: 9px 11px;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matrix-pro-table thead th {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.matrix-pro-table tbody th {
+  background: #f8fafc;
+  color: #334155;
+  text-align: left;
+}
+
+.matrix-pro-table td {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.matrix-pro-expression {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  overflow-x: auto;
+  padding: 12px 0;
+}
+
+.matrix-pro-expression > span {
+  color: #2563eb;
+  font-family: Georgia,serif;
+  font-size: 62px;
+}
+
+.matrix-pro-expression > div {
+  display: grid;
+  gap: 5px;
+}
+
+.matrix-pro-expression-row {
+  display: flex;
+  gap: 5px;
+}
+
+.matrix-pro-expression-row strong {
+  min-width: 44px;
+  padding: 8px;
+  border: 1px solid #dbeafe;
+  border-radius: 6px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 8px;
+  text-align: center;
+}
+
+.matrix-pro-saved {
+  margin-top: 18px;
+}
+
+.matrix-pro-manual-dimensions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.matrix-pro-manual-grid {
+  display: grid;
+  gap: 6px;
+  margin-top: 15px;
+  overflow-x: auto;
+}
+
+.matrix-pro-manual-row {
+  display: flex;
+  gap: 6px;
+}
+
+.matrix-pro-manual-row input {
+  width: 70px;
+  height: 36px;
+  padding: 0 7px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  text-align: center;
+}
+
+@media (max-width: 850px) {
+  .matrix-pro-sources,
+  .matrix-pro-config {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .matrix-pro-result-head {
+    flex-direction: column;
+  }
+
+  .matrix-pro-result-head button,
+  .matrix-pro-generate button {
+    width: 100%;
+  }
+}
